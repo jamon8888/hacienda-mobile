@@ -57,6 +57,11 @@ The design thesis of a "Local AI First" of AnythingLLM applies to the mobile app
 | OpenRouter | Cloud |
 | Any OpenAI-compatible API | Cloud/local |
 
+### Supported Operating Systems
+
+- [x] Android
+- [ ] iOS
+
 ## How to setup for development
 
 ### Prerequisites
