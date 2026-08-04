@@ -194,7 +194,9 @@ export function VoiceSettingsView({ workspace, goToPage }: any) {
                         <View className="bg-[#27282A] px-4 py-2 rounded-lg border border-[#3A3B3D]">
                             <Text className="text-white/60 text-xs uppercase">Available RAM</Text>
                             <Text className="text-white text-base font-medium">
-                                {((deviceCaps?.availableRAM ?? 0) / (1024**3)).toFixed(1)} GB
+                                {deviceCaps?.availableRAM === undefined
+                                    ? 'Unknown'
+                                    : `${(deviceCaps.availableRAM / (1024 ** 3)).toFixed(1)} GB`}
                             </Text>
                         </View>
                     </View>
