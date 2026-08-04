@@ -81,12 +81,16 @@ export class IndexingStore {
     let imported = 0;
 
     try {
-      // P2: hash BEFORE extraction — unchanged files are skipped entirely
+      // P2: hash BEFORE extraction — unchanged files are skipped entirely, and never sent
+      // to extractBatch below.
+      const contentHashByPath = new Map<string, string | null>();
+      const toProcess: IndexJob[] = [];
       for (const job of this.jobs) {
         let contentHash: string | null = null;
         try {
           contentHash = await getSHA256Hash(job.path);
         } catch { contentHash = null; }
+        contentHashByPath.set(job.path, contentHash);
 
         if (contentHash) {
           const existing = await Document.findByContentHash(workspaceSlug, contentHash);
@@ -98,14 +102,63 @@ export class IndexingStore {
             continue;
           }
         }
+        toProcess.push(job);
+      }
 
-        this.currentFile = job.name;
-        job.status = 'processing';
+      // P1: extract the whole remaining batch in one native call (parallel + cached on the
+      // native side) instead of one XbergClient.extract() round-trip per file.
+      const resultByPath = new Map<string, { content: string; chunks?: { content: string }[] }>();
+      const errorByPath = new Map<string, string>();
+      if (toProcess.length > 0) {
+        toProcess.forEach((job) => { this.setJobStatus(job.path, 'processing'); });
         onProgress?.(this.getProgress());
 
         try {
-          const extracted = await XbergClient.extract(job.path, config);
-          const res = extracted.results?.[0];
+          const batch = await XbergClient.extractBatch(toProcess.map((j) => j.path), config);
+          const results = batch.results ?? [];
+          // The native side only tags `source` when it can trust extractBatch's result order
+          // matched its input order 1:1 (see XbergModule.kt/.swift). If even one result lacks
+          // it, none of them can be trusted positionally — fall back to per-file extraction
+          // rather than risk attributing one file's content to another file's name.
+          const batchMappingTrusted = results.length > 0 && results.every((r) => typeof r.source === 'string');
+
+          if (batchMappingTrusted) {
+            for (const res of results) resultByPath.set(res.source as string, res);
+            for (const err of batch.errors ?? []) {
+              if (err.source) errorByPath.set(err.source, err.error || err.code || 'Extraction failed');
+            }
+          } else {
+            if (results.length > 0) {
+              console.warn('extractBatch results could not be safely mapped to source files; falling back to per-file extraction');
+            }
+            for (const job of toProcess) {
+              try {
+                const single = await XbergClient.extract(job.path, config);
+                const res = single.results?.[0];
+                if (res?.content) resultByPath.set(job.path, res);
+                else errorByPath.set(job.path, 'Extraction returned no content');
+              } catch (e) {
+                errorByPath.set(job.path, e instanceof Error ? e.message : String(e));
+              }
+            }
+          }
+        } catch (e) {
+          const message = e instanceof Error ? e.message : String(e);
+          for (const job of toProcess) errorByPath.set(job.path, message);
+        }
+      }
+
+      // Embedding + vector storage stay per-file — that's still the part with meaningful
+      // per-file latency, so progress reporting here remains granular.
+      for (const job of toProcess) {
+        this.currentFile = job.name;
+        onProgress?.(this.getProgress());
+
+        try {
+          const failure = errorByPath.get(job.path);
+          if (failure) throw new Error(failure);
+
+          const res = resultByPath.get(job.path);
           if (!res?.content) throw new Error('Extraction returned no content');
 
           const name = job.name;
@@ -119,7 +172,7 @@ export class IndexingStore {
             embedding: emb,
             metadata: { content: chunkContents[j], name },
           })));
-          await Document.create({ name, workspaceSlug, vectorBoxIds: ids, contentHash });
+          await Document.create({ name, workspaceSlug, vectorBoxIds: ids, contentHash: contentHashByPath.get(job.path) ?? null });
 
           job.status = 'completed';
           imported += 1;

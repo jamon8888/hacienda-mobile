@@ -22,6 +22,12 @@ export interface ExtractionConfig {
 
 export interface ExtractionResult {
   results: Array<{
+    /**
+     * Only present on extractBatch responses, and only when the native side could safely
+     * position-match results to inputs (see XbergModule.kt/.swift extractBatch). Absent on
+     * single-file extract() responses and absent on batch responses where that match failed.
+     */
+    source?: string;
     content: string;
     metadata: {
       format: string;

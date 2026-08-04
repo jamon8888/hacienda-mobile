@@ -39,3 +39,13 @@ export function setEmbeddingEngine(engine: EmbeddingEngine): EmbeddingProvider {
 export function getCurrentEngine(): EmbeddingEngine {
     return currentEngine;
 }
+
+/**
+ * Extends the keep-alive window of whichever embedding provider is currently active, if any.
+ * No-op if no provider has been resolved yet, or if that provider has no model loaded — never
+ * triggers a (re)load. Meant to be called from UI signals of active engagement (e.g. typing)
+ * without needing to know which engine the current workspace uses.
+ */
+export function touchCurrentEmbeddingProvider(): void {
+    currentProvider?.touch();
+}

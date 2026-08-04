@@ -260,6 +260,10 @@ export default class MultilingualEmbedderProvider implements EmbeddingProvider {
         return !!this.cactusLmContext;
     }
 
+    touch(): void {
+        if (this.cactusLmContext) this.keepAlive();
+    }
+
     supportsMatryoshka(): boolean {
         return this.modelId === 'nomic-embed-text-v2-moe';
     }
