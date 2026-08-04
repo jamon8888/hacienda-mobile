@@ -2,6 +2,23 @@
 
 > **Rule**: Use `basemind` for code intelligence BEFORE grep/read/git. It's the default, not a preference.
 
+## Dev Environment Status (as of 2026-08-04)
+
+Installed and verified on this machine:
+
+| Tool | Version | Install method | Notes |
+|------|---------|-----------------|-------|
+| `basemind` | 0.23.1 | `npm install -g basemind` | postinstall (`install.js`) had to be run manually — `allow-scripts` blocked it. Indexed: 461 files scanned, 324 indexed, 91 docs, git-history built (3 commits). |
+| `xberg` (CLI) | 1.0.12 | `cargo install xberg-cli --locked` | ~59 min cold build (OCR/PDF deps: tesseract, candle-ocr, resvg, lopdf…). No `brew` on this box, so cargo was the only path. Backs the `xberg` Claude Code plugin — document extraction, relevant to [SPEC_XBERG_INTEGRATION.md](../SPEC_XBERG_INTEGRATION.md). |
+| `crawlberg` (CLI) | 1.1.2 | `cargo install crawlberg-cli --locked` | ~13.5 min build. Backs the `crawlberg` Claude Code plugin — web crawling, relevant to the `tools-manager` agent's webSearch capability. |
+| Node deps | — | `corepack yarn install` | **Do not run plain `yarn`** — `/usr/bin/yarn` on this machine is an unrelated Debian tool (cliapp-based), not Yarn JS. Always use `corepack yarn <cmd>`. Also run with nothing else memory-heavy in parallel — a concurrent `cargo build` starved it OOM once. |
+
+Claude Code plugins installed (user scope): `xberg@xberg`, `crawlberg@xberg` (marketplace: `xberg-io/plugins`, self-hosted via `claude plugin marketplace add`). Not installed: `html-to-markdown`, `liter-llm`, `tree-sitter-language-pack` — available from the same marketplace if a future task needs them, but not clearly needed by this RN client today.
+
+Not installed: `opencode` (the `opencode-ai` npm package) — the `.opencode/` agent configs below are present in-repo but the CLI itself was skipped by explicit choice. Install with `npm install -g opencode-ai` if you want to actually run `opencode --agent ...`.
+
+Known pre-existing state, not caused by this setup: `yarn typecheck` currently fails (~25 errors) on the `feature/cactus-voice-pipeline` branch — mostly in `VoiceSettings.tsx`/`ModalPicker.tsx` (duplicate/missing exports), `ModelStore.ts`/`device.ts` (missing `Model` fields), and Node-global typing gaps (`global`, `NodeJS`, `module` — likely needs `@types/node` in `tsconfig.json`). Left untouched; flag if you want these fixed.
+
 ## Quick Start
 
 ```bash
