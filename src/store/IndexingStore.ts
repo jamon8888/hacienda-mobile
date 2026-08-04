@@ -7,6 +7,7 @@ import VectorDB from '../utils/VectorDB';
 import Document from '../database/models/Document';
 import { storeProcessedFileAsText } from '../utils/fs';
 import { getSHA256Hash } from '../utils/device';
+import { dedupeChunks } from '../utils/chunking';
 
 export type IndexJobStatus = 'pending' | 'processing' | 'completed' | 'skipped' | 'failed';
 
@@ -163,7 +164,7 @@ export class IndexingStore {
 
           const name = job.name;
           const chunks = res.chunks?.length ? res.chunks : [{ content: res.content }];
-          const chunkContents = chunks.map((c) => c.content).filter(Boolean);
+          const chunkContents = dedupeChunks(chunks.map((c) => c.content).filter(Boolean));
           if (chunkContents.length === 0) throw new Error('Extraction produced no chunks');
 
           await storeProcessedFileAsText(name, res.content);

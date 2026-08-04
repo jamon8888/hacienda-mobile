@@ -5,6 +5,7 @@ import { NativeEmbeddingResult, CactusLM } from 'cactus-react-native';
 import { Platform } from 'react-native';
 import { resolveDestinationPathFromGGUFUrl } from '@/utils/models/defaults';
 import { EmbeddingProvider, EmbedderPrefixType, MultilingualEmbeddingModelId as ModelIdType } from '../types';
+import { dedupeChunks } from '@/utils/chunking';
 
 const MODEL_PREFIXES: Record<MultilingualEmbeddingModelId, Record<EmbedderPrefixType, string>> = {
     'multilingual-e5-small': {
@@ -228,7 +229,7 @@ export default class MultilingualEmbedderProvider implements EmbeddingProvider {
             chunkOverlap: options.chunkOverlap || 50,
         });
 
-        const chunks = await textSplitter.splitText(documentText);
+        const chunks = dedupeChunks(await textSplitter.splitText(documentText));
         this.log(`Split document into ${chunks.length} chunks (max ${this.modelConfig.contextLength} tokens)`);
 
         const embeddings = await this.embedBatch(chunks, as);

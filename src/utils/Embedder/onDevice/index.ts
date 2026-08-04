@@ -4,6 +4,7 @@ import * as RNFS from '@dr.pogodin/react-native-fs';
 import { NativeEmbeddingResult, CactusLM } from "cactus-react-native";
 import { Platform } from "react-native";
 import { EmbeddingProvider, EmbedderPrefixType } from "../types";
+import { dedupeChunks } from "@/utils/chunking";
 
 /**
  * The is a known bug with the on device embedder.
@@ -207,8 +208,8 @@ export default class OnDeviceEmbedderProvider implements EmbeddingProvider {
      */
     async splitAndEmbed(documentText: string, options: TextSplitterConfig, as: EmbedderPrefixType = 'embed_document'): Promise<{ embedding: number[]; metadata: { content: string } }[]> {
         const textSplitter = new TextSplitter(options);
-        let chunks = await textSplitter.splitText(documentText);
-        this.log(`Split document into ${chunks.length} ~${chunks[0].length} character chunks`);
+        let chunks = dedupeChunks(await textSplitter.splitText(documentText));
+        this.log(`Split document into ${chunks.length} ~${chunks[0]?.length ?? 0} character chunks`);
 
         const embeddings = await this.embedBatch(chunks, as);
         return embeddings.map((embedding, index) => ({
