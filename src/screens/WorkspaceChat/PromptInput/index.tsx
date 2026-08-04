@@ -31,6 +31,7 @@ import { PATHS } from "@/utils/paths";
 import useRouteObserver from "@/hooks/useRouteObserver";
 import { useChatHandlerContext } from "@/hooks/useChatHandler/index";
 import useLlmPreference from "@/hooks/useLLMPreference";
+import { touchCurrentEmbeddingProvider } from "@/utils/Embedder";
 
 const defaultPadding = [0, 0, 32]; // top padding for snap points
 export const snapPointsDefault = ["22%", "60%", "100%"];
@@ -138,6 +139,11 @@ export default function PromptInput({ attachmentHandler }: PromptInputProps) {
 
   const handleTextInputChange = useCallback(
     (text: string) => {
+      // B2: typing is a signal the conversation is active — extend the embedder's keep-alive
+      // window so a long pause between messages doesn't hit a cold-start reload on the next
+      // send. No-op if no model is currently loaded.
+      touchCurrentEmbeddingProvider();
+
       const cursorAt = selection.start;
       const oldLength = chatHandler.prompt.length;
       chatHandler.setPrompt(text);

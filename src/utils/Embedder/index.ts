@@ -1,12 +1,12 @@
 import OnDeviceEmbedderProvider from "./onDevice";
 import MultilingualEmbedderProvider from "./onDevice/multilingual";
-import { createEmbeddingProvider, getEmbeddingProvider, setEmbeddingEngine, getCurrentEngine } from "./factory";
+import { createEmbeddingProvider, getEmbeddingProvider, setEmbeddingEngine, getCurrentEngine, touchCurrentEmbeddingProvider } from "./factory";
 import { EmbeddingProvider, EmbeddingEngine, EmbeddingResult, EmbedderPrefixType, MultilingualEmbeddingModelId } from "./types";
 import { MULTILINGUAL_EMBEDDING_MODELS, MultilingualEmbeddingModelId as ModelIdType, DEFAULT_MULTILINGUAL_EMBEDDING_MODEL } from "@/utils/models/defaults";
 
 export type { EmbeddingProvider, EmbeddingEngine, EmbeddingResult, EmbedderPrefixType, MultilingualEmbeddingModelId };
 export { OnDeviceEmbedderProvider, MultilingualEmbedderProvider };
-export { createEmbeddingProvider, getEmbeddingProvider, setEmbeddingEngine, getCurrentEngine };
+export { createEmbeddingProvider, getEmbeddingProvider, setEmbeddingEngine, getCurrentEngine, touchCurrentEmbeddingProvider };
 export { MULTILINGUAL_EMBEDDING_MODELS, DEFAULT_MULTILINGUAL_EMBEDDING_MODEL };
 
 export type EmbedderProvider = OnDeviceEmbedderProvider | MultilingualEmbedderProvider;

@@ -46,6 +46,10 @@ class XbergModule(reactContext: ReactApplicationContext) :
     fun extractBatch(filePaths: ReadableArray, configJson: String, promise: Promise) {
         try {
             val inputs = mutableListOf<ExtractInput>()
+            // Parallel to `inputs`, tracks which source path each accepted input came from.
+            // Xberg.extractBatch's Rust binding gives no per-result identifier of its own, so
+            // this is the only way to reattach extracted content to the file it came from.
+            val inputPaths = mutableListOf<String>()
             val localErrors = org.json.JSONArray()
             for (i in 0 until filePaths.size()) {
                 val filePath = filePaths.getString(i)
@@ -66,6 +70,7 @@ class XbergModule(reactContext: ReactApplicationContext) :
                 }
                 try {
                     inputs.add(ExtractInput.from_uri(filePath))
+                    inputPaths.add(filePath)
                 } catch (e: Exception) {
                     localErrors.put(org.json.JSONObject()
                         .put("source", filePath)
@@ -81,20 +86,33 @@ class XbergModule(reactContext: ReactApplicationContext) :
                 Xberg.extractBatch(inputs, config).toJson()
             }
 
-            if (localErrors.length() > 0) {
-                try {
-                    val envelope = org.json.JSONObject(resultJson)
-                    val errors = envelope.optJSONArray("errors") ?: org.json.JSONArray()
-                    for (j in 0 until localErrors.length()) errors.put(localErrors.get(j))
-                    envelope.put("errors", errors)
-                    promise.resolve(envelope.toString())
-                } catch (e: Exception) {
-                    android.util.Log.w("XbergModule", "extractBatch: could not merge localErrors: ${e.message}")
-                    promise.resolve(resultJson)
+            val envelope = org.json.JSONObject(resultJson)
+            val results = envelope.optJSONArray("results") ?: org.json.JSONArray()
+
+            // Tag each result with the source path it came from, assuming extractBatch preserves
+            // input order (the standard contract for batch APIs, but not one this Rust binding
+            // documents). If the count doesn't match 1:1 we cannot safely assume positional
+            // correspondence, so we deliberately leave "source" unset — callers must treat a
+            // missing "source" as "batch mapping is untrustworthy, fall back to per-file extract"
+            // rather than guess and risk attributing one file's content to another's name.
+            if (results.length() == inputPaths.size) {
+                for (i in 0 until results.length()) {
+                    results.getJSONObject(i).put("source", inputPaths[i])
                 }
             } else {
-                promise.resolve(resultJson)
+                android.util.Log.w(
+                    "XbergModule",
+                    "extractBatch: results count (${results.length()}) != inputs count (${inputPaths.size}); omitting source tagging"
+                )
             }
+            envelope.put("results", results)
+
+            if (localErrors.length() > 0) {
+                val errors = envelope.optJSONArray("errors") ?: org.json.JSONArray()
+                for (j in 0 until localErrors.length()) errors.put(localErrors.get(j))
+                envelope.put("errors", errors)
+            }
+            promise.resolve(envelope.toString())
         } catch (e: Exception) {
             promise.reject("EXTRACTION_ERROR", e.message, e)
         }
