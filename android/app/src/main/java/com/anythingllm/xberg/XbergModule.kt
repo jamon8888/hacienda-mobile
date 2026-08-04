@@ -86,33 +86,42 @@ class XbergModule(reactContext: ReactApplicationContext) :
                 Xberg.extractBatch(inputs, config).toJson()
             }
 
-            val envelope = org.json.JSONObject(resultJson)
-            val results = envelope.optJSONArray("results") ?: org.json.JSONArray()
+            // Building the tagged envelope is best-effort: a parse/serialize failure here should
+            // still return the raw extraction the caller asked for, not fail the whole batch —
+            // matching the iOS side and this method's pre-batch-tagging behavior.
+            try {
+                val envelope = org.json.JSONObject(resultJson)
+                val results = envelope.optJSONArray("results") ?: org.json.JSONArray()
 
-            // Tag each result with the source path it came from, assuming extractBatch preserves
-            // input order (the standard contract for batch APIs, but not one this Rust binding
-            // documents). If the count doesn't match 1:1 we cannot safely assume positional
-            // correspondence, so we deliberately leave "source" unset — callers must treat a
-            // missing "source" as "batch mapping is untrustworthy, fall back to per-file extract"
-            // rather than guess and risk attributing one file's content to another's name.
-            if (results.length() == inputPaths.size) {
-                for (i in 0 until results.length()) {
-                    results.getJSONObject(i).put("source", inputPaths[i])
+                // Tag each result with the source path it came from, assuming extractBatch
+                // preserves input order (the standard contract for batch APIs, but not one this
+                // Rust binding documents). If the count doesn't match 1:1 we cannot safely assume
+                // positional correspondence, so we deliberately leave "source" unset — callers
+                // must treat a missing "source" as "batch mapping is untrustworthy, fall back to
+                // per-file extract" rather than guess and risk attributing one file's content to
+                // another's name.
+                if (results.length() == inputPaths.size) {
+                    for (i in 0 until results.length()) {
+                        results.getJSONObject(i).put("source", inputPaths[i])
+                    }
+                } else {
+                    android.util.Log.w(
+                        "XbergModule",
+                        "extractBatch: results count (${results.length()}) != inputs count (${inputPaths.size}); omitting source tagging"
+                    )
                 }
-            } else {
-                android.util.Log.w(
-                    "XbergModule",
-                    "extractBatch: results count (${results.length()}) != inputs count (${inputPaths.size}); omitting source tagging"
-                )
-            }
-            envelope.put("results", results)
+                envelope.put("results", results)
 
-            if (localErrors.length() > 0) {
-                val errors = envelope.optJSONArray("errors") ?: org.json.JSONArray()
-                for (j in 0 until localErrors.length()) errors.put(localErrors.get(j))
-                envelope.put("errors", errors)
+                if (localErrors.length() > 0) {
+                    val errors = envelope.optJSONArray("errors") ?: org.json.JSONArray()
+                    for (j in 0 until localErrors.length()) errors.put(localErrors.get(j))
+                    envelope.put("errors", errors)
+                }
+                promise.resolve(envelope.toString())
+            } catch (e: Exception) {
+                android.util.Log.w("XbergModule", "extractBatch: could not build result envelope: ${e.message}")
+                promise.resolve(resultJson)
             }
-            promise.resolve(envelope.toString())
         } catch (e: Exception) {
             promise.reject("EXTRACTION_ERROR", e.message, e)
         }
