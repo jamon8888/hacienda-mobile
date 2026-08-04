@@ -9,6 +9,7 @@ import uiStore from '@/store/UIStore';
 import WorkspaceChat from './WorkspaceChat';
 import AnythingLLMExternal from '@/utils/AnythingLLMExternal';
 import Telemetry from '@/utils/Telemetry';
+import { MultilingualEmbeddingModelId, MULTILINGUAL_EMBEDDING_MODELS, DEFAULT_MULTILINGUAL_EMBEDDING_MODEL } from '@/utils/models/defaults';
 
 export type WorkspaceType = {
   name: string;
@@ -25,6 +26,13 @@ export type WorkspaceType = {
     platform: 'server' | 'desktop';
   };
   threads?: WorkspaceThreadType[];
+  /** Embedding configuration for this workspace */
+  embeddingConfig?: {
+    engine: MultilingualEmbeddingModelId;
+    dimensions: number;
+    autoDetectLanguage: boolean;
+    modelVersion: string;
+  };
   /** Check if the remote server is reachable */
   remoteServerReachable: () => Promise<boolean>;
   /** Get the model tag for the workspace from the remote server */
@@ -89,6 +97,16 @@ export default class Workspace extends Model {
         return { valid: !error, error };
       },
     },
+    embeddingConfig: {
+      validate: (value: any) => {
+        let error = '';
+        if (!value || typeof value !== 'object') error = 'Embedding config must be an object';
+        if (value.engine && !MULTILINGUAL_EMBEDDING_MODELS[value.engine as MultilingualEmbeddingModelId]) {
+          error = 'Invalid embedding engine';
+        }
+        return { valid: !error, error };
+      },
+    },
   }
 
   static associations = {
@@ -109,6 +127,7 @@ export default class Workspace extends Model {
   @field('context_length') contextLength!: number;
   @field('is_remote') isRemote!: boolean;
   @json('remote_config', (json: any) => json) remoteConfig!: WorkspaceType['remoteConfig'];
+  @json('embedding_config', (json: any) => json) embeddingConfig!: WorkspaceType['embeddingConfig'];
   @field('created_at') createdAt!: number;
 
   static log(message: any, ...args: any[]) {
@@ -116,7 +135,7 @@ export default class Workspace extends Model {
   }
 
   static toWorkspaceObject(data: any): WorkspaceType {
-    const { name, slug, createdAt, systemPrompt, temperature, contextLength, isRemote = false, remoteConfig = null } = data;
+    const { name, slug, createdAt, systemPrompt, temperature, contextLength, isRemote = false, remoteConfig = null, embeddingConfig = null } = data;
     return {
       name: name,
       slug: slug,
@@ -125,6 +144,12 @@ export default class Workspace extends Model {
       contextLength,
       isRemote,
       remoteConfig,
+      embeddingConfig: embeddingConfig || {
+        engine: DEFAULT_MULTILINGUAL_EMBEDDING_MODEL,
+        dimensions: MULTILINGUAL_EMBEDDING_MODELS[DEFAULT_MULTILINGUAL_EMBEDDING_MODEL].dimensions,
+        autoDetectLanguage: true,
+        modelVersion: '1.0',
+      },
       threads: [],
       createdAt,
 
@@ -202,6 +227,13 @@ export default class Workspace extends Model {
     const nameValidation = Workspace.writableFields.name.validate(name);
     if (!nameValidation.valid) throw new Error(nameValidation.error);
 
+    const defaultEmbeddingConfig = {
+      engine: DEFAULT_MULTILINGUAL_EMBEDDING_MODEL,
+      dimensions: MULTILINGUAL_EMBEDDING_MODELS[DEFAULT_MULTILINGUAL_EMBEDDING_MODEL].dimensions,
+      autoDetectLanguage: true,
+      modelVersion: '1.0',
+    };
+
     let newWorkspace: any;
     await database.write(async () => {
       newWorkspace = await database.get(Workspace.table).create((workspace: any) => {
@@ -212,6 +244,7 @@ export default class Workspace extends Model {
         workspace.context_length = Workspace.defaultContextLength;
         workspace.is_remote = false;
         workspace.remote_config = null;
+        workspace.embedding_config = defaultEmbeddingConfig;
         workspace.created_at = Date.now();
       });
     });
@@ -248,7 +281,7 @@ export default class Workspace extends Model {
       });
 
       // Emit the updated workspace to the UI if useWorkspace hook is listening
-      uiStore.emitter.emit('workspaceUpdate', { type: 'update', details: { workspace: updatedWorkspace } });
+      (uiStore.emitter as any).emit('workspaceUpdate', { type: 'update', details: { workspace: updatedWorkspace } });
       return updatedWorkspace;
     } catch (error) {
       console.error('Error updating workspace:', error);

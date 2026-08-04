@@ -3,8 +3,7 @@ import TextSplitter, { TextSplitterConfig } from "@/utils/TextSplitter";
 import * as RNFS from '@dr.pogodin/react-native-fs';
 import { NativeEmbeddingResult, CactusLM } from "cactus-react-native";
 import { Platform } from "react-native";
-
-type EmbedderPrefixType = 'query' | 'embed_document';
+import { EmbeddingProvider, EmbedderPrefixType } from "../types";
 
 /**
  * The is a known bug with the on device embedder.
@@ -18,7 +17,7 @@ type EmbedderPrefixType = 'query' | 'embed_document';
  * We could track the last query vector and compare it to the new query vector and unload the model if they are different
  * before sending to semantic search, but that is a lot of overhead and we are not sure if it is worth it.
  */
-export default class OnDeviceEmbedderProvider {
+export default class OnDeviceEmbedderProvider implements EmbeddingProvider {
     static instance: OnDeviceEmbedderProvider;
 
     /**
@@ -30,17 +29,17 @@ export default class OnDeviceEmbedderProvider {
      * >2: p-norm
      */
     private EMBEDDING_NORMALIZATION = -1;
-    private EMBED_PREFIXES = {
-        // For nomic-embed-text-v1.5-GGUF it has task prefixes for the different tasks.
-        // https://huggingface.co/nomic-ai/nomic-embed-text-v1.5
+    private EMBED_PREFIXES: Record<EmbedderPrefixType, string> = {
         query: 'search_query: ',
         embed_document: 'search_document: ',
-    }
+        classification: 'search_query: ',
+        clustering: 'search_query: ',
+    };
 
     private _isWorking: boolean = false;
     private model = EMBEDDING_MODEL.modelId;
     private modelPath = resolveDestinationPathFromGGUFUrl(EMBEDDING_MODEL.tag);
-    private keepAliveTimer: NodeJS.Timeout | null = null;
+    private keepAliveTimer: ReturnType<typeof setTimeout> | null = null;
     private keepAliveInterval = 1000 * (60 * 3); // 3 minutes
     private cactusLmContext: CactusLM | null = null;
 
@@ -104,13 +103,6 @@ export default class OnDeviceEmbedderProvider {
         this.keepAliveTimer = setTimeout(() => {
             if (!this._isWorking) this.cleanup();
             else {
-                /**
-                 * If we are still working we cannot unload the model
-                 * so we reset the keep alive timer. This is unbounded and will
-                 * keep the model loaded for as long as we are working (could be forever!)
-                 * TODO: implement a max iteration count to prevent infinite loops to force unload the model
-                 * in case the user is stuck in a loaded state to free up memory.
-                 */
                 this.log('Cannot cleanup, still working...');
                 this.keepAliveTimer = setTimeout(() => this.keepAlive(), this.keepAliveInterval);
             }
@@ -129,13 +121,14 @@ export default class OnDeviceEmbedderProvider {
      * @param func - The function to wrap.
      * @returns The result of the function.
      */
-    private async wrapInKeepAlive(func: () => Promise<any>) {
+    private async wrapInKeepAlive<T>(func: () => Promise<T>): Promise<T> {
         try {
             this._isWorking = true;
             this.keepAlive();
             return await func();
         } catch (error) {
             this.log('error running function', error);
+            throw error;
         } finally {
             this._isWorking = false;
         }
@@ -146,35 +139,64 @@ export default class OnDeviceEmbedderProvider {
      */
     async cleanup(): Promise<void> {
         this.log('Cleaning up!');
+        if (this.keepAliveTimer) {
+            clearTimeout(this.keepAliveTimer);
+            this.keepAliveTimer = null;
+        }
         await this.unloadModel();
     }
 
     /**
      * Embeds a single text.
      * @param text - The text to embed.
+     * @param as - The type of embedding (query, embed_document, classification, clustering)
+     * @param dimensions - Optional dimension truncation (Matryoshka)
      * @returns The embedding.
      */
-    async embed(text: string, as: 'query' | 'embed_document' = 'query') {
+    async embed(text: string, as: EmbedderPrefixType = 'query', dimensions?: number): Promise<number[]> {
         return this.wrapInKeepAlive(async () => {
             await this.initialize();
             if (!this.cactusLmContext) throw new Error('OnDeviceEmbedderProvider::embed: could not initialize');
 
             this.keepAlive();
-            const prefixedText = `${this.EMBED_PREFIXES[as]}${text}`;
+            const prefix = this.EMBED_PREFIXES[as] || this.EMBED_PREFIXES.query;
+            const prefixedText = `${prefix}${text}`;
             this.log(`Embedding text with prefix: ${prefixedText}`);
             const msgResult: NativeEmbeddingResult = await this.cactusLmContext.embedding(prefixedText, { embd_normalize: this.EMBEDDING_NORMALIZATION });
-            return msgResult.embedding;
+
+            let embedding = msgResult.embedding;
+            if (dimensions && dimensions < embedding.length) {
+                embedding = embedding.slice(0, dimensions);
+                this.log(`Truncated to ${dimensions} dimensions`);
+            }
+            return embedding;
         });
     }
 
     /**
      * Embeds a batch of texts.
      * @param texts - The texts to embed.
+     * @param as - The type of embedding
+     * @param dimensions - Optional dimension truncation
      */
-    async embedBatch(texts: string[], as: EmbedderPrefixType = 'query') {
-        let embeddings: number[][] = [];
-        for (const text of texts) embeddings.push(await this.embed(text, as));
-        return embeddings;
+    async embedBatch(texts: string[], as: EmbedderPrefixType = 'query', dimensions?: number): Promise<number[][]> {
+        return this.wrapInKeepAlive(async () => {
+            await this.initialize();
+            if (!this.cactusLmContext) throw new Error('OnDeviceEmbedderProvider::embedBatch: could not initialize');
+
+            const prefix = this.EMBED_PREFIXES[as] || this.EMBED_PREFIXES.query;
+            const embeddings: number[][] = [];
+            for (const text of texts) {
+                const prefixedText = `${prefix}${text}`;
+                const msgResult: NativeEmbeddingResult = await this.cactusLmContext.embedding(prefixedText, { embd_normalize: this.EMBEDDING_NORMALIZATION });
+                let embedding = msgResult.embedding;
+                if (dimensions && dimensions < embedding.length) {
+                    embedding = embedding.slice(0, dimensions);
+                }
+                embeddings.push(embedding);
+            }
+            return embeddings;
+        });
     }
 
     /**
@@ -183,7 +205,7 @@ export default class OnDeviceEmbedderProvider {
      * 
      * Assumes this is a document that is being embedded for semantic search.
      */
-    async splitAndEmbed(documentText: string, options: TextSplitterConfig, as: EmbedderPrefixType = 'embed_document') {
+    async splitAndEmbed(documentText: string, options: TextSplitterConfig, as: EmbedderPrefixType = 'embed_document'): Promise<{ embedding: number[]; metadata: { content: string } }[]> {
         const textSplitter = new TextSplitter(options);
         let chunks = await textSplitter.splitText(documentText);
         this.log(`Split document into ${chunks.length} ~${chunks[0].length} character chunks`);
@@ -195,5 +217,33 @@ export default class OnDeviceEmbedderProvider {
                 content: chunks[index]
             }
         }));
+    }
+
+    getDimensions(): number {
+        return EMBEDDING_MODEL.dimensions || 768;
+    }
+
+    getContextLength(): number {
+        return EMBEDDING_MODEL.contextLength || 8192;
+    }
+
+    getSupportedLanguages(): string[] {
+        return EMBEDDING_MODEL.languages || ['en'];
+    }
+
+    getModelId(): string {
+        return EMBEDDING_MODEL.modelId;
+    }
+
+    isInitialized(): boolean {
+        return !!this.cactusLmContext;
+    }
+
+    supportsMatryoshka(): boolean {
+        return false;
+    }
+
+    getMatryoshkaDimensions(): number[] {
+        return [this.getDimensions()];
     }
 }

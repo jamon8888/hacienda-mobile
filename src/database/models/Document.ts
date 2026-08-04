@@ -9,6 +9,7 @@ export type DocumentType = {
   uuid: string;
   workspaceSlug: string;
   vectorBoxIds: string[];
+  contentHash?: string | null;
   createdAt: number;
 };
 
@@ -24,6 +25,7 @@ export default class Document extends Model {
   @text('uuid') uuid!: string;
   @text('workspace_slug') workspaceSlug!: string;
   @json('vector_box_ids', sanitizeVectorBoxIds) vectorBoxIds!: number[];
+  @text('content_hash') contentHash!: string | null;
   @field('created_at') createdAt!: number;
 
   static log(message: any, ...args: any[]) {
@@ -31,14 +33,31 @@ export default class Document extends Model {
   }
 
   static toDocumentObject(data: any): DocumentType {
-    const { name, uuid, workspaceSlug, vectorBoxIds, createdAt } = data;
+    const { name, uuid, workspaceSlug, vectorBoxIds, contentHash, createdAt } = data;
     return {
       name: name,
       uuid: uuid,
       workspaceSlug: workspaceSlug,
       vectorBoxIds: vectorBoxIds,
+      contentHash,
       createdAt,
     };
+  }
+
+  /**
+   * Find a document by its content hash within a workspace
+   * @param workspaceSlug - The workspace the document belongs to
+   * @param contentHash - The SHA256 hash of the source file content
+   * @returns The first matching document, or null if none exists
+   */
+  static async findByContentHash(workspaceSlug: string, contentHash: string): Promise<DocumentType | null> {
+    if (!workspaceSlug || !contentHash) return null;
+    const documents = await database.get(Document.table).query(
+      Q.where('workspace_slug', workspaceSlug),
+      Q.where('content_hash', contentHash),
+    ).fetch();
+    if (documents.length === 0) return null;
+    return this.toDocumentObject(documents[0]);
   }
 
   /**
@@ -57,10 +76,12 @@ export default class Document extends Model {
     name = 'New Document',
     workspaceSlug,
     vectorBoxIds = [],
+    contentHash,
   }: {
     name: string;
     workspaceSlug: string;
     vectorBoxIds: number[];
+    contentHash?: string | null;
   }): Promise<DocumentType | null> {
     if (!workspaceSlug) {
       this.log('no workspace slug provided for document creation', { name });
@@ -74,6 +95,7 @@ export default class Document extends Model {
         document.uuid = generateUUID();
         document.workspaceSlug = workspaceSlug;
         document.vectorBoxIds = vectorBoxIds;
+        document.contentHash = contentHash ?? null;
         document.createdAt = Date.now();
       });
     });

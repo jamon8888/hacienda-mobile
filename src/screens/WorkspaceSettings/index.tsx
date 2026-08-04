@@ -8,6 +8,9 @@ import Workspace from "@/database/models/Workspace";
 import { LoadingView, ErrorView, MainView } from "./Main";
 import { NumericInputView } from "./NumericInput";
 import { TextInputView } from "./TextInput";
+import { EmbeddingSettingsView } from "./EmbeddingSettings";
+import { DocumentsSettingsView } from "./DocumentsSettings";
+import { VoiceSettingsView } from "./VoiceSettings";
 
 const PAGES = {
   main: (props: any) => <MainView {...props} />,
@@ -52,6 +55,9 @@ const PAGES = {
       suggestions={[512, 1024, 2048, 4096, 8192]}
     />
   ),
+  embedding: (props: any) => <EmbeddingSettingsView {...props} />,
+  documents: (props: any) => <DocumentsSettingsView {...props} />,
+  voice: (props: any) => <VoiceSettingsView {...props} />,
 };
 export type IWorkspacePageKey = keyof typeof PAGES;
 

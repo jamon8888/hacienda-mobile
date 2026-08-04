@@ -1,0 +1,59 @@
+{
+  "project": "anythingllm-mobile",
+  "language": "typescript",
+  "framework": "react-native",
+  "indexing": {
+    "include": [
+      "src/**/*.ts",
+      "src/**/*.tsx",
+      "App.tsx",
+      "babel.config.js",
+      "metro.config.js",
+      "tsconfig.json"
+    ],
+    "exclude": [
+      "node_modules/**",
+      "android/**",
+      "ios/**",
+      ".bundle/**",
+      "*.lock",
+      "*.log"
+    ],
+    "watch": true
+  },
+  "symbols": {
+    "extract": [
+      "class",
+      "interface",
+      "type",
+      "function",
+      "const",
+      "export"
+    ],
+    "relations": [
+      "imports",
+      "extends",
+      "implements",
+      "calls",
+      "references"
+    ]
+  },
+  "providers": {
+    "typescript": {
+      "enabled": true,
+      "configPath": "tsconfig.json"
+    },
+    "react": {
+      "enabled": true,
+      "jsxFactory": "React.createElement"
+    }
+  },
+  "queries": {
+    "defaultLimit": 50,
+    "fuzzyMatch": true
+  },
+  "hooks": {
+    "onFileChange": "incremental",
+    "onSave": "reindex"
+  }
+}

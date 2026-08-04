@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { List } from 'phosphor-react-native';
+import { List, Microphone } from 'phosphor-react-native';
 import useDevShortcut from './useDevShortcut';
 import NewThreadIcon from '@/assets/new-thread.svg';
 import WorkspaceThread from '@/database/models/WorkspaceThread';
@@ -75,11 +75,21 @@ export default function TopBar({
         <ModelChip workspace={workspace} />
       </View>
       {canMakeThread ? (
-        <TouchableOpacity onPress={handleNewThread}>
-          <NewThreadIcon width={32} height={32} fill="white" />
-        </TouchableOpacity>
+        <>
+          <TouchableOpacity onPress={handleNewThread}>
+            <NewThreadIcon width={32} height={32} fill="white" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate(PATHS.voice_chat)} className="ml-2">
+            <Microphone size={32} color="white" weight="bold" />
+          </TouchableOpacity>
+        </>
       ) : (
-        <View className="w-[32px]" />
+        <>
+          <View className="w-[32px]" />
+          <TouchableOpacity onPress={() => navigation.navigate(PATHS.voice_chat)}>
+            <Microphone size={32} color="white" weight="bold" />
+          </TouchableOpacity>
+        </>
       )}
     </View>
   );

@@ -134,6 +134,13 @@ const App = observer(() => {
                           initialParams={initialRoute.params}
                         />
                         <Drawer.Screen
+                          name={PATHS.voice_chat}
+                          component={gestureHandlerRootHOC(
+                            Screens.VoiceChat,
+                          )}
+                          options={{ headerShown: false }}
+                        />
+                        <Drawer.Screen
                           name={PATHS.workspace_settings}
                           component={gestureHandlerRootHOC(
                             Screens.WorkspaceSettings,

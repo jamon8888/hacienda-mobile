@@ -4,7 +4,7 @@ import { generateUUID, getCurrentDeviceInfo, screenDimensions, } from "@/utils/c
 import * as RNFS from '@dr.pogodin/react-native-fs';
 import Storage from "@/utils/storage";
 import { pick } from 'react-native-document-picker';
-import getEmbedder from "@/utils/Embedder";
+import getEmbedder, { getEmbeddingProvider, EmbeddingEngine, setEmbeddingEngine, MultilingualEmbeddingModelId } from "@/utils/Embedder";
 import VectorDB from "@/utils/VectorDB";
 import Document from "@/database/models/Document";
 import { showToast } from "@/utils/Notification";
@@ -15,8 +15,19 @@ import uiStore from "@/store/UIStore";
 import PDFParser from "@/utils/PDFParser";
 import { storeProcessedFileAsText } from "@/utils/fs";
 import Telemetry from "@/utils/Telemetry";
+import { XbergClient } from "@/utils/Xberg";
+import { ExtractionConfig } from "@/utils/Xberg/types";
+import { FileText, MusicNotes, File, Image } from "phosphor-react-native";
 
 const MAX_ATTACHMENTS = 4;
+
+function getAttachmentIcon(type: string) {
+    if (type?.includes('pdf')) return <FileText size={14} color="#F97066" />;
+    if (type?.includes('audio')) return <MusicNotes size={14} color="#6CE9A6" />;
+    if (type?.includes('image')) return <Image size={14} color="#F59E0B" />;
+    if (type?.includes('word') || type?.includes('document')) return <FileText size={14} color="#3B82F6" />;
+    return <File size={14} color="#9F9FA0" />;
+}
 
 export interface Attachment {
     uuid: string;
@@ -39,8 +50,17 @@ export interface AttachmentInterface {
     isMaxAttachments: boolean;
 }
 
-export default function useAttachments(wsSlug: string): AttachmentInterface {
-    const embedder = getEmbedder('native');
+interface UseAttachmentsOptions {
+    wsSlug: string;
+    embeddingConfig?: {
+        engine: MultilingualEmbeddingModelId;
+        dimensions: number;
+        autoDetectLanguage: boolean;
+    };
+}
+
+export default function useAttachments({ wsSlug, embeddingConfig }: UseAttachmentsOptions): AttachmentInterface {
+    const embedder = embeddingConfig ? setEmbeddingEngine(embeddingConfig.engine) : getEmbeddingProvider();
     const deviceInfo = getCurrentDeviceInfo();
     const [workspaceSlug, setWorkspaceSlug] = useState(wsSlug);
     const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -128,8 +148,10 @@ export default function useAttachments(wsSlug: string): AttachmentInterface {
             await storeProcessedFileAsText(attachment.name, result);
 
             // Embed the processed file
+            const chunkSize = embeddingConfig ? Math.min(400, 512 - 50) : 2048; // 512 token context for multilingual models
+            const dimensions = embeddingConfig?.dimensions;
             const document = await embedder
-                .splitAndEmbed(result, { chunkSize: 2048, chunkOverlap: 20 })
+                .splitAndEmbed(result, { chunkSize, chunkOverlap: 50 }, 'embed_document')
                 .then(embedResults => embedResults.map(embedResult => {
                     const metadata = { ...embedResult.metadata, name: attachment.name };
                     return { embedding: embedResult.embedding, metadata };
@@ -165,45 +187,60 @@ export default function useAttachments(wsSlug: string): AttachmentInterface {
     }, []);
 
     const extractTextContentFromFile = useCallback(async (fileStoragePath: string, mimeType: string): Promise<string | null> => {
-        let result: string | null = null;
         try {
-            switch (mimeType) {
-                case 'application/pdf':
-                    result = (await PDFParser.extract(fileStoragePath))?.textContent || null;
-                    break;
-                default:
-                    const stats = await RNFS.stat(fileStoragePath).catch((e) => {
-                        console.log('error', e);
-                        throw new Error('Attachment could not be read');
-                    });
-                    result = await RNFS.read(fileStoragePath, stats.size, 0, 'utf8');
-                    break;
-            }
-            return result;
+            const config: ExtractionConfig = {
+                outputFormat: 'markdown',
+                ocr: { backend: 'tesseract', language: 'eng' },
+                chunking: { enabled: true, strategy: 'semantic', maxChunkSize: 512, chunkOverlap: 50 },
+            };
+            const result = await XbergClient.extract(fileStoragePath, config);
+            return result.results[0]?.content || null;
         } catch (e) {
-            console.log('error', e);
-            return null;
+            console.log('Xberg extraction failed, falling back:', e);
+            try {
+                const stats = await RNFS.stat(fileStoragePath).catch((e) => {
+                    console.log('error', e);
+                    throw new Error('Attachment could not be read');
+                });
+                return await RNFS.read(fileStoragePath, stats.size, 0, 'utf8');
+            } catch (fallbackError) {
+                console.log('Fallback extraction failed:', fallbackError);
+                return null;
+            }
         }
     }, []);
 
     const askForAttachment = useCallback(async () => {
         const result = await pick({
-            allowMultiSelection: false,
-            type: ['text/plain', 'application/pdf', 'text/markdown'],
+            allowMultiSelection: true,
+            type: [
+                'text/plain',
+                'application/pdf',
+                'text/markdown',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'text/csv',
+                'audio/mpeg',
+                'audio/mp4',
+                'audio/wav',
+                'audio/webm',
+            ],
         });
         if (result.length === 0) return;
-        const attachment = result[0];
-        const attachmentObject: Attachment = {
-            uuid: generateUUID(),
-            type: attachment.type || 'text/plain',
-            uri: decodeURI(attachment.uri),
-            name: attachment.name || 'attachment',
-            size: attachment.size || 0,
-            content: null,
-            processing: true,
-        };
-        addAttachment(attachmentObject);
-        await processAttachment(attachmentObject);
+        for (const file of result) {
+            const attachmentObject: Attachment = {
+                uuid: generateUUID(),
+                type: file.type || 'text/plain',
+                uri: decodeURI(file.uri),
+                name: file.name || 'attachment',
+                size: file.size || 0,
+                content: null,
+                processing: true,
+            };
+            addAttachment(attachmentObject);
+            await processAttachment(attachmentObject);
+        }
     }, []);
 
     const renderAttachments = useCallback(() => {
@@ -242,6 +279,7 @@ export default function useAttachments(wsSlug: string): AttachmentInterface {
                                 }}
                             >
                                 {isProcessing && <ActivityIndicator size="small" color="#fff" />}
+                                {getAttachmentIcon(attachment.type)}
                                 <Text numberOfLines={1} ellipsizeMode="middle" className="text-white">{attachment.name}</Text>
                             </TouchableOpacity>
                         );

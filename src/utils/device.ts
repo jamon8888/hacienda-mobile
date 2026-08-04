@@ -350,3 +350,139 @@ export const safeParseJSON = (json: string) => {
     return { prompt: '', error: error };
   }
 };
+
+// ============================================
+// DEVICE CAPABILITIES DETECTION (NEW)
+// ============================================
+
+import { NativeModules, Platform } from 'react-native';
+
+export interface AndroidDeviceCapabilities {
+  cpuInfo: {
+    cores: number;
+    features: string[];
+    hasFp16: boolean;
+    hasDotProd: boolean;
+    hasSve: boolean;
+    hasI8mm: boolean;
+  };
+  ramInfo: {
+    totalRAM: number;
+    availableRAM: number;
+    threshold: number;
+    lowMemory: boolean;
+  };
+  npuBackend: 'QNN' | 'MEDIATEK_APU' | 'EXYNOS_NPU' | 'TENSOR_TPU' | 'KIRIN_NPU' | 'NNAPI' | 'CPU';
+  hasNNAPI: boolean;
+  gpuVendor: 'qualcomm' | 'mediatek' | 'samsung' | 'google' | 'huawei' | 'apple' | 'unknown';
+  
+  // Derived
+  ramTier: 'low' | 'medium' | 'high';
+  computeTier: 'cpu' | 'npu';
+  recommendedASRQuant: 'CQ2' | 'CQ3' | 'CQ4';
+  recommendedLLMQuant: 'CQ2' | 'CQ2.54' | 'CQ4';
+}
+
+export async function getAndroidDeviceCapabilities(): Promise<AndroidDeviceCapabilities> {
+  const { DeviceInfoModule } = NativeModules;
+  
+  if (!DeviceInfoModule?.getDeviceCapabilities) {
+    throw new Error('DeviceInfoModule.getDeviceCapabilities not available');
+  }
+  
+  const raw = await DeviceInfoModule.getDeviceCapabilities();
+  return computeAndroidCapabilities(raw);
+}
+
+function computeAndroidCapabilities(raw: any): AndroidDeviceCapabilities {
+  const availableRAMGB = parseInt(raw.ramInfo.availableRAM) / (1024 ** 3);
+  
+  // RAM tier based on AVAILABLE RAM
+  let ramTier: 'low' | 'medium' | 'high';
+  if (availableRAMGB < 3) ramTier = 'low';
+  else if (availableRAMGB < 6) ramTier = 'medium';
+  else ramTier = 'high';
+  
+  // NPU backend
+  const npuBackend = raw.npuBackend as AndroidDeviceCapabilities['npuBackend'];
+  const hasNPU = npuBackend !== 'CPU' && npuBackend !== 'NNAPI';
+  
+  // Compute tier
+  const computeTier = hasNPU ? 'npu' : 'cpu';
+  
+  // GPU vendor mapping
+  const gpuVendorMap: Record<string, AndroidDeviceCapabilities['gpuVendor']> = {
+    'QNN': 'qualcomm',
+    'MEDIATEK_APU': 'mediatek',
+    'EXYNOS_NPU': 'samsung',
+    'TENSOR_TPU': 'google',
+    'KIRIN_NPU': 'huawei',
+  };
+  const gpuVendor = gpuVendorMap[raw.npuBackend] || 'unknown';
+  
+  // Quantization recommendations
+  let recommendedASRQuant: 'CQ2' | 'CQ3' | 'CQ4';
+  let recommendedLLMQuant: 'CQ2' | 'CQ2.54' | 'CQ4';
+  
+  if (availableRAMGB < 3) {
+    recommendedASRQuant = 'CQ2';
+    recommendedLLMQuant = 'CQ2.54';
+  } else if (availableRAMGB < 5) {
+    recommendedASRQuant = 'CQ3';
+    recommendedLLMQuant = 'CQ2.54';
+  } else {
+    recommendedASRQuant = 'CQ4';
+    recommendedLLMQuant = 'CQ4';
+  }
+  
+  return {
+    cpuInfo: raw.cpuInfo,
+    ramInfo: {
+      totalRAM: parseInt(raw.ramInfo.totalRAM),
+      availableRAM: parseInt(raw.ramInfo.availableRAM),
+      threshold: parseInt(raw.ramInfo.threshold),
+      lowMemory: raw.ramInfo.lowMemory,
+    },
+    npuBackend,
+    hasNNAPI: raw.hasNNAPI,
+    gpuVendor,
+    ramTier,
+    computeTier,
+    recommendedASRQuant,
+    recommendedLLMQuant,
+  };
+}
+
+// iOS stub - returns mock data for cross-platform compatibility
+export async function getIOSDeviceCapabilities(): Promise<AndroidDeviceCapabilities> {
+  return {
+    cpuInfo: {
+      cores: 6,
+      features: [],
+      hasFp16: true,
+      hasDotProd: true,
+      hasSve: false,
+      hasI8mm: false,
+    },
+    ramInfo: {
+      totalRAM: 6442450944,
+      availableRAM: 4294967296,
+      threshold: 1073741824,
+      lowMemory: false,
+    },
+    npuBackend: 'CPU',
+    hasNNAPI: false,
+    gpuVendor: 'apple',
+    ramTier: 'high',
+    computeTier: 'cpu',
+    recommendedASRQuant: 'CQ4',
+    recommendedLLMQuant: 'CQ4',
+  };
+}
+
+export async function getDeviceCapabilities(): Promise<AndroidDeviceCapabilities> {
+  if (Platform.OS === 'android') {
+    return getAndroidDeviceCapabilities();
+  }
+  return getIOSDeviceCapabilities();
+}

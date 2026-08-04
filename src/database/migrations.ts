@@ -1,7 +1,17 @@
-import { schemaMigrations } from '@nozbe/watermelondb/Schema/migrations';
+import { schemaMigrations, addColumns } from '@nozbe/watermelondb/Schema/migrations';
 
 export default schemaMigrations({
   migrations: [
-    // Initial migration is handled by the schema
+    {
+      toVersion: 2,
+      steps: [
+        addColumns({
+          table: 'workspace_documents',
+          columns: [
+            { name: 'content_hash', type: 'string', isOptional: true, isIndexed: true },
+          ],
+        }),
+      ],
+    },
   ],
 });

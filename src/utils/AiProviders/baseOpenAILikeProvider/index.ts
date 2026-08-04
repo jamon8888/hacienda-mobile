@@ -5,7 +5,7 @@ import { formatChatHistory } from "@/utils/chat/helpers";
 import { StreamMetrics } from "@/utils/chat/LLMPerformanceMonitor";
 import { MonitoredStream } from "@/utils/chat/LLMPerformanceMonitor";
 import LLMPerformanceMonitor from "@/utils/chat/LLMPerformanceMonitor";
-import getEmbedder from "@/utils/Embedder";
+import getEmbedder, { getEmbeddingProvider, MultilingualEmbeddingModelId } from "@/utils/Embedder";
 import OpenAILite from "@/utils/openai";
 import VectorDB, { SemanticSearchResult } from "@/utils/VectorDB";
 import { type IAgentAction } from "@/database/models/WorkspaceChat";
@@ -102,6 +102,10 @@ export default abstract class BaseOpenAILikeProvider {
 
   private DEFAULT_TOP_N = 2;
   private SEMANTIC_SEARCH_MIN_RELEVANCE_SCORE = 0.45;
+  private SEMANTIC_SEARCH_CANDIDATE_TOP_N = 6;
+  private CONTEXT_TOKEN_BUDGET = 1200;
+  private QUERY_CACHE_MAX = 20;
+  private queryCache = new Map<string, SemanticSearchResult[]>();
 
   constructor({ provider, config }: BaseLLMProviderConfig) {
     this._provider = provider;
@@ -262,33 +266,81 @@ export default abstract class BaseOpenAILikeProvider {
         this.log(`Semantic search result "${r.metadata.name}" is not relevant enough (${percentRelevance})`);
         return null;
       })
-      .filter((r) => r !== null);
+      .filter((r): r is SemanticSearchResult => r !== null);
   }
 
-  /**
-   * Gets the context texts for the user prompt from semantic search
-   * of the workspace's vector store.
-   */
+/**
+     * Gets the context texts for the user prompt from semantic search
+     * of the workspace's vector store.
+     */
   async getContextTexts(userPrompt: string): Promise<SemanticSearchResult[]> {
     try {
       if (!this.workspace) throw new SilentError('No workspace attached to provider');
       if (userPrompt.length < 10) throw new SilentError('User prompt is too short to get context texts');
       if (await VectorDB.getWorkspaceVectorCount(this.workspace.slug) === 0) throw new SilentError('No vectors in vector store');
 
-      const embedder = getEmbedder('native');
-      const queryVector = await embedder.embed(userPrompt, 'query');
+      const embeddingConfig = this.workspace.embeddingConfig;
+      const cacheKey = this.queryCacheKey(userPrompt, embeddingConfig?.dimensions);
+      const cached = this.queryCache.get(cacheKey);
+      if (cached) {
+        this.log('Semantic search cache hit');
+        return cached;
+      }
+
+      const embedder = embeddingConfig ? getEmbeddingProvider(embeddingConfig.engine as MultilingualEmbeddingModelId) : getEmbeddingProvider();
+      const queryVector = await embedder.embed(userPrompt, 'query', embeddingConfig?.dimensions);
       const results = await VectorDB
-        .runSemanticSearch(this.workspace.slug, queryVector, this.topN)
-        .then((results) => this.filterSemanticSearchResults(results));
+        .runSemanticSearch(this.workspace.slug, queryVector, this.SEMANTIC_SEARCH_CANDIDATE_TOP_N)
+        .then((results) => this.filterSemanticSearchResults(results))
+        .then((results) => this.applyTokenBudget(results));
 
       if (results.length === 0) return [];
-      this.log(`\nGot ${results.length} contexts:`, JSON.stringify({ topN: this.topN, minRelevanceScore: this.minRelevanceScore, dimensions: queryVector.length, query: `${userPrompt.slice(0, 50)}...`, results: results.map((r) => r.score) }, null, 2));
+      this.queryCacheSet(cacheKey, results);
+      this.log(`\nGot ${results.length} contexts:`, JSON.stringify({ topN: this.SEMANTIC_SEARCH_CANDIDATE_TOP_N, minRelevanceScore: this.minRelevanceScore, dimensions: queryVector.length, query: `${userPrompt.slice(0, 50)}...`, results: results.map((r) => r.score) }, null, 2));
       return results;
     } catch (e) {
       if (e instanceof Error) this.log(e.message);
       else this.log('Error getting context texts:', e);
       return [];
     }
+  }
+
+  private queryCacheKey(userPrompt: string, dimensions?: number): string {
+    const normalized = userPrompt.trim().replace(/\s+/g, ' ').toLowerCase();
+    return `${this.workspace?.slug || ''}:${dimensions ?? 0}:${normalized}`;
+  }
+
+  private queryCacheSet(key: string, results: SemanticSearchResult[]) {
+    this.queryCache.delete(key);
+    this.queryCache.set(key, results);
+    if (this.queryCache.size > this.QUERY_CACHE_MAX) {
+      const oldest = this.queryCache.keys().next().value;
+      if (oldest !== undefined) this.queryCache.delete(oldest);
+    }
+  }
+
+  private estimateTokens(text: string): number {
+    return Math.ceil(text.trim().length / 4);
+  }
+
+  /**
+   * Keeps the best (most relevant, lowest-score-first) results whose combined
+   * context fits under the token budget, bounding injected context.
+   */
+  private applyTokenBudget(results: SemanticSearchResult[]): SemanticSearchResult[] {
+    const budgeted: SemanticSearchResult[] = [];
+    let usedTokens = 0;
+    for (const result of results) {
+      const content = String(result.metadata.content || '');
+      const tokens = this.estimateTokens(content);
+      if (usedTokens + tokens > this.CONTEXT_TOKEN_BUDGET) break;
+      budgeted.push(result);
+      usedTokens += tokens;
+    }
+    if (budgeted.length === 0 && results.length > 0) {
+      budgeted.push(results[0]);
+    }
+    return budgeted;
   }
 
   /**
@@ -425,7 +477,7 @@ export default abstract class BaseOpenAILikeProvider {
       completion_tokens: 0,
     };
     let toolToCall: { type: 'function', function: { name: string, arguments: string } } | null = null;
-    let timeout: NodeJS.Timeout | null = null;
+    let timeout: ReturnType<typeof setTimeout> | null = null;
 
     return new Promise(async (resolve) => {
       let fullText = "";

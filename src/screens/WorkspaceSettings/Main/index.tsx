@@ -2,7 +2,7 @@ import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import SafeView from "@/components/SafeView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScrollView } from "react-native-gesture-handler";
-import { ArrowLeft, Binary, CaretRight, ChatCentered, Cube, File, Note, Thermometer } from "phosphor-react-native";
+import { ArrowLeft, Binary, CaretRight, ChatCentered, Cube, File, Files, Note, Thermometer, Globe } from "phosphor-react-native";
 import Workspace, { WorkspaceType } from "@/database/models/Workspace";
 import { IWorkspacePageKey } from "../index";
 import uiStore from "@/store/UIStore";
@@ -164,6 +164,46 @@ export function MainView({ workspace, goToPage, initialThreadSlug }: MainViewPro
                     </TouchableOpacity>
                     <Text style={{ color: '#9F9FA0' }} className="text-xs">
                         The context length is the maximum number of tokens that the AI can use to while generating a response.
+                    </Text>
+                </View>
+
+                {/* Embedding Settings */}
+                <View className="w-full flex flex-col" style={{ gap: 12 }}>
+                    <Text style={{ color: '#9F9FA0' }} className="text-sm uppercase">Embedding Engine</Text>
+                    <TouchableOpacity style={{ backgroundColor: '#27282A', padding: 14, gap: 20 }} className="w-full flex flex-row items-center rounded-lg" onPress={() => goToPage('embedding')}>
+                        <View className="flex flex-row gap-2 items-center">
+                            <Globe size={18} color="#FFF" />
+                            <Text className="text-white text-lg">Embedding</Text>
+                        </View>
+                        <View className="flex flex-1 flex-row gap-2 items-center justify-between">
+                            <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: '#9F9FA0' }} className="text-lg flex-1 text-right">
+                                Multilingual
+                            </Text>
+                            <CaretRight size={18} color="#FFF" />
+                        </View>
+                    </TouchableOpacity>
+                    <Text style={{ color: '#9F9FA0' }} className="text-xs">
+                        Configure embedding model, dimensions, and language detection for document search.
+                    </Text>
+                </View>
+
+                {/* Documents */}
+                <View className="w-full flex flex-col" style={{ gap: 12 }}>
+                    <Text style={{ color: '#9F9FA0' }} className="text-sm uppercase">Documents</Text>
+                    <TouchableOpacity style={{ backgroundColor: '#27282A', padding: 14, gap: 20 }} className="w-full flex flex-row items-center rounded-lg" onPress={() => goToPage('documents')}>
+                        <View className="flex flex-row gap-2 items-center">
+                            <Files size={18} color="#FFF" />
+                            <Text className="text-white text-lg">Documents</Text>
+                        </View>
+                        <View className="flex flex-1 flex-row gap-2 items-center justify-between">
+                            <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: '#9F9FA0' }} className="text-lg flex-1 text-right">
+                                {vectorCount} files
+                            </Text>
+                            <CaretRight size={18} color="#FFF" />
+                        </View>
+                    </TouchableOpacity>
+                    <Text style={{ color: '#9F9FA0' }} className="text-xs">
+                        Import and manage documents for this workspace. Supports PDF, DOCX, audio, and 100+ formats via Xberg.
                     </Text>
                 </View>
 

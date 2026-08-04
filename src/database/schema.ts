@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 1,
+  version: 2,
   tables: [
     tableSchema({
       name: 'workspaces',
@@ -34,6 +34,7 @@ export default appSchema({
         { name: 'uuid', type: 'string', isIndexed: true },
         { name: 'workspace_slug', type: 'string', isIndexed: true },
         { name: 'vector_box_ids', type: 'string', isOptional: true },
+        { name: 'content_hash', type: 'string', isOptional: true, isIndexed: true },
         { name: 'created_at', type: 'number' },
       ],
     }),

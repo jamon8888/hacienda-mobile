@@ -25,7 +25,7 @@ export default function WorkspaceChat() {
   const { wsSlug, threadSlug } = useChatInfoEmit();
   const { LLMProvider, isLoading: isLoadingProvider, error, fetchLLMPreference } = useLlmPreference();
   const { loadingWorkspaceThread, workspace, thread, error: errorWorkspaceThread } = useWorkspaceThread(wsSlug, threadSlug);
-  const attachmentHandler = useAttachments(wsSlug);
+  const attachmentHandler = useAttachments({ wsSlug, embeddingConfig: workspace?.embeddingConfig });
 
   useEffect(() => {
     fetchLLMPreference();

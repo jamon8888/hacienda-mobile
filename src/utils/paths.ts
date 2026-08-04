@@ -7,6 +7,7 @@ export const PATHS = {
   },
   home: 'Home',
   workspace_chat: 'WorkspaceChat',
+  voice_chat: 'VoiceChat',
   workspace_settings: 'WorkspaceSettings',
   user_settings: 'UserSettings',
   developer: {
