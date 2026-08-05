@@ -2,12 +2,18 @@ buildscript {
     ext {
         buildToolsVersion = "36.0.0"
         minSdkVersion = 26
-        // AGP 8.7.3 (below) is only tested/supported through API 35 -- compileSdk/targetSdk 36
-        // needs AGP 8.9.1+, and bumping AGP risks reopening the Kotlin/KSP version alignment
-        // this project depends on (see the kotlinVersion comment below). 35 also matches what
-        // AndroidManifest.xml's <uses-sdk> already declared before this file's value took
-        // precedence, so this isn't a downgrade in practice, just removing a mismatch.
-        compileSdkVersion = 35
+        // io.xberg:xberg-android's AAR metadata requires compileSdk 36+ of any consumer. AGP
+        // 8.7.3 only supports through API 35 -- AGP 8.10.0 is the first line that supports
+        // compileSdk 36 (paired with a Gradle wrapper bump to 8.11.1, see
+        // gradle/wrapper/gradle-wrapper.properties). This does not disturb the Kotlin/KSP
+        // version alignment documented below: that ceiling comes from React Native 0.76.3's own
+        // Gradle plugin being compiled against the KGP 1.9 API, which is independent of the AGP
+        // version.
+        compileSdkVersion = 36
+        // targetSdkVersion stays at 35 deliberately -- only compileSdk (compile-time API
+        // surface) needs to satisfy xberg-android's AAR metadata check. targetSdk opts the app
+        // into new runtime behavior changes for API 36, which is a separate, larger decision
+        // out of scope for unblocking this build.
         targetSdkVersion = 35
         ndkVersion = "26.1.10909125"
         kotlinVersion = "2.0.21"
@@ -18,7 +24,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("com.android.tools.build:gradle:8.7.3")
+        classpath("com.android.tools.build:gradle:8.10.0")
         classpath("com.facebook.react:react-native-gradle-plugin")
         // Pinned explicitly, overriding the 1.9.24 that React Native 0.76.3's own version catalog
         // would otherwise supply (node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml).

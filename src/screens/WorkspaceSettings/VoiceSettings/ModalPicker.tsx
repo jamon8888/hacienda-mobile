@@ -1,16 +1,16 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import {
   BottomSheetBackdrop,
   BottomSheetBackdropProps,
+  BottomSheetFlatList,
   BottomSheetModal,
 } from "@gorhom/bottom-sheet";
 import {
   useBottomSheet,
   BOTTOM_SHEET_NAMES,
 } from "@/contexts/BottomSheetContext";
-import { View, Text, TouchableOpacity, FlatList } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Radio, Check, CaretDown } from "phosphor-react-native";
+import { View, Text, TouchableOpacity } from "react-native";
+import { Check, CaretDown } from "phosphor-react-native";
 import { CactusVoiceModelId } from "@/utils/models/defaults";
 
 interface VoiceModelOption {
@@ -29,7 +29,6 @@ interface ModelPickerModalProps {
   selectedModel: CactusVoiceModelId;
   onSelect: (modelId: CactusVoiceModelId) => void;
   onClose: () => void;
-  deviceCaps: any;
   isRecommended: (model: VoiceModelOption) => boolean;
 }
 
@@ -39,12 +38,10 @@ export function ModelPickerModal({
   selectedModel,
   onSelect,
   onClose,
-  deviceCaps,
   isRecommended,
 }: ModelPickerModalProps) {
-  const insets = useSafeAreaInsets();
   const bottomSheetRef = useRef<any>(null);
-  const { registerSheet, dismissSheet } = useBottomSheet();
+  const { registerSheet } = useBottomSheet();
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -132,7 +129,7 @@ export function ModelPickerModal({
             <CaretDown size={24} color="#FFF" />
           </TouchableOpacity>
         </View>
-        <FlatList
+        <BottomSheetFlatList
           data={models}
           renderItem={renderItem}
           keyExtractor={item => item.id}

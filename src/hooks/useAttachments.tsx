@@ -15,9 +15,8 @@ import {
 import * as RNFS from "@dr.pogodin/react-native-fs";
 import Storage from "@/utils/storage";
 import { pick } from "react-native-document-picker";
-import getEmbedder, {
+import {
   getEmbeddingProvider,
-  EmbeddingEngine,
   setEmbeddingEngine,
   MultilingualEmbeddingModelId,
 } from "@/utils/Embedder";
@@ -28,7 +27,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { snapPointsDefault } from "@/screens/WorkspaceChat/PromptInput";
 import { CHAT_HANDLER_EVENTS } from "@/hooks/useChatHandler";
 import uiStore from "@/store/UIStore";
-import PDFParser from "@/utils/PDFParser";
 import { storeProcessedFileAsText } from "@/utils/fs";
 import Telemetry from "@/utils/Telemetry";
 import { XbergClient } from "@/utils/Xberg";
@@ -113,7 +111,7 @@ export default function useAttachments({
     const currentAttachments = attachments;
     setAttachments([]);
     await Promise.all(currentAttachments.map(a => removeAttachment(a)));
-  }, []);
+  }, [attachments, removeAttachment]);
 
   /**
    * Blindly clears the workspace vectors and deletes the documents
@@ -125,7 +123,7 @@ export default function useAttachments({
     await VectorDB.resetVectorsForWorkspace(workspaceSlug);
     await Document.delete([{ field: "workspace_slug", value: workspaceSlug }]);
     showToast("Workspace vectors cleared");
-  }, []);
+  }, [workspaceSlug]);
 
   const clearWorkspaceVectors = useCallback(async () => {
     Alert.alert(
@@ -197,7 +195,6 @@ export default function useAttachments({
 
       // Embed the processed file
       const chunkSize = embeddingConfig ? Math.min(400, 512 - 50) : 2048; // 512 token context for multilingual models
-      const dimensions = embeddingConfig?.dimensions;
       const document = await embedder
         .splitAndEmbed(
           result,
@@ -246,7 +243,7 @@ export default function useAttachments({
         await RNFS.unlink(temporaryFilePath);
       }
     }
-  }, []);
+  }, [workspaceSlug]);
 
   const extractTextContentFromFile = useCallback(
     async (

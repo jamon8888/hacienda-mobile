@@ -49,7 +49,12 @@ public class TextToSpeechModule extends ReactContextBaseJavaModule
 
             @Override
             public void onDone(String utteranceId) {
-                if (currentPromise != null) {
+                // Only settle currentPromise for the utterance it was actually issued for.
+                // speak() replaces currentPromise/currentUtteranceId together for a new request,
+                // but Android can still deliver a stale onDone/onError for the utterance that was
+                // just superseded -- without this check that stale callback would resolve or
+                // reject the *new* request's promise instead of leaving it for its own callback.
+                if (currentPromise != null && utteranceId.equals(currentUtteranceId)) {
                     currentPromise.resolve(true);
                     currentPromise = null;
                 }
@@ -68,7 +73,7 @@ public class TextToSpeechModule extends ReactContextBaseJavaModule
 
             @Override
             public void onError(String utteranceId, int error) {
-                if (currentPromise != null) {
+                if (currentPromise != null && utteranceId.equals(currentUtteranceId)) {
                     currentPromise.reject("TTS_ERROR", "TTS error: " + error);
                     currentPromise = null;
                 }
@@ -193,6 +198,13 @@ public class TextToSpeechModule extends ReactContextBaseJavaModule
     public void pause(Promise promise) {
         // Android TTS doesn't support pause directly, stop instead
         tts.stop();
+        // Same reasoning as stop(): tts.stop() doesn't reliably deliver onDone/onError for the
+        // utterance it flushed, so without settling currentPromise here it was left dangling --
+        // its speak() caller would never see its awaited promise resolve.
+        if (currentPromise != null) {
+            currentPromise.resolve(true);
+            currentPromise = null;
+        }
         promise.resolve(true);
     }
 

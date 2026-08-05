@@ -1,4 +1,4 @@
-import { applyTemplate, Templates } from "chat-formatter";
+import { Templates } from "chat-formatter";
 import { CompletionParams } from "./completionTypes";
 import { defaultCompletionParams } from "./completionSettingsVersions";
 import {

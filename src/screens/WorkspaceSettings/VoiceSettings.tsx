@@ -5,15 +5,9 @@ import {
   ArrowLeft,
   Microphone,
   Cpu,
-  Lightning,
-  Gauge,
-  ShieldWarning,
   ArrowDown,
-  Check,
   Info,
 } from "phosphor-react-native";
-import { useNavigation } from "@react-navigation/native";
-import { PATHS } from "@/utils/paths";
 import uiStore from "@/store/UIStore";
 import { useEffect, useState } from "react";
 import {
@@ -84,8 +78,7 @@ const LLM_MODEL_OPTIONS: VoiceModelOption[] = Object.values(CACTUS_VOICE_MODELS)
 const DEFAULT_ASR_MODEL: CactusVoiceModelId = DEFAULT_CACTUS_ASR_MODEL;
 const DEFAULT_LLM_MODEL: CactusVoiceModelId = DEFAULT_CACTUS_LLM_MODEL;
 
-export function VoiceSettingsView({ workspace, goToPage }: any) {
-  const navigation = useNavigation();
+export function VoiceSettingsView({ goToPage }: any) {
   const insets = useSafeAreaInsets();
   const deviceCaps = useDeviceCapabilities();
 
@@ -108,8 +101,16 @@ export function VoiceSettingsView({ workspace, goToPage }: any) {
         "voiceSettings",
         {},
       );
-      if (saved.asrModel) setAsrModel(saved.asrModel);
-      if (saved.llmModel) setLlmModel(saved.llmModel);
+      // A saved model ID can go stale if the catalog drops it in an update -- storage doesn't
+      // enforce CactusVoiceModelId, and VoicePipelineProvider.initialize() throws on an unknown
+      // ID. Only apply it if it still exists in the current option list; otherwise keep the
+      // default that was already set.
+      if (ASR_MODEL_OPTIONS.some(model => model.id === saved.asrModel)) {
+        setAsrModel(saved.asrModel!);
+      }
+      if (LLM_MODEL_OPTIONS.some(model => model.id === saved.llmModel)) {
+        setLlmModel(saved.llmModel!);
+      }
       if (saved.confidenceThreshold !== undefined)
         setConfidenceThreshold(saved.confidenceThreshold);
       if (saved.autoHandoff !== undefined) setAutoHandoff(saved.autoHandoff);
@@ -437,7 +438,6 @@ export function VoiceSettingsView({ workspace, goToPage }: any) {
           selectedModel={asrModel}
           onSelect={setAsrModel}
           onClose={() => setShowAsrPicker(false)}
-          deviceCaps={deviceCaps}
           isRecommended={getRecommendedBadge}
         />
       )}
@@ -450,7 +450,6 @@ export function VoiceSettingsView({ workspace, goToPage }: any) {
           selectedModel={llmModel}
           onSelect={setLlmModel}
           onClose={() => setShowLlmPicker(false)}
-          deviceCaps={deviceCaps}
           isRecommended={getRecommendedBadge}
         />
       )}

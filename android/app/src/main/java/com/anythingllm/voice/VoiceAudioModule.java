@@ -196,6 +196,15 @@ public class VoiceAudioModule extends ReactContextBaseJavaModule implements Life
         while (isRecording && audioRecord != null) {
             int read = audioRecord.read(buffer, 0, buffer.length);
 
+            if (read < 0) {
+                // Negative return is an AudioRecord.ERROR_* code, not a byte count -- without
+                // this check the loop just spun read() again immediately forever, pinning a CPU
+                // core until the user manually stopped recording.
+                Log.e(TAG, "AudioRecord.read() failed with error code " + read);
+                isRecording = false;
+                break;
+            }
+
             if (read > 0) {
                 float speechProb = vadInitialized ? runVAD(buffer, read) : -1f;
                 // -1 means "no VAD model available" (see runVAD), not "the model said silence" --
@@ -222,8 +231,12 @@ public class VoiceAudioModule extends ReactContextBaseJavaModule implements Life
                     // Enforce maxSpeechDurationMs here, not only in the silence branch below --
                     // continuous speech with no silence frame never reached this check before,
                     // so speechBuffer grew without bound for as long as the user kept talking.
+                    // isFinal=true even though this cut is duration-triggered, not
+                    // silence-triggered: VoicePipelineProvider.handleSpeechSegment() returns
+                    // immediately for isFinal=false, so a "not final" max-duration segment was
+                    // silently dropped instead of transcribed.
                     if (speechFrameCount >= maxSpeechFrames) {
-                        emitSpeechSegment(speechBuffer, false);
+                        emitSpeechSegment(speechBuffer, true);
                         speechBuffer.clear();
                         inSpeech = false;
                         speechFrameCount = 0;

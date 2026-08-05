@@ -158,7 +158,10 @@ static const unsigned long long kMaxImportFileSize = 50ULL * 1024 * 1024;
         }
         NSNumber *fileSize = nil;
         [fileURL getResourceValue:&fileSize forKey:NSURLFileSizeKey error:nil];
-        if (fileSize.unsignedLongLongValue > kMaxImportFileSize) {
+        // fileSize is nil when the resource value couldn't be read, and
+        // nil.unsignedLongLongValue is 0 -- without this nil check, a file whose size we
+        // couldn't determine passed the size limit silently instead of being rejected.
+        if (fileSize == nil || fileSize.unsignedLongLongValue > kMaxImportFileSize) {
             continue;
         }
         // sourcePathLength can exceed the child path length for a symlink or a resolved

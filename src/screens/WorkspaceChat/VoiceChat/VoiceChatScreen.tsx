@@ -1,32 +1,66 @@
 // VoiceChatScreen.tsx - Main voice chat interface
 
-import React, { useEffect, useState, useRef, useCallback } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  Animated,
-  Easing,
-  TouchableOpacity,
-} from "react-native";
+import React, { useEffect, useState, useRef } from "react";
+import { View, Text, StyleSheet, Animated, Easing, TouchableOpacity } from "react-native";
 import SafeView from "@/components/SafeView";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Microphone, X, SpeakerHigh, Sparkle } from "phosphor-react-native";
 import {
-  Microphone,
-  X,
-  PaperPlane,
-  SpeakerHigh,
-  SpeakerNone,
-  Sparkle,
-  ArrowDown,
-} from "phosphor-react-native";
-import { useVoicePipeline } from "@/utils/AiProviders/onDevice/voice";
+  useVoicePipeline,
+  VoicePipelineConfig,
+} from "@/utils/AiProviders/onDevice/voice";
 import { useVoiceAudioStream } from "@/utils/AiProviders/onDevice/voice/VoiceAudioStream";
 import {
+  CACTUS_VOICE_MODELS,
+  CactusVoiceModelId,
   DEFAULT_CACTUS_ASR_MODEL,
   DEFAULT_CACTUS_LLM_MODEL,
 } from "@/utils/models/defaults";
+import uiStore from "@/store/UIStore";
+
+interface VoiceSettingsStorage {
+  asrModel: CactusVoiceModelId;
+  llmModel: CactusVoiceModelId;
+  confidenceThreshold: number;
+  autoHandoff: boolean;
+  processingDelay: number;
+  enableTTS: boolean;
+  vadThreshold: number;
+}
+
+function isKnownModelId(
+  id: unknown,
+  recommendedFor: "transcription" | "voice-pipeline",
+): id is CactusVoiceModelId {
+  const model = typeof id === "string" ? CACTUS_VOICE_MODELS[id] : undefined;
+  return model?.recommendedFor === recommendedFor;
+}
+
+/**
+ * Loads the settings VoiceSettingsView persists to "voiceSettings" and turns them into a
+ * VoicePipelineConfig. Model IDs are validated against the current catalog -- storage doesn't
+ * enforce CactusVoiceModelId, and a stale/removed ID would otherwise reach
+ * VoicePipelineProvider's constructor, which throws on an unknown registry lookup.
+ */
+async function loadVoicePipelineConfig(): Promise<VoicePipelineConfig> {
+  const saved = await uiStore.getFromStorage<Partial<VoiceSettingsStorage>>(
+    "voiceSettings",
+    {},
+  );
+  const config: VoicePipelineConfig = {};
+  if (isKnownModelId(saved.asrModel, "transcription"))
+    config.asrModelId = saved.asrModel;
+  if (isKnownModelId(saved.llmModel, "voice-pipeline"))
+    config.llmModelId = saved.llmModel;
+  if (saved.confidenceThreshold !== undefined)
+    config.confidenceThreshold = saved.confidenceThreshold;
+  if (saved.autoHandoff !== undefined) config.autoHandoff = saved.autoHandoff;
+  if (saved.processingDelay !== undefined)
+    config.processingDelayMs = saved.processingDelay;
+  if (saved.enableTTS !== undefined) config.enableTTS = saved.enableTTS;
+  if (saved.vadThreshold !== undefined)
+    config.vadThreshold = saved.vadThreshold;
+  return config;
+}
 
 const COLORS = {
   background: "#1B1B1E",
@@ -44,10 +78,48 @@ const COLORS = {
   thinking: "#8B5CF6",
 };
 
+const DEFAULT_VOICE_PIPELINE_CONFIG: VoicePipelineConfig = {
+  asrModelId: DEFAULT_CACTUS_ASR_MODEL,
+  llmModelId: DEFAULT_CACTUS_LLM_MODEL,
+  confidenceThreshold: 0.7,
+  autoHandoff: true,
+  processingDelayMs: 50,
+  enableTTS: true,
+  vadThreshold: 0.5,
+};
+
+/**
+ * useVoicePipeline constructs its VoicePipelineProvider once, via a lazy useState initializer
+ * (see VoicePipelineProvider.ts) -- the config it's first called with is the config it keeps for
+ * the lifetime of the component. So the settings VoiceSettingsView saves can only take effect if
+ * they're loaded and merged in *before* this component (and therefore useVoicePipeline) ever
+ * mounts, which is what this wrapper exists for.
+ */
 export default function VoiceChatScreen() {
-  const insets = useSafeAreaInsets();
+  const [config, setConfig] = useState<VoicePipelineConfig | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadVoicePipelineConfig()
+      .then(saved => {
+        if (!cancelled)
+          setConfig({ ...DEFAULT_VOICE_PIPELINE_CONFIG, ...saved });
+      })
+      .catch(err => {
+        console.error("Failed to load voice settings:", err);
+        if (!cancelled) setConfig(DEFAULT_VOICE_PIPELINE_CONFIG);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!config) return null;
+  return <VoiceChatScreenInner config={config} />;
+}
+
+function VoiceChatScreenInner({ config }: { config: VoicePipelineConfig }) {
   const {
-    provider,
     state,
     lastResponse,
     currentTranscript,
@@ -55,15 +127,7 @@ export default function VoiceChatScreen() {
     initialize,
     startListening,
     stopListening,
-  } = useVoicePipeline({
-    asrModelId: DEFAULT_CACTUS_ASR_MODEL,
-    llmModelId: DEFAULT_CACTUS_LLM_MODEL,
-    confidenceThreshold: 0.7,
-    autoHandoff: true,
-    processingDelayMs: 50,
-    enableTTS: true,
-    vadThreshold: 0.5,
-  });
+  } = useVoicePipeline(config);
 
   const {
     isRecording,
