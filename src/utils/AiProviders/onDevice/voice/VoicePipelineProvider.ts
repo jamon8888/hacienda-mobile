@@ -398,16 +398,40 @@ export function useVoicePipeline(config: VoicePipelineConfig = {}) {
     };
   }, []);
 
+  // provider.initialize.bind(provider) (etc.) used to run inline in the return statement,
+  // producing a brand new function identity every render. Any consumer effect that depends on
+  // these (e.g. VoiceChatScreen's "initialize on mount" effect) reran on every render as a
+  // result -- harmless if initialize() succeeds and flips a guard flag, but if it rejects (no
+  // model downloaded, as on a fresh install) the guard never flips, so the effect calls
+  // initialize() again, gets a new function identity again, and loops forever ("Maximum update
+  // depth exceeded"). provider itself is stable (lazy useState initializer), so binding through
+  // useCallback keyed on it gives every consumer a stable reference across renders.
+  const initialize = useCallback(
+    (...args: Parameters<typeof provider.initialize>) =>
+      provider.initialize(...args),
+    [provider],
+  );
+  const startListening = useCallback(
+    (...args: Parameters<typeof provider.startListening>) =>
+      provider.startListening(...args),
+    [provider],
+  );
+  const stopListening = useCallback(
+    (...args: Parameters<typeof provider.stopListening>) =>
+      provider.stopListening(...args),
+    [provider],
+  );
+
   return {
     provider,
     state,
     lastResponse,
     currentTranscript,
     error,
-    initialize: provider.initialize.bind(provider),
-    startListening: provider.startListening.bind(provider),
-    stopListening: provider.stopListening.bind(provider),
+    initialize,
+    startListening,
+    stopListening,
   };
 }
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
