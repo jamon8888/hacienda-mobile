@@ -4,7 +4,7 @@ import VoiceAudioStream from './VoiceAudioStream';
 import { pcmBase64ToInt16Samples } from './audioEncoding';
 import { speakText } from './NativeTTS';
 import { CactusLM, CactusSTT } from 'cactus-react-native';
-import { CACTUS_VOICE_MODELS, CactusVoiceModelId, DEFAULT_CACTUS_ASR_MODEL, DEFAULT_CACTUS_LLM_MODEL } from '@/utils/models/defaults';
+import { CACTUS_VOICE_MODELS, CactusVoiceModelBundle, CactusVoiceModelId, DEFAULT_CACTUS_ASR_MODEL, DEFAULT_CACTUS_LLM_MODEL } from '@/utils/models/defaults';
 
 export interface VoicePipelineConfig {
   asrModelId?: CactusVoiceModelId;
@@ -70,8 +70,16 @@ export class VoicePipelineProvider {
     try {
       const asrId = asrModelId || this.config.asrModelId;
       const llmId = llmModelId || this.config.llmModelId;
-      const asrBundle = CACTUS_VOICE_MODELS[asrId];
-      const llmBundle = CACTUS_VOICE_MODELS[llmId];
+      // Widened to the full interface: CACTUS_VOICE_MODELS is `as const satisfies
+      // Record<...>`, so each literal's inferred type only has the keys it actually sets --
+      // none set the optional `pro`, so TS narrows it out entirely even though every bundle
+      // is a valid CactusVoiceModelBundle at runtime.
+      const asrBundle: CactusVoiceModelBundle | undefined = CACTUS_VOICE_MODELS[asrId];
+      const llmBundle: CactusVoiceModelBundle | undefined = CACTUS_VOICE_MODELS[llmId];
+      // asrId/llmId can come from persisted voice settings (see VoiceSettings.tsx), which may
+      // reference a model id from a previous catalog that no longer exists here.
+      if (!asrBundle) throw new Error(`Unknown ASR model id: ${asrId}`);
+      if (!llmBundle) throw new Error(`Unknown LLM model id: ${llmId}`);
 
       // Load ASR model (Parakeet)
       const asrModel = new CactusSTT({
