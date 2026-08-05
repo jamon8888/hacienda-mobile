@@ -41,6 +41,14 @@ export type IndexProgress = {
   currentFile: string | null;
 };
 
+/**
+ * Files extracted per outer chunk before their embeddings are stored and the extracted content
+ * is dropped. Matches XbergClient's own DEFAULT_BATCH_CHUNK_SIZE (8) so one outer chunk maps to
+ * exactly one native extractBatch call -- bounding peak memory to one chunk's worth of extracted
+ * text instead of the whole folder's, without splitting what was already one native round-trip.
+ */
+const INDEX_CHUNK_SIZE = 8;
+
 export class IndexingStore {
   isIndexing = false;
   jobs: IndexJob[] = [];
@@ -139,27 +147,32 @@ export class IndexingStore {
         toProcess.push(job);
       }
 
-      // P1: extract through the batched native path (parallel + cached natively) instead of one
-      // XbergClient.extract() round-trip per file. XbergClient splits this across several native
-      // calls internally, so the extraction phase reports its own progress before the per-file
-      // embedding loop below starts.
-      const resultByPath = new Map<string, ExtractionResultItem>();
-      const errorByPath = new Map<string, string>();
-      if (toProcess.length > 0) {
-        toProcess.forEach(job => {
+      // P1 + memory bound: extract and embed one INDEX_CHUNK_SIZE chunk at a time instead of
+      // extracting the whole folder before embedding any of it. The earlier version kept every
+      // file's extracted content (text + chunks) resident in `resultByPath` until the embedding
+      // loop drained it at the end -- for a folder of large documents that held hundreds of MB
+      // alive at once, which is enough to have the OS kill the app mid-import on a phone. Each
+      // chunk's extraction results are dropped once that chunk is embedded and stored, so peak
+      // memory is bounded to one chunk's worth of extracted text rather than the folder's.
+      this.extracted = 0;
+      for (let i = 0; i < toProcess.length; i += INDEX_CHUNK_SIZE) {
+        const chunk = toProcess.slice(i, i + INDEX_CHUNK_SIZE);
+        const resultByPath = new Map<string, ExtractionResultItem>();
+        const errorByPath = new Map<string, string>();
+
+        chunk.forEach(job => {
           this.setJobStatus(job.path, "processing");
         });
         this.phase = "extracting";
-        this.extracted = 0;
         onProgress?.(this.getProgress());
 
         try {
           const batch = await XbergClient.extractBatch(
-            toProcess.map(j => j.path),
+            chunk.map(j => j.path),
             config,
             {
               onProgress: ({ done }) => {
-                this.extracted = done;
+                this.extracted = i + done;
                 onProgress?.(this.getProgress());
               },
             },
@@ -185,7 +198,7 @@ export class IndexingStore {
           // Anything the batch could neither extract nor explain — untagged results, or files
           // the native side silently dropped — is retried individually, where the result needs
           // no source tag to be unambiguous.
-          const unresolved = toProcess.filter(
+          const unresolved = chunk.filter(
             job => !resultByPath.has(job.path) && !errorByPath.has(job.path),
           );
           if (unresolved.length > 0) {
@@ -215,66 +228,73 @@ export class IndexingStore {
           }
         } catch (e) {
           const message = e instanceof Error ? e.message : String(e);
-          for (const job of toProcess) errorByPath.set(job.path, message);
-        }
-      }
-
-      this.phase = "embedding";
-      onProgress?.(this.getProgress());
-
-      // Embedding + vector storage stay per-file — that's still the part with meaningful
-      // per-file latency, so progress reporting here remains granular.
-      for (const job of toProcess) {
-        this.currentFile = job.name;
-        onProgress?.(this.getProgress());
-
-        try {
-          const failure = errorByPath.get(job.path);
-          if (failure) throw new Error(failure);
-
-          const res = resultByPath.get(job.path);
-          if (!res?.content) throw new Error("Extraction returned no content");
-
-          const name = job.name;
-          const chunks = res.chunks?.length
-            ? res.chunks
-            : [{ content: res.content }];
-          const chunkContents = dedupeChunks(
-            chunks.map(c => c.content).filter(Boolean),
-          );
-          if (chunkContents.length === 0)
-            throw new Error("Extraction produced no chunks");
-
-          await storeProcessedFileAsText(name, res.content);
-          const embeddings = await embedder.embedBatch(
-            chunkContents,
-            "embed_document",
-          );
-          const { ids } = await VectorDB.bulkInsert(
-            workspaceSlug,
-            embeddings.map((emb, j) => ({
-              embedding: emb,
-              metadata: { content: chunkContents[j], name },
-            })),
-          );
-          await Document.create({
-            name,
-            workspaceSlug,
-            vectorBoxIds: ids,
-            contentHash: contentHashByPath.get(job.path) ?? null,
-          });
-
-          job.status = "completed";
-          imported += 1;
-        } catch (e) {
-          console.error("Failed to process folder file:", job.path, e);
-          job.status = "failed";
-          this.failed += 1;
+          for (const job of chunk) errorByPath.set(job.path, message);
         }
 
-        this.done += 1;
-        this.currentFile = null;
+        this.phase = "embedding";
         onProgress?.(this.getProgress());
+
+        // Embedding + vector storage stay per-file — that's still the part with meaningful
+        // per-file latency, so progress reporting here remains granular.
+        for (const job of chunk) {
+          this.currentFile = job.name;
+          onProgress?.(this.getProgress());
+
+          try {
+            const failure = errorByPath.get(job.path);
+            if (failure) throw new Error(failure);
+
+            const res = resultByPath.get(job.path);
+            if (!res?.content)
+              throw new Error("Extraction returned no content");
+
+            const name = job.name;
+            const chunks = res.chunks?.length
+              ? res.chunks
+              : [{ content: res.content }];
+            const chunkContents = dedupeChunks(
+              chunks.map(c => c.content).filter(Boolean),
+            );
+            if (chunkContents.length === 0)
+              throw new Error("Extraction produced no chunks");
+
+            await storeProcessedFileAsText(name, res.content);
+            const embeddings = await embedder.embedBatch(
+              chunkContents,
+              "embed_document",
+            );
+            const { ids } = await VectorDB.bulkInsert(
+              workspaceSlug,
+              embeddings.map((emb, j) => ({
+                embedding: emb,
+                metadata: { content: chunkContents[j], name },
+              })),
+            );
+            await Document.create({
+              name,
+              workspaceSlug,
+              vectorBoxIds: ids,
+              contentHash: contentHashByPath.get(job.path) ?? null,
+            });
+
+            job.status = "completed";
+            imported += 1;
+          } catch (e) {
+            console.error("Failed to process folder file:", job.path, e);
+            job.status = "failed";
+            this.failed += 1;
+          }
+
+          this.done += 1;
+          this.currentFile = null;
+          onProgress?.(this.getProgress());
+
+          // Explicitly drop this file's extracted content (text + chunks) now that it's been
+          // embedded and stored, rather than waiting for the whole chunk's Map to go out of
+          // scope -- the file's raw content can be large, and there's no reason to hold it any
+          // longer than the single embed+store call above needs it for.
+          resultByPath.delete(job.path);
+        }
       }
 
       return { imported, unchanged: this.skipped, failed: this.failed };
