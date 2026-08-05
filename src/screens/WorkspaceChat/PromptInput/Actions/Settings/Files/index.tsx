@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Paperclip, DotsThreeCircleVertical, X, FolderSimple, File } from "phosphor-react-native";
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useBottomSheet, BOTTOM_SHEET_NAMES } from '@/contexts/BottomSheetContext';
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, Platform, NativeModules } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WorkspaceType } from "@/database/models/Workspace";
 import useWorkspaceFiles from "./useWorkspaceFiles";
@@ -20,6 +20,7 @@ import { getEmbeddingProvider } from "@/utils/Embedder";
 import { EmbeddingEngine } from "@/utils/Embedder/types";
 import { getSHA256Hash } from "@/utils/device";
 import { indexingStore, IndexProgress } from "@/store/IndexingStore";
+import { dedupeChunks } from "@/utils/chunking";
 import uiStore from "@/store/UIStore";
 
 const MAX_IMPORT_FILE_SIZE = 50 * 1024 * 1024;
@@ -112,17 +113,40 @@ export default function WorkspaceFilesActionSheet({ workspace }: { workspace: Wo
     }
 
     async function handleImportFolder() {
+        // react-native-document-picker's pickDirectory() unconditionally rejects on iOS
+        // ("pickDirectory is not supported on iOS" — the library never wired up
+        // UIDocumentPickerViewController's folder-picking mode there). FolderPickerModule is a
+        // small native module (ios/AnythingLLM/FolderPickerModule.{h,m}) that fills that gap
+        // directly: it presents the same system picker restricted to folders and copies the
+        // selection into a tmp dir so it can be walked like any other real path below.
+        let iosTmpPath: string | null = null;
         try {
-            const result = await DocumentPicker.pickDirectory();
-            if (!result) return;
-            setIsImporting(true);
-
-            const realPath = await Storage.getRealPathFromUri(result.uri);
-            if (realPath.startsWith('content://')) {
-                uiStore.showError('This folder picker can’t be scanned here yet. Choose individual files instead.');
-                setIsImporting(false);
-                return;
+            let realPath: string;
+            if (Platform.OS === 'ios') {
+                const { FolderPickerModule } = NativeModules;
+                if (!FolderPickerModule) {
+                    uiStore.showError('Folder import isn’t available on this build.');
+                    return;
+                }
+                let result: { path: string };
+                try {
+                    result = await FolderPickerModule.pickDirectory();
+                } catch (e: any) {
+                    if (e?.code === 'CANCELLED') return;
+                    throw e;
+                }
+                realPath = result.path;
+                iosTmpPath = realPath;
+            } else {
+                const result = await DocumentPicker.pickDirectory();
+                if (!result) return;
+                realPath = await Storage.getRealPathFromUri(result.uri);
+                if (realPath.startsWith('content://')) {
+                    uiStore.showError('This folder picker can’t be scanned here yet. Choose individual files instead.');
+                    return;
+                }
             }
+            setIsImporting(true);
 
             const paths = await collectSupportedFiles(realPath);
             if (paths.length === 0) {
@@ -130,12 +154,7 @@ export default function WorkspaceFilesActionSheet({ workspace }: { workspace: Wo
                 return;
             }
 
-            const config: ExtractionConfig = {
-                outputFormat: 'markdown',
-                ocr: { backend: 'tesseract', language: 'eng' },
-                chunking: { enabled: true, strategy: 'semantic', maxChunkSize: 512, chunkOverlap: 50 },
-                ...XbergClient.defaultFolderBatchConfig(),
-            };
+            const config: ExtractionConfig = XbergClient.defaultFolderBatchConfig();
             const engine = (workspace.embeddingConfig?.engine || 'multilingual-e5-small') as EmbeddingEngine;
 
             // P5: queue the import — background, per-file tolerance, live progress
@@ -158,6 +177,9 @@ export default function WorkspaceFilesActionSheet({ workspace }: { workspace: Wo
                 uiStore.showError('Failed to import folder');
             }
         } finally {
+            if (iosTmpPath) {
+                RNFS.unlink(iosTmpPath).catch(() => {});
+            }
             setIsImporting(false);
             setFolderProgress(null);
         }
@@ -177,18 +199,21 @@ export default function WorkspaceFilesActionSheet({ workspace }: { workspace: Wo
                 if (existing) return false;
             }
 
-            const config: ExtractionConfig = {
-                outputFormat: 'markdown',
-                ocr: { backend: 'tesseract', language: 'eng' },
-                chunking: { enabled: true, strategy: 'semantic', maxChunkSize: 512, chunkOverlap: 50 },
-            };
+            const config: ExtractionConfig = XbergClient.defaultExtractionConfig();
             const extracted = await XbergClient.extract(realPath, config);
-            if (!extracted.results[0]) throw new Error('Extraction failed');
-            const content = extracted.results[0].content;
-            const chunks = extracted.results[0].chunks || [];
+            const result = extracted.results[0];
+            if (!result?.content) throw new Error('Extraction returned no content');
+            const content = result.content;
+            // Chunking is a request, not a guarantee: Xberg returns no chunks for inputs its
+            // semantic splitter can't segment (very short files, some OCR output). Falling back
+            // to the whole document keeps the file searchable instead of registering a Document
+            // with zero vectors — which would look imported but never match a query.
+            const chunks = result.chunks?.length ? result.chunks : [{ content }];
+            const chunkContents = dedupeChunks(chunks.map(c => c.content).filter(Boolean));
+            if (chunkContents.length === 0) throw new Error('Extraction produced no chunks');
+
             await storeProcessedFileAsText(file.name, content);
             const embedder = getEmbeddingProvider((workspace.embeddingConfig?.engine || 'multilingual-e5-small') as EmbeddingEngine);
-            const chunkContents = chunks.map(c => c.content);
             const embeddings = await embedder.embedBatch(chunkContents, 'embed_document');
             const { ids } = await VectorDB.bulkInsert(workspace.slug, embeddings.map((emb, i) => ({
                 embedding: emb,
@@ -272,29 +297,42 @@ export default function WorkspaceFilesActionSheet({ workspace }: { workspace: Wo
                 )}
 
                 {/* Folder import progress */}
-                {folderProgress && (
-                    <View className='mb-4 p-3 bg-gray-800 rounded-lg'>
-                        <View className='flex flex-row justify-between text-xs text-gray-400 mb-1'>
-                            <Text>{folderProgress.currentFile || 'Starting...'}</Text>
-                            <Text>{folderProgress.done + folderProgress.skipped + folderProgress.failed} / {folderProgress.total}</Text>
+                {folderProgress && (() => {
+                    // `done` already counts skipped and failed files (IndexingStore advances it
+                    // once per file whatever the outcome), so it is the completion count on its
+                    // own — adding the other two back would overshoot the total.
+                    const isExtracting = folderProgress.phase === 'hashing' || folderProgress.phase === 'extracting';
+                    const count = isExtracting ? folderProgress.extracted : folderProgress.done;
+                    const percent = folderProgress.total > 0 ? Math.round((count / folderProgress.total) * 100) : 0;
+                    const label = folderProgress.currentFile
+                        || (folderProgress.phase === 'hashing' ? 'Checking for changes…'
+                            : folderProgress.phase === 'extracting' ? 'Extracting…'
+                                : folderProgress.phase === 'embedding' ? 'Embedding…'
+                                    : 'Starting…');
+                    return (
+                        <View className='mb-4 p-3 bg-gray-800 rounded-lg'>
+                            <View className='flex flex-row justify-between text-xs text-gray-400 mb-1'>
+                                <Text>{label}</Text>
+                                <Text>{count} / {folderProgress.total}</Text>
+                            </View>
+                            <View style={{ height: 4, backgroundColor: '#333', borderRadius: 2 }}>
+                                <View
+                                    style={{
+                                        height: '100%',
+                                        width: `${percent}%`,
+                                        backgroundColor: isExtracting ? '#7CB8FF' : '#6CE9A6',
+                                        borderRadius: 2,
+                                    }}
+                                />
+                            </View>
+                            <View className='flex flex-row justify-between text-xs text-gray-500 mt-1'>
+                                <Text>Done: {folderProgress.done - folderProgress.skipped - folderProgress.failed}</Text>
+                                <Text>Skipped: {folderProgress.skipped}</Text>
+                                <Text>Failed: {folderProgress.failed}</Text>
+                            </View>
                         </View>
-                        <View style={{ height: 4, backgroundColor: '#333', borderRadius: 2 }}>
-                            <View
-                                style={{
-                                    height: '100%',
-                                    width: `${folderProgress.total > 0 ? Math.round(((folderProgress.done + folderProgress.skipped + folderProgress.failed) / folderProgress.total) * 100) : 0}%`,
-                                    backgroundColor: '#6CE9A6',
-                                    borderRadius: 2,
-                                }}
-                            />
-                        </View>
-                        <View className='flex flex-row justify-between text-xs text-gray-500 mt-1'>
-                            <Text>Done: {folderProgress.done}</Text>
-                            <Text>Skipped: {folderProgress.skipped}</Text>
-                            <Text>Failed: {folderProgress.failed}</Text>
-                        </View>
-                    </View>
-                )}
+                    );
+                })()}
 
                 {selectedFileUuids.length > 0 && (
                     <TouchableOpacity

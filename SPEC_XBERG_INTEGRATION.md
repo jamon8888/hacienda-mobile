@@ -1,8 +1,8 @@
 # Xberg Integration Specification
 
-> **Status**: Planning
+> **Status**: Implemented — pending on-device verification
 > **Version**: 1.0.0
-> **Last Updated**: 2026-08-02
+> **Last Updated**: 2026-08-04
 
 ---
 
@@ -815,28 +815,35 @@ xbergConfig: {
 ## Implementation Phases
 
 ### Phase 1: Core (Week 1-2)
-- [ ] Android native module (XbergModule.kt)
-- [ ] TypeScript wrapper (XbergClient.ts)
-- [ ] Basic extraction (single file)
-- [ ] Integration with useAttachments
+- [x] Android native module (XbergModule.kt)
+- [x] TypeScript wrapper (XbergClient.ts)
+- [x] Basic extraction (single file)
+- [x] Integration with useAttachments
 
 ### Phase 2: iOS (Week 3)
-- [ ] iOS native module (XbergModule.swift)
-- [ ] ObjectBox iOS integration (VectorBox.swift)
-- [ ] Run ObjectBox code generator (`Pods/ObjectBox/setup.rb`)
-- [ ] Cross-platform testing
+- [x] iOS native module (XbergModule.swift)
+- [x] ObjectBox iOS integration (VectorBox.swift)
+- [x] Run ObjectBox code generator (`Pods/ObjectBox/setup.rb`)
+- [ ] Cross-platform testing — **not started; nothing below has run on a device**
 
 ### Phase 3: Advanced (Week 4)
-- [ ] Folder extraction
-- [ ] OCR integration
-- [ ] Batch processing
-- [ ] Progress tracking
+- [x] Folder extraction — recursive walk + `FolderPickerModule` for iOS, where
+      `react-native-document-picker`'s `pickDirectory()` always rejects
+- [x] OCR integration — `forceOcr` is applied automatically to images, which have no text layer.
+      `ocr.language` is still pinned to `eng`: Tesseract needs per-language trained data bundled
+      natively, so widening it depends on the native package, not on config
+- [x] Batch processing — `extractBatch` splits work into 8-file native calls
+- [x] Progress tracking — extraction and embedding report as separate phases (`IndexPhase`),
+      since extraction happens for the whole batch before any file is embedded
 
 ### Phase 4: Polish (Week 5)
-- [ ] Error handling
-- [ ] Offline fallback
-- [ ] Performance optimization
-- [ ] UI/UX improvements
+- [x] Error handling — a rejected batch chunk no longer discards the chunks that succeeded;
+      untagged results are re-extracted per file rather than position-guessed
+- [x] Offline fallback — `XbergUnavailableError` for builds without the native module; the
+      plain-text fallback now refuses binary formats instead of embedding UTF-8 noise
+- [x] Performance optimization — hash-skip before extraction, native batch cache, chunk dedupe
+- [x] UI/UX improvements — phased progress bar; fixed a counter that triple-counted skipped
+      and failed files and overshot 100%
 
 ---
 
@@ -854,6 +861,9 @@ xbergConfig: {
 ---
 
 ## Success Metrics
+
+All of these are code-complete but **unverified on hardware** — the JS↔native contract is covered
+by unit tests against a mocked module, which proves the wrapper's behaviour, not Xberg's.
 
 - [ ] Extract text from PDF, DOCX, PPTX, XLSX
 - [ ] OCR on scanned documents (Tesseract)

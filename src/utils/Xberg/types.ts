@@ -18,35 +18,49 @@ export interface ExtractionConfig {
     use_cache?: boolean;
     max_concurrent_extractions?: number;
   };
+  /**
+   * Applied only to audio inputs, which XbergClient routes to the transcription path rather than
+   * the document extractors. Ignored for every other file kind.
+   */
+  transcription?: Partial<TranscriptionConfig>;
+}
+
+export interface ExtractionResultItem {
+  /**
+   * Set by XbergClient for every batched result — from the native side's positional tagging when
+   * extractBatch returned 1:1 with its inputs (see XbergModule.kt/.swift), or from the file path
+   * directly on the per-file transcription path. Absent on single-file `extract()` responses,
+   * and absent on batch results the native side could not safely position-match.
+   */
+  source?: string;
+  content: string;
+  metadata: {
+    format: string;
+    mimeType: string;
+    size: number;
+    pages?: number;
+    language?: string;
+    title?: string;
+    author?: string;
+  };
+  tables?: Array<{ rows: string[][]; header?: string[] }>;
+  chunks?: Array<{
+    content: string;
+    chunkType: string;
+    embedding?: number[];
+    metadata: { index: number; tokenCount: number };
+  }>;
+}
+
+export interface ExtractionError {
+  source?: string;
+  error?: string;
+  code?: string;
 }
 
 export interface ExtractionResult {
-  results: Array<{
-    /**
-     * Only present on extractBatch responses, and only when the native side could safely
-     * position-match results to inputs (see XbergModule.kt/.swift extractBatch). Absent on
-     * single-file extract() responses and absent on batch responses where that match failed.
-     */
-    source?: string;
-    content: string;
-    metadata: {
-      format: string;
-      mimeType: string;
-      size: number;
-      pages?: number;
-      language?: string;
-      title?: string;
-      author?: string;
-    };
-    tables?: Array<{ rows: string[][]; header?: string[] }>;
-    chunks?: Array<{
-      content: string;
-      chunkType: string;
-      embedding?: number[];
-      metadata: { index: number; tokenCount: number };
-    }>;
-  }>;
-  errors?: Array<{ source?: string; error?: string; code?: string }>;
+  results: ExtractionResultItem[];
+  errors?: ExtractionError[];
   summary?: Record<string, unknown>;
 }
 

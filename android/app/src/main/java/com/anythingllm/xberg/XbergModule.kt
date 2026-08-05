@@ -8,10 +8,27 @@ import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.WritableArray
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.bridge.Arguments
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import io.xberg.ExtractInput
+import io.xberg.ExtractInputKind
 import io.xberg.ExtractionConfig
+import io.xberg.ExtractionResult
+import io.xberg.TranscriptionConfig
+import io.xberg.WhisperModel
 import io.xberg.Xberg
 
+/**
+ * React Native bridge over the Xberg document-extraction SDK.
+ *
+ * Xberg's Kotlin API is typed end to end -- ExtractionConfig is a 47-field object, results come
+ * back as ExtractedDocument instances -- while the JS side of a React Native bridge can only carry
+ * strings. Jackson does the translation in both directions: the SDK already ships Jackson-annotated
+ * DTOs (it uses Jackson for its own serde), so its own types round-trip without hand-mapping.
+ */
 class XbergModule(reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
 
@@ -19,24 +36,44 @@ class XbergModule(reactContext: ReactApplicationContext) :
 
     companion object {
         private const val MAX_FILE_SIZE = 50 * 1024 * 1024L
+
+        /**
+         * Unknown properties are ignored on purpose: the JS caller builds config objects by hand,
+         * and a key it sends that this SDK version does not know should degrade to "that option is
+         * not applied" rather than fail the whole extraction.
+         */
+        private val mapper: ObjectMapper = ObjectMapper()
+            .registerModule(KotlinModule.Builder().build())
+            .registerModule(Jdk8Module())
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+
+        private fun parseConfig(configJson: String): ExtractionConfig =
+            if (configJson.isBlank() || configJson == "{}") ExtractionConfig()
+            else mapper.readValue(configJson, ExtractionConfig::class.java)
+
+        private fun inputFor(file: java.io.File): ExtractInput =
+            ExtractInput(kind = ExtractInputKind.URI, uri = file.absolutePath, filename = file.name)
+
+        /** Rejects with a stable code the JS side can branch on, or returns null when usable. */
+        private fun validate(filePath: String): Pair<String, String>? {
+            val file = java.io.File(filePath)
+            return when {
+                !file.exists() -> "FILE_NOT_FOUND" to "File not found: $filePath"
+                file.length() > MAX_FILE_SIZE -> "FILE_TOO_LARGE" to "File exceeds 50MB: $filePath"
+                else -> null
+            }
+        }
     }
 
     @ReactMethod
     fun extract(filePath: String, configJson: String, promise: Promise) {
         try {
-            val file = java.io.File(filePath)
-            if (!file.exists()) {
-                promise.reject("FILE_NOT_FOUND", "File not found: $filePath")
+            validate(filePath)?.let { (code, message) ->
+                promise.reject(code, message)
                 return
             }
-            if (file.length() > MAX_FILE_SIZE) {
-                promise.reject("FILE_TOO_LARGE", "File exceeds 50MB limit")
-                return
-            }
-            val input = ExtractInput.from_uri(filePath)
-            val config = ExtractionConfig.fromJson(configJson)
-            val result = Xberg.extract(input, config)
-            promise.resolve(result.toJson())
+            val result = Xberg.extract(inputFor(java.io.File(filePath)), parseConfig(configJson))
+            promise.resolve(mapper.writeValueAsString(result))
         } catch (e: Exception) {
             promise.reject("EXTRACTION_ERROR", e.message, e)
         }
@@ -46,82 +83,75 @@ class XbergModule(reactContext: ReactApplicationContext) :
     fun extractBatch(filePaths: ReadableArray, configJson: String, promise: Promise) {
         try {
             val inputs = mutableListOf<ExtractInput>()
-            // Parallel to `inputs`, tracks which source path each accepted input came from.
-            // Xberg.extractBatch's Rust binding gives no per-result identifier of its own, so
+            // Parallel to `inputs`: Xberg's ExtractedDocument carries no identifier of its own, so
             // this is the only way to reattach extracted content to the file it came from.
             val inputPaths = mutableListOf<String>()
-            val localErrors = org.json.JSONArray()
+            val localErrors = mutableListOf<Map<String, Any?>>()
+
             for (i in 0 until filePaths.size()) {
-                val filePath = filePaths.getString(i)
-                val file = java.io.File(filePath)
-                if (!file.exists()) {
-                    localErrors.put(org.json.JSONObject()
-                        .put("source", filePath)
-                        .put("code", "FILE_NOT_FOUND")
-                        .put("error", "File not found: $filePath"))
-                    continue
-                }
-                if (file.length() > MAX_FILE_SIZE) {
-                    localErrors.put(org.json.JSONObject()
-                        .put("source", filePath)
-                        .put("code", "FILE_TOO_LARGE")
-                        .put("error", "File exceeds 50MB: $filePath"))
+                val filePath = filePaths.getString(i) ?: continue
+                val failure = validate(filePath)
+                if (failure != null) {
+                    val (code, message) = failure
+                    localErrors.add(mapOf("source" to filePath, "code" to code, "error" to message))
                     continue
                 }
                 try {
-                    inputs.add(ExtractInput.from_uri(filePath))
+                    inputs.add(inputFor(java.io.File(filePath)))
                     inputPaths.add(filePath)
                 } catch (e: Exception) {
-                    localErrors.put(org.json.JSONObject()
-                        .put("source", filePath)
-                        .put("code", "INVALID_INPUT")
-                        .put("error", e.message ?: "Failed to read file"))
-                }
-            }
-
-            val config = ExtractionConfig.fromJson(configJson)
-            val resultJson = if (inputs.isEmpty()) {
-                """{"results":[],"errors":[],"summary":{}}"""
-            } else {
-                Xberg.extractBatch(inputs, config).toJson()
-            }
-
-            // Building the tagged envelope is best-effort: a parse/serialize failure here should
-            // still return the raw extraction the caller asked for, not fail the whole batch —
-            // matching the iOS side and this method's pre-batch-tagging behavior.
-            try {
-                val envelope = org.json.JSONObject(resultJson)
-                val results = envelope.optJSONArray("results") ?: org.json.JSONArray()
-
-                // Tag each result with the source path it came from, assuming extractBatch
-                // preserves input order (the standard contract for batch APIs, but not one this
-                // Rust binding documents). If the count doesn't match 1:1 we cannot safely assume
-                // positional correspondence, so we deliberately leave "source" unset — callers
-                // must treat a missing "source" as "batch mapping is untrustworthy, fall back to
-                // per-file extract" rather than guess and risk attributing one file's content to
-                // another's name.
-                if (results.length() == inputPaths.size) {
-                    for (i in 0 until results.length()) {
-                        results.getJSONObject(i).put("source", inputPaths[i])
-                    }
-                } else {
-                    android.util.Log.w(
-                        "XbergModule",
-                        "extractBatch: results count (${results.length()}) != inputs count (${inputPaths.size}); omitting source tagging"
+                    localErrors.add(
+                        mapOf(
+                            "source" to filePath,
+                            "code" to "INVALID_INPUT",
+                            "error" to (e.message ?: "Failed to read file"),
+                        )
                     )
                 }
-                envelope.put("results", results)
-
-                if (localErrors.length() > 0) {
-                    val errors = envelope.optJSONArray("errors") ?: org.json.JSONArray()
-                    for (j in 0 until localErrors.length()) errors.put(localErrors.get(j))
-                    envelope.put("errors", errors)
-                }
-                promise.resolve(envelope.toString())
-            } catch (e: Exception) {
-                android.util.Log.w("XbergModule", "extractBatch: could not build result envelope: ${e.message}")
-                promise.resolve(resultJson)
             }
+
+            val result: ExtractionResult? =
+                if (inputs.isEmpty()) null else Xberg.extractBatch(inputs, parseConfig(configJson))
+
+            val envelope = mapper.createObjectNode()
+            val results = envelope.putArray("results")
+            val errors = envelope.putArray("errors")
+
+            if (result != null) {
+                // Tag each result with the path it came from, assuming extractBatch preserves input
+                // order -- the standard contract for batch APIs, but one this SDK does not
+                // document. When the counts do not line up 1:1 that assumption is unsafe, so
+                // "source" is left off entirely: the JS side treats an untagged result as
+                // unusable and re-extracts that file individually, which costs one extra pass,
+                // whereas guessing would silently file one document's content under another
+                // document's name.
+                val ordered = result.results.size == inputPaths.size
+                if (!ordered) {
+                    android.util.Log.w(
+                        "XbergModule",
+                        "extractBatch returned ${result.results.size} results for ${inputPaths.size} inputs; omitting source tags",
+                    )
+                }
+                result.results.forEachIndexed { index, document ->
+                    val node = mapper.valueToTree<ObjectNode>(document)
+                    if (ordered) node.put("source", inputPaths[index])
+                    results.add(node)
+                }
+
+                // Xberg's own errors carry the index of the input that failed, so these map back
+                // exactly rather than positionally. Its field is `message`; the JS side reads
+                // `error`, so both are emitted.
+                result.errors.forEach { item ->
+                    val node = mapper.createObjectNode()
+                    node.put("source", inputPaths.getOrNull(item.index.toInt()) ?: item.source)
+                    node.put("error", item.message)
+                    node.put("code", item.errorType)
+                    errors.add(node)
+                }
+            }
+
+            localErrors.forEach { errors.add(mapper.valueToTree<ObjectNode>(it)) }
+            promise.resolve(mapper.writeValueAsString(envelope))
         } catch (e: Exception) {
             promise.reject("EXTRACTION_ERROR", e.message, e)
         }
@@ -130,9 +160,8 @@ class XbergModule(reactContext: ReactApplicationContext) :
     @ReactMethod
     fun getSupportedFormats(promise: Promise) {
         try {
-            val formats = Xberg.listSupportedFormats()
             val result: WritableArray = Arguments.createArray()
-            for (format in formats) {
+            for (format in Xberg.listSupportedFormats()) {
                 val map: WritableMap = Arguments.createMap()
                 map.putString("extension", format.extension)
                 map.putString("mimeType", format.mimeType)
@@ -147,9 +176,8 @@ class XbergModule(reactContext: ReactApplicationContext) :
     @ReactMethod
     fun transcribeAudio(filePath: String, model: String, language: String?, promise: Promise) {
         try {
-            val file = java.io.File(filePath)
-            if (!file.exists()) {
-                promise.reject("FILE_NOT_FOUND", "Audio file not found: $filePath")
+            validate(filePath)?.let { (code, message) ->
+                promise.reject(code, message.replace("File ", "Audio file "))
                 return
             }
             val audioExtensions = listOf(".mp3", ".m4a", ".wav", ".webm", ".mpga")
@@ -157,15 +185,28 @@ class XbergModule(reactContext: ReactApplicationContext) :
                 promise.reject("INVALID_FORMAT", "Not an audio file: $filePath")
                 return
             }
-            val input = ExtractInput.from_uri(filePath)
-            val configJson = buildString {
-                append("""{"transcription":{"model":"$model"""")
-                if (language != null) append(""","language":"$language"""")
-                append("}}")
+
+            val whisperModel = when (model.lowercase()) {
+                "tiny" -> WhisperModel.TINY
+                "base" -> WhisperModel.BASE
+                "small" -> WhisperModel.SMALL
+                "medium" -> WhisperModel.MEDIUM
+                "large-v3", "large_v3", "large" -> WhisperModel.LARGE_V3
+                else -> {
+                    promise.reject("INVALID_MODEL", "Unknown Whisper model: $model")
+                    return
+                }
             }
-            val config = ExtractionConfig.fromJson(configJson)
-            val result = Xberg.extract(input, config)
-            promise.resolve(result.toJson())
+
+            val config = ExtractionConfig(
+                transcription = TranscriptionConfig(
+                    enabled = true,
+                    model = whisperModel,
+                    language = language,
+                )
+            )
+            val result = Xberg.extract(inputFor(java.io.File(filePath)), config)
+            promise.resolve(mapper.writeValueAsString(result))
         } catch (e: Exception) {
             promise.reject("TRANSCRIPTION_ERROR", e.message, e)
         }

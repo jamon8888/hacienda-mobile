@@ -16,10 +16,24 @@ import PDFParser from "@/utils/PDFParser";
 import { storeProcessedFileAsText } from "@/utils/fs";
 import Telemetry from "@/utils/Telemetry";
 import { XbergClient } from "@/utils/Xberg";
-import { ExtractionConfig } from "@/utils/Xberg/types";
+import { ExtractionConfig, SUPPORTED_FILE_TYPES } from "@/utils/Xberg/types";
 import { FileText, MusicNotes, File, Image } from "phosphor-react-native";
 
 const MAX_ATTACHMENTS = 4;
+
+/** Formats whose bytes are already readable text, so a raw UTF-8 read is a valid fallback. */
+const PLAIN_TEXT_EXTENSIONS = [
+    ...SUPPORTED_FILE_TYPES.text,
+    ...SUPPORTED_FILE_TYPES.data,
+    ...SUPPORTED_FILE_TYPES.web,
+    ...SUPPORTED_FILE_TYPES.code,
+];
+
+function isPlainTextAttachment(filePath: string, mimeType: string): boolean {
+    if (mimeType?.startsWith('text/')) return true;
+    const lower = filePath.toLowerCase();
+    return PLAIN_TEXT_EXTENSIONS.some(ext => lower.endsWith(ext));
+}
 
 function getAttachmentIcon(type: string) {
     if (type?.includes('pdf')) return <FileText size={14} color="#F97066" />;
@@ -188,15 +202,20 @@ export default function useAttachments({ wsSlug, embeddingConfig }: UseAttachmen
 
     const extractTextContentFromFile = useCallback(async (fileStoragePath: string, mimeType: string): Promise<string | null> => {
         try {
-            const config: ExtractionConfig = {
-                outputFormat: 'markdown',
-                ocr: { backend: 'tesseract', language: 'eng' },
-                chunking: { enabled: true, strategy: 'semantic', maxChunkSize: 512, chunkOverlap: 50 },
-            };
+            const config: ExtractionConfig = XbergClient.defaultExtractionConfig();
             const result = await XbergClient.extract(fileStoragePath, config);
             return result.results[0]?.content || null;
         } catch (e) {
             console.log('Xberg extraction failed, falling back:', e);
+            // The fallback reads the file as UTF-8 text, which is only meaningful for formats
+            // that *are* text. Reading a PDF, DOCX or image this way yields binary noise that
+            // still looks like a successful extraction to every caller downstream — it gets
+            // embedded, stored, and later retrieved as context. Refusing is the honest answer:
+            // callers surface "could not be read" rather than silently poisoning the workspace.
+            if (!isPlainTextAttachment(fileStoragePath, mimeType)) {
+                console.log('No text fallback for this format; reporting extraction failure');
+                return null;
+            }
             try {
                 const stats = await RNFS.stat(fileStoragePath).catch((e) => {
                     console.log('error', e);

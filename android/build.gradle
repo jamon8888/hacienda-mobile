@@ -1,11 +1,11 @@
 buildscript {
     ext {
         buildToolsVersion = "36.0.0"
-        minSdkVersion = 24
+        minSdkVersion = 26
         compileSdkVersion = 36
         targetSdkVersion = 36
         ndkVersion = "26.1.10909125"
-        kotlinVersion = "1.9.24"
+        kotlinVersion = "2.0.21"
         objectboxVersion = "4.3.0"
     }
     repositories {
@@ -15,8 +15,31 @@ buildscript {
     dependencies {
         classpath("com.android.tools.build:gradle:8.7.3")
         classpath("com.facebook.react:react-native-gradle-plugin")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
+        // Pinned explicitly, overriding the 1.9.24 that React Native 0.76.3's own version catalog
+        // would otherwise supply (node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml).
+        //
+        // Why: io.xberg:xberg-android constrains kotlin-stdlib to 2.2.10 (every published version
+        // 1.0.0..1.0.12 does), so Gradle resolves the stdlib to 2.2.20 project-wide. A 1.9.24
+        // compiler against a 2.2.x stdlib fails every Kotlin module with "Unresolved reference:
+        // mapOf" and metadata-version errors, so the compiler has to track the stdlib.
+        //
+        // Why 2.0.21 specifically -- it is the ceiling React Native 0.76.3 allows, verified
+        // empirically here:
+        //   2.0.21 -> applies cleanly
+        //   2.1.21 -> "Found interface KotlinTopLevelExtension, but class was expected"
+        //   2.2.20 -> same
+        // RN's Gradle plugin is compiled against the KGP 1.9 API where KotlinTopLevelExtension is
+        // a class; it became an interface in KGP 2.1. Recompiling that plugin against 2.2 was
+        // tried and abandoned: its own build scripts use the kotlinOptions DSL (removed in 2.2)
+        // and apiVersion 1.6 (unsupported in 2.2), so it cascades into patching React Native's
+        // build infrastructure -- fragile, and it would break on every RN upgrade.
+        //
+        // Raising this past 2.0.21 therefore means upgrading React Native itself.
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
         classpath("io.objectbox:objectbox-gradle-plugin:$objectboxVersion")
+        // KSP replaces kapt for annotation processing -- see the comment in app/build.gradle.
+        // The version's prefix must match kotlinVersion exactly; KSP releases are per-Kotlin.
+        classpath("com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin:$kotlinVersion-1.0.28")
         // Add the Google Services plugin dependency
         // This is used exclusively for Firebase functionality
         classpath 'com.google.gms:google-services:4.4.3'
@@ -24,3 +47,26 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
+
+// The compiler is capped at 2.0.21 by React Native (see above), but io.xberg:xberg-android ships
+// classes carrying Kotlin 2.2.0 metadata and drags kotlin-stdlib up to 2.2.20. Without this, the
+// 2.0.21 compiler rejects both with "Module was compiled with an incompatible version of Kotlin".
+//
+// The stdlib is deliberately left at the resolved 2.2.20 rather than forced back to 2.0.21:
+// xberg-android's bytecode was compiled against the 2.2 stdlib, so downgrading risks
+// NoSuchMethodError at runtime, while keeping it stays backward-compatible for every other
+// module. This flag only relaxes a compile-time version assertion; it changes nothing shipped.
+//
+// Uses the legacy kotlinOptions DSL on purpose. The modern compilerOptions equivalent fails on
+// kapt stub tasks under KGP 2.0.x -- KaptGenerateStubsTask ships no default for freeCompilerArgs,
+// so add() leaves the property with no value and the task dies with "Cannot query the value of
+// property 'freeCompilerArgs'". kotlinOptions' eager shim reads through an empty default instead.
+// Deprecated in 2.0, removed in 2.2 -- revisit together with the Kotlin cap above.
+allprojects {
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        kotlinOptions {
+            freeCompilerArgs += ["-Xskip-metadata-version-check"]
+        }
+    }
+}
+

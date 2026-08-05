@@ -1,6 +1,6 @@
 import { makeAutoObservable } from 'mobx';
 import { XbergClient } from '../utils/Xberg';
-import { ExtractionConfig } from '../utils/Xberg/types';
+import { ExtractionConfig, ExtractionResultItem } from '../utils/Xberg/types';
 import { getEmbeddingProvider } from '../utils/Embedder';
 import { EmbeddingEngine } from '../utils/Embedder/types';
 import VectorDB from '../utils/VectorDB';
@@ -17,7 +17,18 @@ export type IndexJob = {
   status: IndexJobStatus;
 };
 
+/**
+ * Which half of the import is running. Extraction happens for the whole batch up front, then
+ * embedding runs per file, so a single "done / total" bar would sit still for the entire
+ * extraction pass on a large folder. `extracted` tracks the first half, `done` the second.
+ */
+export type IndexPhase = 'idle' | 'hashing' | 'extracting' | 'embedding';
+
 export type IndexProgress = {
+  phase: IndexPhase;
+  /** Files whose extraction has been attempted. Counts up to `total` during 'extracting'. */
+  extracted: number;
+  /** Files fully imported, skipped, or failed. Counts up to `total` during 'embedding'. */
   done: number;
   total: number;
   skipped: number;
@@ -28,6 +39,8 @@ export type IndexProgress = {
 export class IndexingStore {
   isIndexing = false;
   jobs: IndexJob[] = [];
+  phase: IndexPhase = 'idle';
+  extracted = 0;
   done = 0;
   total = 0;
   skipped = 0;
@@ -43,6 +56,8 @@ export class IndexingStore {
 
   private getProgress(): IndexProgress {
     return {
+      phase: this.phase,
+      extracted: this.extracted,
       done: this.done,
       total: this.total,
       skipped: this.skipped,
@@ -72,7 +87,9 @@ export class IndexingStore {
 
     this.isIndexing = true;
     this.jobs = paths.map((path) => ({ path, name: path.split('/').pop() || path, status: 'pending' as IndexJobStatus }));
+    this.phase = 'hashing';
     this.total = paths.length;
+    this.extracted = 0;
     this.done = 0;
     this.skipped = 0;
     this.failed = 0;
@@ -106,48 +123,75 @@ export class IndexingStore {
         toProcess.push(job);
       }
 
-      // P1: extract the whole remaining batch in one native call (parallel + cached on the
-      // native side) instead of one XbergClient.extract() round-trip per file.
-      const resultByPath = new Map<string, { content: string; chunks?: { content: string }[] }>();
+      // P1: extract through the batched native path (parallel + cached natively) instead of one
+      // XbergClient.extract() round-trip per file. XbergClient splits this across several native
+      // calls internally, so the extraction phase reports its own progress before the per-file
+      // embedding loop below starts.
+      const resultByPath = new Map<string, ExtractionResultItem>();
       const errorByPath = new Map<string, string>();
       if (toProcess.length > 0) {
         toProcess.forEach((job) => { this.setJobStatus(job.path, 'processing'); });
+        this.phase = 'extracting';
+        this.extracted = 0;
         onProgress?.(this.getProgress());
 
         try {
-          const batch = await XbergClient.extractBatch(toProcess.map((j) => j.path), config);
-          const results = batch.results ?? [];
-          // The native side only tags `source` when it can trust extractBatch's result order
-          // matched its input order 1:1 (see XbergModule.kt/.swift). If even one result lacks
-          // it, none of them can be trusted positionally — fall back to per-file extraction
-          // rather than risk attributing one file's content to another file's name.
-          const batchMappingTrusted = results.length > 0 && results.every((r) => typeof r.source === 'string');
+          const batch = await XbergClient.extractBatch(
+            toProcess.map((j) => j.path),
+            config,
+            {
+              onProgress: ({ done }) => {
+                this.extracted = done;
+                onProgress?.(this.getProgress());
+              },
+            },
+          );
 
-          if (batchMappingTrusted) {
-            for (const res of results) resultByPath.set(res.source as string, res);
-            for (const err of batch.errors ?? []) {
-              if (err.source) errorByPath.set(err.source, err.error || err.code || 'Extraction failed');
-            }
-          } else {
-            if (results.length > 0) {
-              console.warn('extractBatch results could not be safely mapped to source files; falling back to per-file extraction');
-            }
-            for (const job of toProcess) {
+          // A result is only usable if we know which file it came from: the native side tags
+          // `source` when extractBatch returned 1:1 with its inputs, and drops the tag entirely
+          // when it did not (see XbergModule.kt/.swift). Untagged results are discarded rather
+          // than position-guessed — attributing one file's content to another file's name is a
+          // silent, permanent data error, whereas a discarded result just costs one re-extract.
+          for (const res of batch.results) {
+            if (typeof res.source === 'string') resultByPath.set(res.source, res);
+          }
+          for (const err of batch.errors ?? []) {
+            if (err.source) errorByPath.set(err.source, err.error || err.code || 'Extraction failed');
+          }
+
+          // Anything the batch could neither extract nor explain — untagged results, or files
+          // the native side silently dropped — is retried individually, where the result needs
+          // no source tag to be unambiguous.
+          const unresolved = toProcess.filter(
+            (job) => !resultByPath.has(job.path) && !errorByPath.has(job.path),
+          );
+          if (unresolved.length > 0) {
+            console.warn(`extractBatch left ${unresolved.length} file(s) unmapped; re-extracting those individually`);
+            for (const job of unresolved) {
+              // `extracted` is not advanced here: the batch pass already counted these files as
+              // attempted, so counting the retry too would push the extraction bar past its own
+              // total. The retry is surfaced through `currentFile` instead.
+              this.currentFile = job.name;
+              onProgress?.(this.getProgress());
               try {
                 const single = await XbergClient.extract(job.path, config);
-                const res = single.results?.[0];
+                const res = single.results[0];
                 if (res?.content) resultByPath.set(job.path, res);
                 else errorByPath.set(job.path, 'Extraction returned no content');
               } catch (e) {
                 errorByPath.set(job.path, e instanceof Error ? e.message : String(e));
               }
             }
+            this.currentFile = null;
           }
         } catch (e) {
           const message = e instanceof Error ? e.message : String(e);
           for (const job of toProcess) errorByPath.set(job.path, message);
         }
       }
+
+      this.phase = 'embedding';
+      onProgress?.(this.getProgress());
 
       // Embedding + vector storage stay per-file — that's still the part with meaningful
       // per-file latency, so progress reporting here remains granular.
@@ -191,6 +235,7 @@ export class IndexingStore {
       return { imported, unchanged: this.skipped, failed: this.failed };
     } finally {
       this.isIndexing = false;
+      this.phase = 'idle';
       this.currentFile = null;
     }
   }
@@ -198,6 +243,8 @@ export class IndexingStore {
   reset() {
     this.isIndexing = false;
     this.jobs = [];
+    this.phase = 'idle';
+    this.extracted = 0;
     this.done = 0;
     this.total = 0;
     this.skipped = 0;

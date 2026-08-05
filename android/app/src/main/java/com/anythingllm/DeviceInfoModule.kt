@@ -5,7 +5,6 @@ import android.app.ActivityManager
 import android.content.Context
 import android.os.Build
 import android.os.Build.VERSION_CODES
-import android.neuralnetworks.NeuralNetworks
 import java.io.File
 
 class DeviceInfoModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
@@ -93,7 +92,7 @@ class DeviceInfoModule(reactContext: ReactApplicationContext) : ReactContextBase
     @ReactMethod
     fun getRAMInfo(promise: Promise) {
         try {
-            val activityManager = reactContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+            val activityManager = reactApplicationContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
             val memInfo = ActivityManager.MemoryInfo()
             activityManager.getMemoryInfo(memInfo)
             
@@ -132,7 +131,7 @@ class DeviceInfoModule(reactContext: ReactApplicationContext) : ReactContextBase
             
             // RAM Info
             val ramInfo = Arguments.createMap()
-            val activityManager = reactContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+            val activityManager = reactApplicationContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
             val memInfo = ActivityManager.MemoryInfo()
             activityManager.getMemoryInfo(memInfo)
             ramInfo.putString("totalRAM", memInfo.totalMem.toString())
@@ -145,13 +144,13 @@ class DeviceInfoModule(reactContext: ReactApplicationContext) : ReactContextBase
             result.putString("npuBackend", detectNPUBackend())
             
             // NNAPI Support
-            val hasNNAPI = if (Build.VERSION.SDK_INT >= VERSION_CODES.O_MR1) {
-                try {
-                    NeuralNetworks.getDeviceCount() > 0
-                } catch (e: Exception) {
-                    false
-                }
-            } else false
+            // NNAPI has no Java/Kotlin API surface: android.neuralnetworks does not exist, and
+            // the runtime is reachable only from native code via <android/NeuralNetworks.h>. The
+            // only thing determinable from here is whether the platform ships NNAPI at all, which
+            // is API 27 (8.1) and up. Whether this device actually exposes an accelerator behind
+            // it -- the question the old NeuralNetworks.getDeviceCount() call pretended to answer
+            // -- can only be answered from the native side.
+            val hasNNAPI = Build.VERSION.SDK_INT >= VERSION_CODES.O_MR1
             result.putBoolean("hasNNAPI", hasNNAPI)
             
             // GPU Vendor
