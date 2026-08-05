@@ -44,7 +44,7 @@ export class UIStore {
     'current_anythingllm_external_connection',
     'anythingllm_external_connections',
     'voiceSettings',
-  ] as const;
+  ];
 
   pageStates = {
     modelsScreen: {

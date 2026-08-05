@@ -8,7 +8,7 @@ import uiStore from "@/store/UIStore";
 import { useEffect, useState } from "react";
 import { CACTUS_VOICE_MODELS, CactusVoiceModelId, DEFAULT_CACTUS_ASR_MODEL, DEFAULT_CACTUS_LLM_MODEL } from "@/utils/models/defaults";
 import { useDeviceCapabilities } from "@/hooks/useDeviceCapabilities";
-import { CACTUS_VOICE_MODELS as VOICE_MODELS } from "@/utils/models/defaults";
+import { ModelPickerModal } from "./VoiceSettings/ModalPicker";
 
 type VoiceModelCategory = 'asr' | 'llm';
 
@@ -22,68 +22,52 @@ interface VoiceModelOption {
     quantization: string;
 }
 
-const ASR_MODEL_OPTIONS: VoiceModelOption[] = [
-    {
-        id: 'parakeet-tdt-0.6b-cq2',
-        name: 'Parakeet TDT 0.6B (CQ2)',
-        description: 'Best balance - 180MB, WER 0.147',
-        size: '180MB',
-        category: 'asr',
-        recommendedFor: ['low', 'medium', 'high'],
-        quantization: 'CQ2',
-    },
-    {
-        id: 'parakeet-tdt-0.6b-cq3',
-        name: 'Parakeet TDT 0.6B (CQ3)',
-        description: 'Higher accuracy - 250MB, WER 0.115',
-        size: '250MB',
-        category: 'asr',
-        recommendedFor: ['medium', 'high'],
-        quantization: 'CQ3',
-    },
-    {
-        id: 'parakeet-tdt-0.6b-cq4',
-        name: 'Parakeet TDT 0.6B (CQ4)',
-        description: 'Best accuracy - 384MB, WER 0.115',
-        size: '384MB',
-        category: 'asr',
-        recommendedFor: ['high'],
-        quantization: 'CQ4',
-    },
-];
+interface VoiceSettingsStorage {
+    asrModel: CactusVoiceModelId;
+    llmModel: CactusVoiceModelId;
+    confidenceThreshold: number;
+    autoHandoff: boolean;
+    processingDelay: number;
+    enableTTS: boolean;
+    vadThreshold: number;
+}
 
-const LLM_MODEL_OPTIONS: VoiceModelOption[] = [
-    {
-        id: 'gemma-4-e2b-hybrid-cq2',
-        name: 'Gemma 4 E2B Hybrid (CQ2)',
-        description: 'Smallest - ~400MB, basic quality',
-        size: '~400MB',
-        category: 'llm',
-        recommendedFor: ['low'],
-        quantization: 'CQ2',
-    },
-    {
-        id: 'gemma-4-e2b-hybrid-cq2.54',
-        name: 'Gemma 4 E2B Hybrid (CQ2.54)',
-        description: 'Production bundle - 650MB, balanced',
-        size: '650MB',
-        category: 'llm',
-        recommendedFor: ['low', 'medium'],
-        quantization: 'CQ2.54',
-    },
-    {
-        id: 'gemma-4-e2b-hybrid-cq4',
-        name: 'Gemma 4 E2B Hybrid (CQ4)',
-        description: 'Best quality - 1.2GB, highest accuracy',
-        size: '1.2GB',
-        category: 'llm',
-        recommendedFor: ['high'],
-        quantization: 'CQ4',
-    },
-];
+// CACTUS_VOICE_MODELS carries a single minRAM per bundle rather than a per-tier
+// recommendation list; bucket it against useDeviceCapabilities' ramTier so the
+// existing badge/filtering logic below keeps working unchanged.
+function ramTiersForMinRAM(minRAM: string): string[] {
+    const gb = parseFloat(minRAM);
+    if (gb <= 2) return ['low', 'medium', 'high'];
+    if (gb <= 3) return ['medium', 'high'];
+    return ['high'];
+}
 
-const DEFAULT_ASR_MODEL: CactusVoiceModelId = 'parakeet-tdt-0.6b-cq2';
-const DEFAULT_LLM_MODEL: CactusVoiceModelId = 'gemma-4-e2b-hybrid-cq2.54';
+const ASR_MODEL_OPTIONS: VoiceModelOption[] = Object.values(CACTUS_VOICE_MODELS)
+    .filter(m => m.recommendedFor === 'transcription')
+    .map(m => ({
+        id: m.id as CactusVoiceModelId,
+        name: m.name,
+        description: m.description,
+        size: m.size,
+        category: 'asr',
+        recommendedFor: ramTiersForMinRAM(m.minRAM),
+        quantization: m.quantization,
+    }));
+
+const LLM_MODEL_OPTIONS: VoiceModelOption[] = Object.values(CACTUS_VOICE_MODELS)
+    .filter(m => m.recommendedFor === 'voice-pipeline')
+    .map(m => ({
+        id: m.id as CactusVoiceModelId,
+        name: m.name,
+        description: m.description,
+        size: m.size,
+        category: 'llm',
+        recommendedFor: ramTiersForMinRAM(m.minRAM),
+        quantization: m.quantization,
+    }));
+
+const DEFAULT_ASR_MODEL: CactusVoiceModelId = DEFAULT_CACTUS_ASR_MODEL;
+const DEFAULT_LLM_MODEL: CactusVoiceModelId = DEFAULT_CACTUS_LLM_MODEL;
 
 export function VoiceSettingsView({ workspace, goToPage }: any) {
     const navigation = useNavigation();
@@ -103,7 +87,7 @@ export function VoiceSettingsView({ workspace, goToPage }: any) {
     // Load saved preferences
     useEffect(() => {
         const loadSettings = async () => {
-            const saved = await uiStore.getFromStorage('voiceSettings', {});
+            const saved = await uiStore.getFromStorage<Partial<VoiceSettingsStorage>>('voiceSettings', {});
             if (saved.asrModel) setAsrModel(saved.asrModel);
             if (saved.llmModel) setLlmModel(saved.llmModel);
             if (saved.confidenceThreshold !== undefined) setConfidenceThreshold(saved.confidenceThreshold);
@@ -131,7 +115,7 @@ export function VoiceSettingsView({ workspace, goToPage }: any) {
     };
 
     const getRecommendedBadge = (model: VoiceModelOption) => {
-        if (!deviceCaps) return null;
+        if (!deviceCaps) return false;
         const ramTier = deviceCaps.ramTier;
         return model.recommendedFor.includes(ramTier);
     };
@@ -147,6 +131,11 @@ export function VoiceSettingsView({ workspace, goToPage }: any) {
             return `${deviceCaps.npuBackend} ✓`;
         }
         return 'CPU Only';
+    };
+
+    const getAvailableRAMLabel = () => {
+        if (!deviceCaps) return 'Unknown';
+        return `${(deviceCaps.availableRAM / (1024 ** 3)).toFixed(1)} GB`;
     };
 
     const asrModelOption = ASR_MODEL_OPTIONS.find(m => m.id === asrModel);
@@ -183,7 +172,7 @@ export function VoiceSettingsView({ workspace, goToPage }: any) {
                         <View className="bg-[#27282A] px-4 py-2 rounded-lg border border-[#3A3B3D]">
                             <Text className="text-white/60 text-xs uppercase">Available RAM</Text>
                             <Text className="text-white text-base font-medium">
-                                {(deviceCaps?.availableRAM / (1024**3)).toFixed(1)} GB
+                                {getAvailableRAMLabel()}
                             </Text>
                         </View>
                     </View>
@@ -225,7 +214,7 @@ export function VoiceSettingsView({ workspace, goToPage }: any) {
                         onPress={() => setShowLlmPicker(true)}
                     >
                         <View className="flex flex-row gap-2 items-center">
-                            <CPU size={18} color="#FFF" />
+                            <Cpu size={18} color="#FFF" />
                             <Text className="text-white text-lg">LLM Model</Text>
                         </View>
                         <View className="flex flex-1 flex-row gap-2 items-center justify-between">
@@ -390,5 +379,3 @@ export function VoiceSettingsView({ workspace, goToPage }: any) {
         </SafeView>
     );
 }
-
-export { VoiceSettingsView };

@@ -3,10 +3,11 @@ import { BottomSheetBackdrop, BottomSheetBackdropProps, BottomSheetModal } from 
 import { useBottomSheet, BOTTOM_SHEET_NAMES } from '@/contexts/BottomSheetContext';
 import { View, Text, TouchableOpacity, FlatList } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Radio, Check, ChevronDown } from "phosphor-react-native";
+import { Radio, Check, CaretDown } from "phosphor-react-native";
+import { CactusVoiceModelId } from "@/utils/models/defaults";
 
 interface VoiceModelOption {
-    id: string;
+    id: CactusVoiceModelId;
     name: string;
     description: string;
     size: string;
@@ -18,8 +19,8 @@ interface VoiceModelOption {
 interface ModelPickerModalProps {
     title: string;
     models: VoiceModelOption[];
-    selectedModel: string;
-    onSelect: (modelId: string) => void;
+    selectedModel: CactusVoiceModelId;
+    onSelect: (modelId: CactusVoiceModelId) => void;
     onClose: () => void;
     deviceCaps: any;
     isRecommended: (model: VoiceModelOption) => boolean;
@@ -108,7 +109,7 @@ export function ModelPickerModal({
                 <View className='flex flex-row items-center justify-between mb-4'>
                     <Text className='text-white text-xl font-medium'>{title}</Text>
                     <TouchableOpacity onPress={onClose}>
-                        <ChevronDown size={24} color="#FFF" />
+                        <CaretDown size={24} color="#FFF" />
                     </TouchableOpacity>
                 </View>
                 <FlatList
@@ -122,5 +123,3 @@ export function ModelPickerModal({
         </BottomSheetModal>
     );
 }
-
-export { ModelPickerModal };

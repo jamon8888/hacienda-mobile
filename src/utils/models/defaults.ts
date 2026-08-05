@@ -160,7 +160,7 @@ export interface CactusVoiceModelBundle {
     minRAM: string;
 }
 
-export const CACTUS_VOICE_MODELS: Record<string, CactusVoiceModelBundle> = {
+export const CACTUS_VOICE_MODELS = {
     'gemma-4-e2b-it-int8': {
         id: 'gemma-4-e2b-it-int8',
         name: 'Gemma 4 E2B (8-bit)',
@@ -226,7 +226,7 @@ export const CACTUS_VOICE_MODELS: Record<string, CactusVoiceModelBundle> = {
         recommendedFor: 'transcription',
         minRAM: '3GB',
     },
-} as const;
+} as const satisfies Record<string, CactusVoiceModelBundle>;
 
 export type CactusVoiceModelId = keyof typeof CACTUS_VOICE_MODELS;
 

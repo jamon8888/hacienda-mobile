@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Microphone, X, PaperPlane, SpeakerHigh, SpeakerNone, Sparkle, ArrowDown } from 'phosphor-react-native';
 import { useVoicePipeline } from '@/utils/AiProviders/onDevice/voice';
 import { useVoiceAudioStream } from '@/utils/AiProviders/onDevice/voice/VoiceAudioStream';
+import { DEFAULT_CACTUS_ASR_MODEL, DEFAULT_CACTUS_LLM_MODEL } from '@/utils/models/defaults';
 
 const COLORS = {
   background: '#1B1B1E',
@@ -27,8 +28,8 @@ const COLORS = {
 export default function VoiceChatScreen() {
   const insets = useSafeAreaInsets();
   const { provider, state, lastResponse, currentTranscript, error, initialize, startListening, stopListening } = useVoicePipeline({
-    asrModelId: 'parakeet-tdt-0.6b-cq2',
-    llmModelId: 'gemma-4-e2b-hybrid-cq2.54',
+    asrModelId: DEFAULT_CACTUS_ASR_MODEL,
+    llmModelId: DEFAULT_CACTUS_LLM_MODEL,
     confidenceThreshold: 0.7,
     autoHandoff: true,
     processingDelayMs: 50,
@@ -225,7 +226,6 @@ export default function VoiceChatScreen() {
 
   return (
     <SafeView
-      style={styles.container}
       safeAreaClassNames="bg-[#1B1B1E]"
       containerStyle={{ flex: 1, backgroundColor: COLORS.background }}
     >
