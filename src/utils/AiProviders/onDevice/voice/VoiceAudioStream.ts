@@ -3,6 +3,7 @@
 import {
   NativeModules,
   NativeEventEmitter,
+  PermissionsAndroid,
   Platform,
   EmitterSubscription,
 } from "react-native";
@@ -61,6 +62,25 @@ class VoiceAudioStream {
     if (this.isRecording) return;
 
     try {
+      // RECORD_AUDIO is a dangerous permission (API 23+) -- declaring it in the manifest only
+      // makes it requestable, it doesn't grant it. Without this, AudioRecord's native
+      // constructor fails on every device that hasn't had the permission granted some other
+      // way, surfacing as "Failed to initialize AudioRecord" with no indication why.
+      if (Platform.OS === "android") {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+          {
+            title: "Microphone Permission",
+            message:
+              "AnythingLLM needs access to your microphone for voice chat.",
+            buttonPositive: "OK",
+          },
+        );
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          throw new Error("Microphone permission denied");
+        }
+      }
+
       // Configure VAD
       await VoiceAudioModule.setVADThreshold(this.config.vadThreshold ?? 0.5);
       await VoiceAudioModule.setVADConfig(
@@ -151,8 +171,30 @@ export function useVoiceAudioStream(config: VoiceAudioConfig = {}) {
 
   const streamRef = useRef<VoiceAudioStream | null>(null);
 
+  // Depend on the individual primitive fields, not `config` itself: callers overwhelmingly pass
+  // an inline object literal (e.g. useVoiceAudioStream({ vadThreshold: 0.5, ... })), which is a
+  // new reference every render. Depending on that reference reran this effect -- and therefore
+  // recreated the native stream and called setStream -- on every single render, which triggered
+  // another render, which created another new config object, forever ("Maximum update depth
+  // exceeded").
+  const {
+    sampleRate,
+    channels,
+    vadThreshold,
+    minSpeechDurationMs,
+    maxSpeechDurationMs,
+    silenceDurationMs,
+  } = config;
+
   useEffect(() => {
-    const newStream = new VoiceAudioStream(config);
+    const newStream = new VoiceAudioStream({
+      sampleRate,
+      channels,
+      vadThreshold,
+      minSpeechDurationMs,
+      maxSpeechDurationMs,
+      silenceDurationMs,
+    });
     streamRef.current = newStream;
     setStream(newStream);
 
@@ -179,7 +221,14 @@ export function useVoiceAudioStream(config: VoiceAudioConfig = {}) {
       unsubStop();
       newStream.stop().catch(console.error);
     };
-  }, [config]);
+  }, [
+    sampleRate,
+    channels,
+    vadThreshold,
+    minSpeechDurationMs,
+    maxSpeechDurationMs,
+    silenceDurationMs,
+  ]);
 
   const start = useCallback(async () => {
     if (streamRef.current) {

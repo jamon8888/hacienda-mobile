@@ -155,20 +155,24 @@ function VoiceChatScreenInner({ config }: { config: VoicePipelineConfig }) {
     }
   }, [initialize, isInitialized]);
 
-  // Update waveform based on volume
+  // Update waveform based on volume while recording, decay it to zero while idle. Previously
+  // this depended on waveformData and called setWaveformData unconditionally on every trigger,
+  // which reran the effect itself every render regardless of whether volume/isRecording had
+  // actually changed ("Maximum update depth exceeded" -- observed in practice on-device).
+  // The idle decay now runs on an interval instead of chaining off its own state.
   useEffect(() => {
     if (isRecording) {
-      const newData = [
-        ...waveformData.slice(1),
+      setWaveformData(prev => [
+        ...prev.slice(1),
         volume * 50 + Math.random() * 10,
-      ];
-      setWaveformData(newData);
-    } else {
-      // Smooth decay to zero
-      const newData = waveformData.map(v => v * 0.9);
-      setWaveformData(newData);
+      ]);
+      return;
     }
-  }, [volume, isRecording, waveformData]);
+    const interval = setInterval(() => {
+      setWaveformData(prev => prev.map(v => v * 0.9));
+    }, 50);
+    return () => clearInterval(interval);
+  }, [volume, isRecording]);
 
   // Pulse animation when recording
   useEffect(() => {

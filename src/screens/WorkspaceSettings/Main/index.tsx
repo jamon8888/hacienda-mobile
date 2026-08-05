@@ -2,7 +2,7 @@ import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import SafeView from "@/components/SafeView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScrollView } from "react-native-gesture-handler";
-import { ArrowLeft, Binary, CaretRight, ChatCentered, Cube, File, Files, Note, Thermometer, Globe } from "phosphor-react-native";
+import { ArrowLeft, Binary, CaretRight, ChatCentered, Cube, File, Files, Microphone, Note, Thermometer, Globe } from "phosphor-react-native";
 import Workspace, { WorkspaceType } from "@/database/models/Workspace";
 import { IWorkspacePageKey } from "../index";
 import uiStore from "@/store/UIStore";
@@ -204,6 +204,23 @@ export function MainView({ workspace, goToPage, initialThreadSlug }: MainViewPro
                     </TouchableOpacity>
                     <Text style={{ color: '#9F9FA0' }} className="text-xs">
                         Import and manage documents for this workspace. Supports PDF, DOCX, audio, and 100+ formats via Xberg.
+                    </Text>
+                </View>
+
+                {/* Voice */}
+                <View className="w-full flex flex-col" style={{ gap: 12 }}>
+                    <Text style={{ color: '#9F9FA0' }} className="text-sm uppercase">Voice</Text>
+                    <TouchableOpacity style={{ backgroundColor: '#27282A', padding: 14, gap: 20 }} className="w-full flex flex-row items-center rounded-lg" onPress={() => goToPage('voice')}>
+                        <View className="flex flex-row gap-2 items-center">
+                            <Microphone size={18} color="#FFF" />
+                            <Text className="text-white text-lg">Voice Settings</Text>
+                        </View>
+                        <View className="flex flex-1 flex-row gap-2 items-center justify-end">
+                            <CaretRight size={18} color="#FFF" />
+                        </View>
+                    </TouchableOpacity>
+                    <Text style={{ color: '#9F9FA0' }} className="text-xs">
+                        Configure the on-device ASR and LLM models used for voice chat.
                     </Text>
                 </View>
 
