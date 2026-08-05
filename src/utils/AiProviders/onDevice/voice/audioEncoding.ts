@@ -1,7 +1,8 @@
 // audioEncoding.ts - Convert the base64 PCM16LE audio emitted by VoiceAudioModule
 // into the int16 sample array CactusSTT.transcribe expects.
 
-const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+const BASE64_CHARS =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 const BASE64_LOOKUP = (() => {
   const table = new Uint8Array(256);
   for (let i = 0; i < BASE64_CHARS.length; i++) {
@@ -11,7 +12,7 @@ const BASE64_LOOKUP = (() => {
 })();
 
 function base64ToBytes(base64: string): Uint8Array {
-  const clean = base64.replace(/=+$/, '').replace(/[^A-Za-z0-9+/]/g, '');
+  const clean = base64.replace(/=+$/, "").replace(/[^A-Za-z0-9+/]/g, "");
   const bytes = new Uint8Array(Math.floor((clean.length * 6) / 8));
 
   let byteIndex = 0;

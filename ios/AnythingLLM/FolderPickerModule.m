@@ -11,7 +11,7 @@
 // walk it with a plain RNFS.readDir the same way it already does for the Android tree.
 // Callers are responsible for deleting the returned tmp folder once the import finishes.
 
-@interface FolderPickerModule () <UIDocumentPickerDelegate>
+@interface FolderPickerModule () <UIDocumentPickerDelegate, UIAdaptivePresentationControllerDelegate>
 @end
 
 @implementation FolderPickerModule {
@@ -41,6 +41,13 @@ RCT_EXPORT_METHOD(pickDirectory:(RCTPromiseResolveBlock)resolve
                 [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[ UTTypeFolder ]];
             picker.delegate = self;
             picker.allowsMultipleSelection = NO;
+            // documentPicker:didPickDocumentsAtURLs:/documentPickerWasCancelled: only fire for
+            // the picker's own Cancel/select actions. If it gets dismissed some other way --
+            // the presenting view controller torn down by navigation, a swipe-to-dismiss -- and
+            // neither ever fires, _resolve stays set forever and every later pickDirectory call
+            // rejects with PICKER_BUSY until the app restarts. This delegate is the fallback for
+            // that case.
+            picker.presentationController.delegate = self;
 
             UIViewController *rootVC = RCTPresentedViewController();
             if (rootVC == nil) {
@@ -86,7 +93,42 @@ RCT_EXPORT_METHOD(pickDirectory:(RCTPromiseResolveBlock)resolve
     [self finishWithPath:nil code:@"CANCELLED" message:@"User cancelled the folder picker"];
 }
 
+#pragma mark - UIAdaptivePresentationControllerDelegate
+
+- (void)presentationControllerDidDismiss:(UIPresentationController *)presentationController
+{
+    // No-op if didPickDocumentsAtURLs:/documentPickerWasCancelled: already settled the promise
+    // (finishWithPath: clears _resolve/_reject, so this becomes a harmless no-op in that case).
+    [self finishWithPath:nil code:@"CANCELLED" message:@"Folder picker was dismissed"];
+}
+
 #pragma mark - Internals
+
+// Mirrors SUPPORTED_FILE_TYPES in src/utils/Xberg/types.ts -- keep in sync. Filtering here
+// (rather than only in JS's collectSupportedFiles, which ran on the full unfiltered copy)
+// means a folder containing large unsupported files (videos, photo libraries) doesn't get
+// every one of those bytes duplicated onto the device before being discarded.
+static NSSet<NSString *> *ImportableExtensions(void) {
+    static NSSet<NSString *> *set;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        set = [NSSet setWithArray:@[
+            @"pdf", @"docx", @"doc", @"pptx", @"ppt", @"xlsx", @"xls", @"odt", @"ods", @"odp",
+            @"txt", @"md", @"markdown", @"rst", @"org", @"rtf",
+            @"csv", @"tsv", @"json", @"yaml", @"xml",
+            @"html", @"htm",
+            @"eml", @"msg",
+            @"mp3", @"m4a", @"wav", @"webm", @"mpga",
+            @"mp4", @"mpeg",
+            @"png", @"jpg", @"jpeg", @"gif", @"webp", @"bmp", @"tiff",
+            @"js", @"ts", @"py", @"java", @"c", @"cpp", @"go", @"rs",
+        ]];
+    });
+    return set;
+}
+
+// Matches MAX_IMPORT_FILE_SIZE in Files/index.tsx.
+static const unsigned long long kMaxImportFileSize = 50ULL * 1024 * 1024;
 
 - (nullable NSString *)copyFolderContentsFromURL:(NSURL *)sourceURL error:(NSError **)error
 {
@@ -99,15 +141,30 @@ RCT_EXPORT_METHOD(pickDirectory:(RCTPromiseResolveBlock)resolve
 
     NSDirectoryEnumerator<NSURL *> *enumerator =
         [fm enumeratorAtURL:sourceURL
- includingPropertiesForKeys:@[ NSURLIsRegularFileKey ]
+ includingPropertiesForKeys:@[ NSURLIsRegularFileKey, NSURLFileSizeKey ]
                     options:NSDirectoryEnumerationSkipsHiddenFiles
                errorHandler:nil];
 
     NSUInteger sourcePathLength = sourceURL.path.length;
+    NSSet<NSString *> *extensions = ImportableExtensions();
     for (NSURL *fileURL in enumerator) {
         NSNumber *isRegularFile = nil;
         [fileURL getResourceValue:&isRegularFile forKey:NSURLIsRegularFileKey error:nil];
         if (![isRegularFile boolValue]) {
+            continue;
+        }
+        if (![extensions containsObject:fileURL.pathExtension.lowercaseString]) {
+            continue;
+        }
+        NSNumber *fileSize = nil;
+        [fileURL getResourceValue:&fileSize forKey:NSURLFileSizeKey error:nil];
+        if (fileSize.unsignedLongLongValue > kMaxImportFileSize) {
+            continue;
+        }
+        // sourcePathLength can exceed the child path length for a symlink or a resolved
+        // enumerator entry outside sourceURL's own subtree; substringFromIndex: would raise
+        // NSRangeException in that case, so just skip rather than crash the whole import.
+        if (fileURL.path.length <= sourcePathLength) {
             continue;
         }
 

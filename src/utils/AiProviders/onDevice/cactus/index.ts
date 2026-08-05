@@ -1,17 +1,20 @@
-import { CactusLM, CactusLMTool } from 'cactus-react-native';
+import { CactusLM, CactusLMTool } from "cactus-react-native";
 
-import * as RNFS from '@dr.pogodin/react-native-fs';
-import { Model } from '@/utils/types';
-import { defaultModels } from '@/utils/models';
-import { stops } from '@/utils/chat';
-import { CompletionParams, toApiCompletionParams } from '@/utils/chat/completionTypes';
+import * as RNFS from "@dr.pogodin/react-native-fs";
+import { Model } from "@/utils/types";
+import { defaultModels } from "@/utils/models";
+import { stops } from "@/utils/chat";
+import {
+  CompletionParams,
+  toApiCompletionParams,
+} from "@/utils/chat/completionTypes";
 import { ICompleteResponse } from "@/utils/AiProviders/baseOpenAILikeProvider";
-import type OnDeviceProvider from '@/utils/AiProviders/onDevice/index';
+import type OnDeviceProvider from "@/utils/AiProviders/onDevice/index";
 
 export type NativeLlamaChatMessage = {
-  role: 'user' | 'assistant' | 'system'
-  content: string
-}
+  role: "user" | "assistant" | "system";
+  content: string;
+};
 
 export type ICactusLmStreamCallback = (token: string) => void;
 export default class CactusLmWrapper {
@@ -20,7 +23,7 @@ export default class CactusLmWrapper {
    * https://github.com/cactus-compute/cactus/tree/main/react/src/NativeCactus.ts#L10
    */
 
-  /** 
+  /**
    * This is the default context length for the CactusLmWrapper class, not the workspace settings.
    * On overflow, the chats are auto-truncated by the CactusLmWrapper class. Maybe we can warn the user when
    * they are overflowing?
@@ -49,7 +52,7 @@ export default class CactusLmWrapper {
 
   log = (text: string, ...args: any[]) => {
     console.log(`\x1b[36m[${this.constructor.name}]\x1b[0m ${text}`, ...args);
-  }
+  };
 
   /**
    * Presets the gguf file path for extra models we manually support
@@ -62,31 +65,38 @@ export default class CactusLmWrapper {
 
   async determineGgufFilePath() {
     if (!this.ggufFilePath) {
-      this.log(`GGUF file location is not yet set - will find a gguf file in the model directory.`);
+      this.log(
+        `GGUF file location is not yet set - will find a gguf file in the model directory.`,
+      );
       let path = `${RNFS.DocumentDirectoryPath}/models/gguf/${this.model}`;
 
-      if (path.endsWith('.gguf')) {
+      if (path.endsWith(".gguf")) {
         if (await RNFS.exists(path)) {
           this.ggufFilePath = path;
           this.log(`GGUF file found at ${this.ggufFilePath}`);
           return this.ggufFilePath;
         } else {
-          this.log(`GGUF file not found at ${path} - trying to find via subdir`);
-          path = path.split('/').slice(0, -1).join('/');
+          this.log(
+            `GGUF file not found at ${path} - trying to find via subdir`,
+          );
+          path = path.split("/").slice(0, -1).join("/");
           this.log(`Retrying to find GGUF file in ${path}`);
         }
       }
 
       const files = await RNFS.readDir(path);
-      const ggufFile = files.find(file => file.name.endsWith('.gguf'));
-      if (!ggufFile) throw new Error(`LlamaRnWrapper::ggufFilePath: No gguf file found for model ${this.model}`);
+      const ggufFile = files.find(file => file.name.endsWith(".gguf"));
+      if (!ggufFile)
+        throw new Error(
+          `LlamaRnWrapper::ggufFilePath: No gguf file found for model ${this.model}`,
+        );
       this.ggufFilePath = `${path}/${ggufFile.name}`;
     }
     return this.ggufFilePath;
   }
 
   get name() {
-    return 'cactus.lm';
+    return "cactus.lm";
   }
 
   get modelDefinition(): Model {
@@ -94,7 +104,9 @@ export default class CactusLmWrapper {
   }
 
   get temperature() {
-    return this.parent.workspace?.temperature ?? CactusLmWrapper.DEFAULT_TEMPERATURE;
+    return (
+      this.parent.workspace?.temperature ?? CactusLmWrapper.DEFAULT_TEMPERATURE
+    );
   }
 
   get nPredict() {
@@ -103,7 +115,10 @@ export default class CactusLmWrapper {
   }
 
   get contextLength() {
-    return this.parent.workspace?.contextLength ?? CactusLmWrapper.DEFAULT_CONTEXT_LENGTH;
+    return (
+      this.parent.workspace?.contextLength ??
+      CactusLmWrapper.DEFAULT_CONTEXT_LENGTH
+    );
   }
 
   async initialize(): Promise<boolean> {
@@ -114,15 +129,20 @@ export default class CactusLmWrapper {
       }
 
       if (!this.ggufFilePath) await this.determineGgufFilePath();
-      if (!this.ggufFilePath) throw new Error(`CactusLmWrapper::initialize: No gguf file found for model ${this.model}`);
+      if (!this.ggufFilePath)
+        throw new Error(
+          `CactusLmWrapper::initialize: No gguf file found for model ${this.model}`,
+        );
 
       const lm = new CactusLM({ model: this.ggufFilePath });
       await lm.init();
       this.cactusLmContext = lm;
-      this.log(`${this.name} initialized with model ${this.model} @ ${this.contextLength} context length`);
+      this.log(
+        `${this.name} initialized with model ${this.model} @ ${this.contextLength} context length`,
+      );
       return true;
     } catch (error) {
-      console.error('Failed to initialize model:', error);
+      console.error("Failed to initialize model:", error);
       throw error;
     }
   }
@@ -136,7 +156,9 @@ export default class CactusLmWrapper {
   private get defaultRuntimeConfig(): CompletionParams | {} {
     const extraParams: CompletionParams = {};
     if (!!this.modelDefinition && this.modelDefinition.completionSettings) {
-      for (const [key, value] of Object.entries(this.modelDefinition.completionSettings)) {
+      for (const [key, value] of Object.entries(
+        this.modelDefinition.completionSettings,
+      )) {
         (extraParams as Record<string, unknown>)[key] = value;
       }
     }
@@ -144,7 +166,10 @@ export default class CactusLmWrapper {
   }
 
   private keepAlive() {
-    if (this.keepAliveTimer) this.log(`Keep alive timer already running - resetting timer for ${this.keepAliveInterval}ms`);
+    if (this.keepAliveTimer)
+      this.log(
+        `Keep alive timer already running - resetting timer for ${this.keepAliveInterval}ms`,
+      );
     else this.log(`Starting keep alive timer for ${this.keepAliveInterval}ms`);
     this.keepAliveTimer = setTimeout(() => {
       this.cleanup();
@@ -155,10 +180,15 @@ export default class CactusLmWrapper {
    * Gets the chat completion from the model.
    * Returns the text response
    */
-  async getChatCompletion(messages: NativeLlamaChatMessage[]): Promise<ICompleteResponse> {
+  async getChatCompletion(
+    messages: NativeLlamaChatMessage[],
+  ): Promise<ICompleteResponse> {
     this.keepAlive();
     if (!this.cactusLmContext) await this.initialize();
-    if (!this.cactusLmContext) throw new Error(`CactusLmWrapper::streamGetChatCompletion: Model not initialized`);
+    if (!this.cactusLmContext)
+      throw new Error(
+        `CactusLmWrapper::streamGetChatCompletion: Model not initialized`,
+      );
 
     const result = await this.cactusLmContext.complete({
       messages,
@@ -186,10 +216,18 @@ export default class CactusLmWrapper {
    * Converts the app's OpenAI-shaped tool definitions (as produced by ToolsManager)
    * into the flat CactusLMTool shape the cactus-react-native SDK expects.
    */
-  private toCactusTools(availableTools: { function: { name: string; description?: string; parameters: CactusLMTool['parameters'] } }[]): CactusLMTool[] {
+  private toCactusTools(
+    availableTools: {
+      function: {
+        name: string;
+        description?: string;
+        parameters: CactusLMTool["parameters"];
+      };
+    }[],
+  ): CactusLMTool[] {
     return availableTools.map(tool => ({
       name: tool.function.name,
-      description: tool.function.description ?? '',
+      description: tool.function.description ?? "",
       parameters: tool.function.parameters,
     }));
   }
@@ -204,7 +242,10 @@ export default class CactusLmWrapper {
   ): Promise<ICompleteResponse> {
     this.keepAlive();
     if (!this.cactusLmContext) await this.initialize();
-    if (!this.cactusLmContext) throw new Error(`CactusLmWrapper::streamGetChatCompletion: Model not initialized`);
+    if (!this.cactusLmContext)
+      throw new Error(
+        `CactusLmWrapper::streamGetChatCompletion: Model not initialized`,
+      );
 
     const cactusTools = this.toCactusTools(availableTools ?? []);
 
@@ -226,7 +267,7 @@ export default class CactusLmWrapper {
       // JSON-string arguments ToolsManager/ICompleteResponse expect elsewhere
       // (that shape mirrors real OpenAI tool_calls) -- stringify here, once.
       toolCalls: result.functionCalls?.map(fc => ({
-        type: 'function' as const,
+        type: "function" as const,
         function: { name: fc.name, arguments: JSON.stringify(fc.arguments) },
       })),
       metrics: {
@@ -240,13 +281,13 @@ export default class CactusLmWrapper {
   }
 
   async unloadModel(): Promise<void> {
-    this.log('Unloading model');
+    this.log("Unloading model");
     if (this.cactusLmContext) await this.cactusLmContext.destroy();
     this.cactusLmContext = null;
   }
 
   async cleanup(): Promise<void> {
-    this.log('Cleaning up CactusLmWrapper');
+    this.log("Cleaning up CactusLmWrapper");
     await this.unloadModel();
   }
 }

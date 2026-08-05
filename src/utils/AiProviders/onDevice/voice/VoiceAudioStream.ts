@@ -1,7 +1,12 @@
 // VoiceAudioStream.ts - TypeScript bridge for native audio recording with VAD
 
-import { NativeModules, NativeEventEmitter, Platform, EmitterSubscription } from 'react-native';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import {
+  NativeModules,
+  NativeEventEmitter,
+  Platform,
+  EmitterSubscription,
+} from "react-native";
+import { useEffect, useState, useCallback, useRef } from "react";
 
 const { VoiceAudioModule } = NativeModules;
 
@@ -45,7 +50,7 @@ class VoiceAudioStream {
       ...config,
     };
 
-    if (Platform.OS === 'ios') {
+    if (Platform.OS === "ios") {
       this.eventEmitter = new NativeEventEmitter(VoiceAudioModule);
     } else {
       this.eventEmitter = new NativeEventEmitter();
@@ -61,7 +66,7 @@ class VoiceAudioStream {
       await VoiceAudioModule.setVADConfig(
         this.config.minSpeechDurationMs ?? 300,
         this.config.maxSpeechDurationMs ?? 30000,
-        this.config.silenceDurationMs ?? 800
+        this.config.silenceDurationMs ?? 800,
       );
 
       // Set up event listeners
@@ -72,7 +77,7 @@ class VoiceAudioStream {
       this.isRecording = true;
       this.events.onRecordingStart?.();
     } catch (error) {
-      console.error('Failed to start recording:', error);
+      console.error("Failed to start recording:", error);
       this.events.onError?.(error as Error);
       throw error;
     }
@@ -87,7 +92,7 @@ class VoiceAudioStream {
       this.cleanupEventListeners();
       this.events.onRecordingStop?.();
     } catch (error) {
-      console.error('Failed to stop recording:', error);
+      console.error("Failed to stop recording:", error);
       this.events.onError?.(error as Error);
       throw error;
     }
@@ -97,15 +102,21 @@ class VoiceAudioStream {
     if (!this.eventEmitter) return;
 
     this.subscriptions.push(
-      this.eventEmitter.addListener('onSpeechSegment', (event: SpeechSegment) => {
-        this.events.onSpeechSegment?.(event);
-      })
+      this.eventEmitter.addListener(
+        "onSpeechSegment",
+        (event: SpeechSegment) => {
+          this.events.onSpeechSegment?.(event);
+        },
+      ),
     );
 
     this.subscriptions.push(
-      this.eventEmitter.addListener('onVolumeChange', (event: { volume: number }) => {
-        this.events.onVolumeChange?.(event.volume);
-      })
+      this.eventEmitter.addListener(
+        "onVolumeChange",
+        (event: { volume: number }) => {
+          this.events.onVolumeChange?.(event.volume);
+        },
+      ),
     );
   }
 
@@ -116,7 +127,7 @@ class VoiceAudioStream {
 
   on<Event extends keyof VoiceAudioEvents>(
     event: Event,
-    callback: VoiceAudioEvents[Event]
+    callback: VoiceAudioEvents[Event],
   ): () => void {
     this.events[event] = callback;
     return () => {
@@ -145,19 +156,19 @@ export function useVoiceAudioStream(config: VoiceAudioConfig = {}) {
     streamRef.current = newStream;
     setStream(newStream);
 
-    const unsubError = newStream.on('onError', (err) => {
+    const unsubError = newStream.on("onError", err => {
       setError(err);
     });
 
-    const unsubVolume = newStream.on('onVolumeChange', (vol) => {
+    const unsubVolume = newStream.on("onVolumeChange", vol => {
       setVolume(vol);
     });
 
-    const unsubStart = newStream.on('onRecordingStart', () => {
+    const unsubStart = newStream.on("onRecordingStart", () => {
       setIsRecording(true);
     });
 
-    const unsubStop = newStream.on('onRecordingStop', () => {
+    const unsubStop = newStream.on("onRecordingStop", () => {
       setIsRecording(false);
     });
 

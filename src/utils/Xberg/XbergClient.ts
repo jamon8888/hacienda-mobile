@@ -1,4 +1,4 @@
-import { NativeModules } from 'react-native';
+import { NativeModules } from "react-native";
 import {
   ExtractionConfig,
   ExtractionResult,
@@ -6,7 +6,7 @@ import {
   SupportedFormat,
   TranscriptionConfig,
   SUPPORTED_FILE_TYPES,
-} from './types';
+} from "./types";
 
 const { XbergModule } = NativeModules;
 
@@ -28,8 +28,8 @@ export type BatchProgress = {
  */
 export class XbergUnavailableError extends Error {
   constructor() {
-    super('Xberg native module is not available in this build');
-    this.name = 'XbergUnavailableError';
+    super("Xberg native module is not available in this build");
+    this.name = "XbergUnavailableError";
   }
 }
 
@@ -39,12 +39,15 @@ function requireModule() {
 }
 
 function extensionOf(filePath: string): string {
-  const base = filePath.split('/').pop() || filePath;
-  const dot = base.lastIndexOf('.');
-  return dot === -1 ? '' : base.slice(dot).toLowerCase();
+  const base = filePath.split("/").pop() || filePath;
+  const dot = base.lastIndexOf(".");
+  return dot === -1 ? "" : base.slice(dot).toLowerCase();
 }
 
-function hasExtensionIn(filePath: string, extensions: readonly string[]): boolean {
+function hasExtensionIn(
+  filePath: string,
+  extensions: readonly string[],
+): boolean {
   return extensions.includes(extensionOf(filePath));
 }
 
@@ -58,20 +61,30 @@ function hasExtensionIn(filePath: string, extensions: readonly string[]): boolea
  * Parsing is also the only place the envelope is validated, so a native contract change surfaces
  * here as one explicit error instead of an `undefined` several call frames away.
  */
-function parseExtractionResult(raw: unknown, context: string): ExtractionResult {
-  if (raw == null) throw new Error(`${context}: native module returned no result`);
+function parseExtractionResult(
+  raw: unknown,
+  context: string,
+): ExtractionResult {
+  if (raw == null)
+    throw new Error(`${context}: native module returned no result`);
 
   let envelope: unknown = raw;
-  if (typeof raw === 'string') {
+  if (typeof raw === "string") {
     try {
       envelope = JSON.parse(raw);
     } catch (e) {
-      throw new Error(`${context}: native module returned malformed JSON (${(e as Error).message})`);
+      throw new Error(
+        `${context}: native module returned malformed JSON (${
+          (e as Error).message
+        })`,
+      );
     }
   }
 
-  if (typeof envelope !== 'object' || envelope === null) {
-    throw new Error(`${context}: expected an extraction envelope, got ${typeof envelope}`);
+  if (typeof envelope !== "object" || envelope === null) {
+    throw new Error(
+      `${context}: expected an extraction envelope, got ${typeof envelope}`,
+    );
   }
 
   const { results, errors, summary } = envelope as Partial<ExtractionResult>;
@@ -110,16 +123,21 @@ export class XbergClient {
    * A caller that wants the raw native behaviour for a given path can set `forceOcr` explicitly,
    * or call `transcribeAudio` directly.
    */
-  static async extract(filePath: string, config: ExtractionConfig = {}): Promise<ExtractionResult> {
+  static async extract(
+    filePath: string,
+    config: ExtractionConfig = {},
+  ): Promise<ExtractionResult> {
     const module = requireModule();
 
     if (XbergClient.isAudioFile(filePath)) {
-      const { model = 'tiny', language } = config.transcription ?? {};
+      const { model = "tiny", language } = config.transcription ?? {};
       return XbergClient.transcribeAudio(filePath, model, language);
     }
 
     const effectiveConfig: ExtractionConfig =
-      XbergClient.isImageFile(filePath) && config.ocr && config.forceOcr === undefined
+      XbergClient.isImageFile(filePath) &&
+      config.ocr &&
+      config.forceOcr === undefined
         ? { ...config, forceOcr: true }
         : config;
 
@@ -142,12 +160,18 @@ export class XbergClient {
   static async extractBatch(
     filePaths: string[],
     config: ExtractionConfig = {},
-    options: { chunkSize?: number; onProgress?: (progress: BatchProgress) => void } = {},
+    options: {
+      chunkSize?: number;
+      onProgress?: (progress: BatchProgress) => void;
+    } = {},
   ): Promise<ExtractionResult> {
     const module = requireModule();
     if (filePaths.length === 0) return { results: [], errors: [] };
 
-    const chunkSize = Math.max(1, options.chunkSize ?? DEFAULT_BATCH_CHUNK_SIZE);
+    const chunkSize = Math.max(
+      1,
+      options.chunkSize ?? DEFAULT_BATCH_CHUNK_SIZE,
+    );
     const total = filePaths.length;
     let done = 0;
 
@@ -159,7 +183,9 @@ export class XbergClient {
       const chunk = documentPaths.slice(i, i + chunkSize);
       try {
         const raw = await module.extractBatch(chunk, JSON.stringify(config));
-        parts.push(parseExtractionResult(raw, `extractBatch(${chunk.length} files)`));
+        parts.push(
+          parseExtractionResult(raw, `extractBatch(${chunk.length} files)`),
+        );
       } catch (e) {
         // A rejected chunk must not discard the chunks that already succeeded, so the failure is
         // recorded per source path and reported through the same envelope callers already
@@ -167,7 +193,11 @@ export class XbergClient {
         const message = e instanceof Error ? e.message : String(e);
         parts.push({
           results: [],
-          errors: chunk.map(source => ({ source, error: message, code: 'BATCH_CHUNK_FAILED' })),
+          errors: chunk.map(source => ({
+            source,
+            error: message,
+            code: "BATCH_CHUNK_FAILED",
+          })),
         });
       }
       done += chunk.length;
@@ -176,12 +206,19 @@ export class XbergClient {
 
     for (const filePath of audioPaths) {
       try {
-        const { model = 'tiny', language } = config.transcription ?? {};
-        const transcript = await XbergClient.transcribeAudio(filePath, model, language);
+        const { model = "tiny", language } = config.transcription ?? {};
+        const transcript = await XbergClient.transcribeAudio(
+          filePath,
+          model,
+          language,
+        );
         // transcribeAudio uses the single-file native path, which never tags a source. Callers
         // rely on `source` to map content back to a file, so tag it here.
         parts.push({
-          results: transcript.results.map(r => ({ ...r, source: r.source ?? filePath })),
+          results: transcript.results.map(r => ({
+            ...r,
+            source: r.source ?? filePath,
+          })),
           errors: transcript.errors ?? [],
         });
       } catch (e) {
@@ -191,7 +228,7 @@ export class XbergClient {
             {
               source: filePath,
               error: e instanceof Error ? e.message : String(e),
-              code: 'TRANSCRIPTION_ERROR',
+              code: "TRANSCRIPTION_ERROR",
             },
           ],
         });
@@ -218,9 +255,14 @@ export class XbergClient {
    */
   static defaultExtractionConfig(): ExtractionConfig {
     return {
-      outputFormat: 'markdown',
-      ocr: { backend: 'tesseract', language: 'eng' },
-      chunking: { enabled: true, strategy: 'semantic', maxChunkSize: 512, chunkOverlap: 50 },
+      outputFormat: "markdown",
+      ocr: { backend: "tesseract", language: "eng" },
+      chunking: {
+        enabled: true,
+        strategy: "semantic",
+        maxChunkSize: 512,
+        chunkOverlap: 50,
+      },
     };
   }
 
@@ -242,10 +284,14 @@ export class XbergClient {
 
   static async transcribeAudio(
     filePath: string,
-    model: TranscriptionConfig['model'] = 'tiny',
+    model: TranscriptionConfig["model"] = "tiny",
     language?: string,
   ): Promise<ExtractionResult> {
-    const raw = await requireModule().transcribeAudio(filePath, model, language || null);
+    const raw = await requireModule().transcribeAudio(
+      filePath,
+      model,
+      language || null,
+    );
     return parseExtractionResult(raw, `transcribeAudio(${filePath})`);
   }
 
@@ -262,6 +308,8 @@ export class XbergClient {
   }
 
   static isSupportedFile(filePath: string): boolean {
-    return Object.values(SUPPORTED_FILE_TYPES).some(exts => hasExtensionIn(filePath, exts));
+    return Object.values(SUPPORTED_FILE_TYPES).some(exts =>
+      hasExtensionIn(filePath, exts),
+    );
   }
 }

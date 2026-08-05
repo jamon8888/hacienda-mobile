@@ -261,7 +261,9 @@ export default function PromptInput({ attachmentHandler }: PromptInputProps) {
             }}
             defaultValue={chatHandler.prompt}
             onChangeText={handleTextInputChange}
-            onSelectionChange={event => setSelection(event.nativeEvent.selection)}
+            onSelectionChange={event =>
+              setSelection(event.nativeEvent.selection)
+            }
             selection={selection}
             scrollEnabled={true}
             style={{

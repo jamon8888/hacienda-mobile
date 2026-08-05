@@ -1,4 +1,4 @@
-import { CactusLMCompleteOptions } from 'cactus-react-native';
+import { CactusLMCompleteOptions } from "cactus-react-native";
 
 // Alias allows flexibility to switch API providers later
 // We should move towards OpenAI Compatible API Params
@@ -26,11 +26,11 @@ export type AppOnlyCompletionParams = {
 
 /**
  * List of keys that are app-specific and should be stripped before
-  * sending to the cactus.lm API.
+ * sending to the cactus.lm API.
  */
 const APP_ONLY_KEYS: (keyof AppOnlyCompletionParams)[] = [
-  'version',
-  'include_thinking_in_context',
+  "version",
+  "include_thinking_in_context",
 ];
 
 /**

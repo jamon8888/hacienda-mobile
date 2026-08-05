@@ -2,8 +2,13 @@ buildscript {
     ext {
         buildToolsVersion = "36.0.0"
         minSdkVersion = 26
-        compileSdkVersion = 36
-        targetSdkVersion = 36
+        // AGP 8.7.3 (below) is only tested/supported through API 35 -- compileSdk/targetSdk 36
+        // needs AGP 8.9.1+, and bumping AGP risks reopening the Kotlin/KSP version alignment
+        // this project depends on (see the kotlinVersion comment below). 35 also matches what
+        // AndroidManifest.xml's <uses-sdk> already declared before this file's value took
+        // precedence, so this isn't a downgrade in practice, just removing a mismatch.
+        compileSdkVersion = 35
+        targetSdkVersion = 35
         ndkVersion = "26.1.10909125"
         kotlinVersion = "2.0.21"
         objectboxVersion = "4.3.0"

@@ -106,23 +106,22 @@ class XbergModule(reactContext: ReactApplicationContext) :
     
     override fun getName(): String = "XbergModule"
     
+    // Implemented bridge (android/app/src/main/java/com/anythingllm/xberg/XbergModule.kt) --
+    // consolidated from the extractFile/extractFolder/extractWithOCR/batchExtract/detectFormat
+    // surface originally sketched here, once the real xberg-android API (typed Kotlin objects,
+    // not JSON strings) was known. OCR and folder-recursion are config passed into extract/
+    // extractBatch, not separate methods; there is no client-facing detectFormat.
     @ReactMethod
-    fun extractFile(filePath: String, options: ReadableMap, promise: Promise)
+    fun extract(filePath: String, configJson: String, promise: Promise)
     
     @ReactMethod
-    fun extractFolder(folderPath: String, options: ReadableMap, promise: Promise)
-    
-    @ReactMethod
-    fun extractWithOCR(filePath: String, ocrOptions: ReadableMap, promise: Promise)
-    
-    @ReactMethod
-    fun batchExtract(filePaths: ReadableArray, options: ReadableMap, promise: Promise)
-    
-    @ReactMethod
-    fun detectFormat(filePath: String, promise: Promise)
+    fun extractBatch(filePaths: ReadableArray, configJson: String, promise: Promise)
     
     @ReactMethod
     fun getSupportedFormats(promise: Promise)
+    
+    @ReactMethod
+    fun transcribeAudio(filePath: String, model: String, language: String?, promise: Promise)
 }
 ```
 

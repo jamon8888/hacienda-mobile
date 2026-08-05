@@ -10,7 +10,7 @@
  * 3. Add a migration step in migrateCompletionSettings to handle the new setting
  */
 
-import {CompletionParams} from './completionTypes';
+import { CompletionParams } from "./completionTypes";
 
 // Current version of the completion settings schema
 // Increment this when adding new settings or changing existing ones
@@ -29,7 +29,7 @@ export const defaultCompletionParams: CompletionParams = {
   topK: 40, // Limit the next token selection to the K most probable tokens.
   topP: 0.95, // Limit the next token selection to a subset of tokens with a cumulative probability above a threshold P.
   maxTokens: 1024, // The maximum number of tokens to predict when generating text.
-  stopSequences: ['</s>'],
+  stopSequences: ["</s>"],
   forceTools: false,
   telemetryEnabled: true,
   includeStopSequences: false,
@@ -40,10 +40,23 @@ export const defaultCompletionParams: CompletionParams = {
 // Keys present in version-0/1 (llama.cpp-style) settings that have no equivalent
 // in cactus-react-native 1.13.1's CactusLMCompleteOptions and are dropped on migration.
 const V1_KEYS_WITHOUT_SDK_EQUIVALENT = [
-  'prompt', 'min_p', 'xtc_threshold', 'xtc_probability', 'typical_p',
-  'penalty_last_n', 'penalty_repeat', 'penalty_freq', 'penalty_present',
-  'mirostat', 'mirostat_tau', 'mirostat_eta', 'seed', 'n_probs',
-  'chat_template', 'jinja', 'tool_choice',
+  "prompt",
+  "min_p",
+  "xtc_threshold",
+  "xtc_probability",
+  "typical_p",
+  "penalty_last_n",
+  "penalty_repeat",
+  "penalty_freq",
+  "penalty_present",
+  "mirostat",
+  "mirostat_tau",
+  "mirostat_eta",
+  "seed",
+  "n_probs",
+  "chat_template",
+  "jinja",
+  "tool_choice",
 ];
 
 /**
@@ -53,7 +66,7 @@ const V1_KEYS_WITHOUT_SDK_EQUIVALENT = [
  */
 export function migrateCompletionSettings(settings: any): any {
   // Clone the settings to avoid modifying the original
-  const migratedSettings = {...settings};
+  const migratedSettings = { ...settings };
 
   // If no version is specified, assume it's the initial version (0)
   if (migratedSettings.version === undefined) {
@@ -72,19 +85,19 @@ export function migrateCompletionSettings(settings: any): any {
     // Migration to version 2: rename llama.cpp-style fields to the
     // cactus-react-native 1.13.1 CactusLMCompleteOptions field names, and
     // drop sampling knobs that no longer exist in the SDK.
-    if ('n_predict' in migratedSettings) {
+    if ("n_predict" in migratedSettings) {
       migratedSettings.maxTokens = migratedSettings.n_predict;
       delete migratedSettings.n_predict;
     }
-    if ('top_p' in migratedSettings) {
+    if ("top_p" in migratedSettings) {
       migratedSettings.topP = migratedSettings.top_p;
       delete migratedSettings.top_p;
     }
-    if ('top_k' in migratedSettings) {
+    if ("top_k" in migratedSettings) {
       migratedSettings.topK = migratedSettings.top_k;
       delete migratedSettings.top_k;
     }
-    if ('stop' in migratedSettings) {
+    if ("stop" in migratedSettings) {
       migratedSettings.stopSequences = migratedSettings.stop;
       delete migratedSettings.stop;
     }

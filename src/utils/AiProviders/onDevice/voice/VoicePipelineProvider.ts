@@ -1,10 +1,16 @@
 // VoicePipelineProvider.ts - Orchestrates ASR -> LLM -> TTS pipeline
 
-import VoiceAudioStream from './VoiceAudioStream';
-import { pcmBase64ToInt16Samples } from './audioEncoding';
-import { speakText } from './NativeTTS';
-import { CactusLM, CactusSTT } from 'cactus-react-native';
-import { CACTUS_VOICE_MODELS, CactusVoiceModelBundle, CactusVoiceModelId, DEFAULT_CACTUS_ASR_MODEL, DEFAULT_CACTUS_LLM_MODEL } from '@/utils/models/defaults';
+import VoiceAudioStream from "./VoiceAudioStream";
+import { pcmBase64ToInt16Samples } from "./audioEncoding";
+import { speakText } from "./NativeTTS";
+import { CactusLM, CactusSTT } from "cactus-react-native";
+import {
+  CACTUS_VOICE_MODELS,
+  CactusVoiceModelBundle,
+  CactusVoiceModelId,
+  DEFAULT_CACTUS_ASR_MODEL,
+  DEFAULT_CACTUS_LLM_MODEL,
+} from "@/utils/models/defaults";
 
 export interface VoicePipelineConfig {
   asrModelId?: CactusVoiceModelId;
@@ -30,18 +36,30 @@ export interface VoiceResponse {
   };
 }
 
-type PipelineState = 'idle' | 'downloading' | 'initializing' | 'listening' | 'transcribing' | 'thinking' | 'responding' | 'error';
+type PipelineState =
+  | "idle"
+  | "downloading"
+  | "initializing"
+  | "listening"
+  | "transcribing"
+  | "thinking"
+  | "responding"
+  | "error";
 
 export class VoicePipelineProvider {
   private config: Required<VoicePipelineConfig>;
   private asrModel: CactusSTT | null = null;
   private llmModel: CactusLM | null = null;
   private audioStream: VoiceAudioStream | null = null;
-  private state: PipelineState = 'idle';
+  private state: PipelineState = "idle";
   private stateListeners: ((state: PipelineState) => void)[] = [];
-  private downloadProgressListeners: ((info: { model: 'asr' | 'llm'; progress: number }) => void)[] = [];
+  private downloadProgressListeners: ((info: {
+    model: "asr" | "llm";
+    progress: number;
+  }) => void)[] = [];
   private responseListeners: ((response: VoiceResponse) => void)[] = [];
-  private transcriptListeners: ((text: string, isFinal: boolean) => void)[] = [];
+  private transcriptListeners: ((text: string, isFinal: boolean) => void)[] =
+    [];
   private errorListeners: ((error: Error) => void)[] = [];
   private isProcessing = false;
   private processingTimer: ReturnType<typeof setTimeout> | null = null;
@@ -63,9 +81,9 @@ export class VoicePipelineProvider {
 
   async initialize(
     asrModelId?: CactusVoiceModelId,
-    llmModelId?: CactusVoiceModelId
+    llmModelId?: CactusVoiceModelId,
   ): Promise<void> {
-    this.setState('initializing');
+    this.setState("initializing");
 
     try {
       const asrId = asrModelId || this.config.asrModelId;
@@ -74,8 +92,10 @@ export class VoicePipelineProvider {
       // Record<...>`, so each literal's inferred type only has the keys it actually sets --
       // none set the optional `pro`, so TS narrows it out entirely even though every bundle
       // is a valid CactusVoiceModelBundle at runtime.
-      const asrBundle: CactusVoiceModelBundle | undefined = CACTUS_VOICE_MODELS[asrId];
-      const llmBundle: CactusVoiceModelBundle | undefined = CACTUS_VOICE_MODELS[llmId];
+      const asrBundle: CactusVoiceModelBundle | undefined =
+        CACTUS_VOICE_MODELS[asrId];
+      const llmBundle: CactusVoiceModelBundle | undefined =
+        CACTUS_VOICE_MODELS[llmId];
       // asrId/llmId can come from persisted voice settings (see VoiceSettings.tsx), which may
       // reference a model id from a previous catalog that no longer exists here.
       if (!asrBundle) throw new Error(`Unknown ASR model id: ${asrId}`);
@@ -86,9 +106,11 @@ export class VoicePipelineProvider {
         model: asrBundle.slug,
         options: { quantization: asrBundle.quantization, pro: asrBundle.pro },
       });
-      this.setState('downloading');
-      await asrModel.download({ onProgress: p => this.notifyDownloadProgress('asr', p) });
-      this.setState('initializing');
+      this.setState("downloading");
+      await asrModel.download({
+        onProgress: p => this.notifyDownloadProgress("asr", p),
+      });
+      this.setState("initializing");
       await asrModel.init();
       this.asrModel = asrModel;
 
@@ -97,21 +119,23 @@ export class VoicePipelineProvider {
         model: llmBundle.slug,
         options: { quantization: llmBundle.quantization, pro: llmBundle.pro },
       });
-      this.setState('downloading');
-      await llmModel.download({ onProgress: p => this.notifyDownloadProgress('llm', p) });
-      this.setState('initializing');
+      this.setState("downloading");
+      await llmModel.download({
+        onProgress: p => this.notifyDownloadProgress("llm", p),
+      });
+      this.setState("initializing");
       await llmModel.init();
       this.llmModel = llmModel;
 
-      this.setState('idle');
+      this.setState("idle");
     } catch (error) {
-      this.setState('error');
+      this.setState("error");
       throw error;
     }
   }
 
   async startListening(): Promise<void> {
-    if (this.state === 'listening') return;
+    if (this.state === "listening") return;
     if (!this.asrModel || !this.llmModel) {
       await this.initialize();
     }
@@ -120,11 +144,11 @@ export class VoicePipelineProvider {
       vadThreshold: this.config.vadThreshold,
     });
 
-    this.audioStream.on('onSpeechSegment', this.handleSpeechSegment.bind(this));
-    this.audioStream.on('onError', (err) => this.notifyError(err));
+    this.audioStream.on("onSpeechSegment", this.handleSpeechSegment.bind(this));
+    this.audioStream.on("onError", err => this.notifyError(err));
 
     await this.audioStream.start();
-    this.setState('listening');
+    this.setState("listening");
   }
 
   async stopListening(): Promise<void> {
@@ -137,7 +161,7 @@ export class VoicePipelineProvider {
       this.processingTimer = null;
     }
     this.isProcessing = false;
-    this.setState('idle');
+    this.setState("idle");
   }
 
   async cleanup(): Promise<void> {
@@ -152,12 +176,15 @@ export class VoicePipelineProvider {
     }
   }
 
-  private async handleSpeechSegment(segment: { audioBase64: string; isFinal: boolean }) {
+  private async handleSpeechSegment(segment: {
+    audioBase64: string;
+    isFinal: boolean;
+  }) {
     if (!segment.isFinal || this.isProcessing) return;
     if (!this.asrModel || !this.llmModel) return;
 
     this.isProcessing = true;
-    this.setState('transcribing');
+    this.setState("transcribing");
 
     try {
       // Step 1: ASR Transcription
@@ -168,7 +195,7 @@ export class VoicePipelineProvider {
       if (!transcriptResult.text.trim()) return;
 
       this.notifyTranscript(transcriptResult.text, true);
-      this.setState('thinking');
+      this.setState("thinking");
 
       // Thermal delay
       await this.sleep(this.config.processingDelayMs);
@@ -186,37 +213,42 @@ export class VoicePipelineProvider {
         metrics: {
           asrLatencyMs: asrLatency,
           llmLatencyMs: llmLatency,
-          totalLatencyMs: asrLatency + llmLatency + this.config.processingDelayMs,
-          asrModel: CACTUS_VOICE_MODELS[this.config.asrModelId]?.name || 'Parakeet',
-          llmModel: CACTUS_VOICE_MODELS[this.config.llmModelId]?.name || 'Gemma 4 E2B Hybrid',
+          totalLatencyMs:
+            asrLatency + llmLatency + this.config.processingDelayMs,
+          asrModel:
+            CACTUS_VOICE_MODELS[this.config.asrModelId]?.name || "Parakeet",
+          llmModel:
+            CACTUS_VOICE_MODELS[this.config.llmModelId]?.name ||
+            "Gemma 4 E2B Hybrid",
         },
       };
 
       this.notifyResponse(voiceResponse);
-      this.setState('responding');
+      this.setState("responding");
 
       // TTS if enabled
       if (this.config.enableTTS && response.text) {
         await this.speakResponse(response.text);
       }
-
     } catch (error) {
-      console.error('Voice pipeline error:', error);
+      console.error("Voice pipeline error:", error);
       this.notifyError(error as Error);
     } finally {
       this.isProcessing = false;
-      if (this.state !== 'error') {
-        this.setState('listening');
+      if (this.state !== "error") {
+        this.setState("listening");
       }
     }
   }
 
-  private async transcribeAudio(audioBase64: string): Promise<{ text: string }> {
+  private async transcribeAudio(
+    audioBase64: string,
+  ): Promise<{ text: string }> {
     const result = await this.asrModel!.transcribe({
       audio: pcmBase64ToInt16Samples(audioBase64),
     });
 
-    return { text: result.response || '' };
+    return { text: result.response || "" };
   }
 
   private async generateResponse(transcript: string): Promise<{
@@ -227,11 +259,12 @@ export class VoicePipelineProvider {
   }> {
     const messages = [
       {
-        role: 'system' as const,
-        content: 'You are a helpful voice assistant. Respond naturally and concisely.',
+        role: "system" as const,
+        content:
+          "You are a helpful voice assistant. Respond naturally and concisely.",
       },
       {
-        role: 'user' as const,
+        role: "user" as const,
         content: transcript,
       },
     ];
@@ -246,7 +279,7 @@ export class VoicePipelineProvider {
     });
 
     return {
-      text: result.response || '',
+      text: result.response || "",
       confidence: result.confidence ?? 1.0,
       cloudHandoff: result.cloudHandoff ?? false,
       thinking: result.thinking,
@@ -269,24 +302,32 @@ export class VoicePipelineProvider {
     };
   }
 
-  onDownloadProgress(listener: (info: { model: 'asr' | 'llm'; progress: number }) => void): () => void {
+  onDownloadProgress(
+    listener: (info: { model: "asr" | "llm"; progress: number }) => void,
+  ): () => void {
     this.downloadProgressListeners.push(listener);
     return () => {
-      this.downloadProgressListeners = this.downloadProgressListeners.filter(l => l !== listener);
+      this.downloadProgressListeners = this.downloadProgressListeners.filter(
+        l => l !== listener,
+      );
     };
   }
 
   onResponse(listener: (response: VoiceResponse) => void): () => void {
     this.responseListeners.push(listener);
     return () => {
-      this.responseListeners = this.responseListeners.filter(l => l !== listener);
+      this.responseListeners = this.responseListeners.filter(
+        l => l !== listener,
+      );
     };
   }
 
   onTranscript(listener: (text: string, isFinal: boolean) => void): () => void {
     this.transcriptListeners.push(listener);
     return () => {
-      this.transcriptListeners = this.transcriptListeners.filter(l => l !== listener);
+      this.transcriptListeners = this.transcriptListeners.filter(
+        l => l !== listener,
+      );
     };
   }
 
@@ -302,7 +343,7 @@ export class VoicePipelineProvider {
     this.stateListeners.forEach(l => l(state));
   }
 
-  private notifyDownloadProgress(model: 'asr' | 'llm', progress: number) {
+  private notifyDownloadProgress(model: "asr" | "llm", progress: number) {
     this.downloadProgressListeners.forEach(l => l({ model, progress }));
   }
 
@@ -332,15 +373,20 @@ export class VoicePipelineProvider {
  */
 export function useVoicePipeline(config: VoicePipelineConfig = {}) {
   const [provider] = useState(() => new VoicePipelineProvider(config));
-  const [state, setState] = useState<PipelineState>('idle');
+  const [state, setState] = useState<PipelineState>("idle");
   const [lastResponse, setLastResponse] = useState<VoiceResponse | null>(null);
-  const [currentTranscript, setCurrentTranscript] = useState({ text: '', isFinal: false });
+  const [currentTranscript, setCurrentTranscript] = useState({
+    text: "",
+    isFinal: false,
+  });
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const unsubState = provider.onStateChange(setState);
     const unsubResponse = provider.onResponse(setLastResponse);
-    const unsubTranscript = provider.onTranscript((text, isFinal) => setCurrentTranscript({ text, isFinal }));
+    const unsubTranscript = provider.onTranscript((text, isFinal) =>
+      setCurrentTranscript({ text, isFinal }),
+    );
     const unsubError = provider.onError(setError);
 
     return () => {
@@ -364,4 +410,4 @@ export function useVoicePipeline(config: VoicePipelineConfig = {}) {
   };
 }
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";

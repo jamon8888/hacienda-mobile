@@ -1,33 +1,61 @@
 // VoiceChatScreen.tsx - Main voice chat interface
 
-import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Animated, Easing, TouchableOpacity } from 'react-native';
-import SafeView from '@/components/SafeView';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Microphone, X, PaperPlane, SpeakerHigh, SpeakerNone, Sparkle, ArrowDown } from 'phosphor-react-native';
-import { useVoicePipeline } from '@/utils/AiProviders/onDevice/voice';
-import { useVoiceAudioStream } from '@/utils/AiProviders/onDevice/voice/VoiceAudioStream';
-import { DEFAULT_CACTUS_ASR_MODEL, DEFAULT_CACTUS_LLM_MODEL } from '@/utils/models/defaults';
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  Animated,
+  Easing,
+  TouchableOpacity,
+} from "react-native";
+import SafeView from "@/components/SafeView";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  Microphone,
+  X,
+  PaperPlane,
+  SpeakerHigh,
+  SpeakerNone,
+  Sparkle,
+  ArrowDown,
+} from "phosphor-react-native";
+import { useVoicePipeline } from "@/utils/AiProviders/onDevice/voice";
+import { useVoiceAudioStream } from "@/utils/AiProviders/onDevice/voice/VoiceAudioStream";
+import {
+  DEFAULT_CACTUS_ASR_MODEL,
+  DEFAULT_CACTUS_LLM_MODEL,
+} from "@/utils/models/defaults";
 
 const COLORS = {
-  background: '#1B1B1E',
-  surface: '#27282A',
-  surfaceHover: '#2E2F31',
-  border: '#3A3B3D',
-  text: '#FFFFFF',
-  textSecondary: '#9F9FA0',
-  accent: '#3B82F6',
-  accentHover: '#2563EB',
-  success: '#6CE9A6',
-  warning: '#FBBF24',
-  error: '#F97066',
-  recording: '#EF4444',
-  thinking: '#8B5CF6',
+  background: "#1B1B1E",
+  surface: "#27282A",
+  surfaceHover: "#2E2F31",
+  border: "#3A3B3D",
+  text: "#FFFFFF",
+  textSecondary: "#9F9FA0",
+  accent: "#3B82F6",
+  accentHover: "#2563EB",
+  success: "#6CE9A6",
+  warning: "#FBBF24",
+  error: "#F97066",
+  recording: "#EF4444",
+  thinking: "#8B5CF6",
 };
 
 export default function VoiceChatScreen() {
   const insets = useSafeAreaInsets();
-  const { provider, state, lastResponse, currentTranscript, error, initialize, startListening, stopListening } = useVoicePipeline({
+  const {
+    provider,
+    state,
+    lastResponse,
+    currentTranscript,
+    error,
+    initialize,
+    startListening,
+    stopListening,
+  } = useVoicePipeline({
     asrModelId: DEFAULT_CACTUS_ASR_MODEL,
     llmModelId: DEFAULT_CACTUS_LLM_MODEL,
     confidenceThreshold: 0.7,
@@ -37,7 +65,12 @@ export default function VoiceChatScreen() {
     vadThreshold: 0.5,
   });
 
-  const { isRecording, volume, start: startAudio, stop: stopAudio } = useVoiceAudioStream({
+  const {
+    isRecording,
+    volume,
+    start: startAudio,
+    stop: stopAudio,
+  } = useVoiceAudioStream({
     vadThreshold: 0.5,
     minSpeechDurationMs: 300,
     maxSpeechDurationMs: 30000,
@@ -52,14 +85,19 @@ export default function VoiceChatScreen() {
   // Initialize pipeline on mount
   useEffect(() => {
     if (!isInitialized) {
-      initialize().then(() => setIsInitialized(true)).catch(console.error);
+      initialize()
+        .then(() => setIsInitialized(true))
+        .catch(console.error);
     }
   }, [initialize, isInitialized]);
 
   // Update waveform based on volume
   useEffect(() => {
     if (isRecording) {
-      const newData = [...waveformData.slice(1), volume * 50 + Math.random() * 10];
+      const newData = [
+        ...waveformData.slice(1),
+        volume * 50 + Math.random() * 10,
+      ];
       setWaveformData(newData);
     } else {
       // Smooth decay to zero
@@ -77,7 +115,7 @@ export default function VoiceChatScreen() {
           duration: 800,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
-        })
+        }),
       ).start();
     } else {
       pulseAnim.stopAnimation();
@@ -91,14 +129,14 @@ export default function VoiceChatScreen() {
 
   // Show thinking animation when processing
   useEffect(() => {
-    if (state === 'thinking' || state === 'transcribing') {
+    if (state === "thinking" || state === "transcribing") {
       Animated.loop(
         Animated.timing(waveformAnim, {
           toValue: 1,
           duration: 1000,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
-        })
+        }),
       ).start();
     } else {
       waveformAnim.stopAnimation();
@@ -120,31 +158,45 @@ export default function VoiceChatScreen() {
         await startListening();
       }
     } catch (err) {
-      console.error('Recording error:', err);
+      console.error("Recording error:", err);
     }
   };
 
   const getStateColor = () => {
     switch (state) {
-      case 'listening': return COLORS.recording;
-      case 'transcribing': return COLORS.warning;
-      case 'thinking': return COLORS.thinking;
-      case 'responding': return COLORS.success;
-      case 'error': return COLORS.error;
-      default: return COLORS.textSecondary;
+      case "listening":
+        return COLORS.recording;
+      case "transcribing":
+        return COLORS.warning;
+      case "thinking":
+        return COLORS.thinking;
+      case "responding":
+        return COLORS.success;
+      case "error":
+        return COLORS.error;
+      default:
+        return COLORS.textSecondary;
     }
   };
 
   const getStateLabel = () => {
     switch (state) {
-      case 'idle': return 'Tap to start';
-      case 'initializing': return 'Loading models...';
-      case 'listening': return 'Listening...';
-      case 'transcribing': return 'Transcribing...';
-      case 'thinking': return 'Thinking...';
-      case 'responding': return 'Responding...';
-      case 'error': return 'Error occurred';
-      default: return 'Unknown';
+      case "idle":
+        return "Tap to start";
+      case "initializing":
+        return "Loading models...";
+      case "listening":
+        return "Listening...";
+      case "transcribing":
+        return "Transcribing...";
+      case "thinking":
+        return "Thinking...";
+      case "responding":
+        return "Responding...";
+      case "error":
+        return "Error occurred";
+      default:
+        return "Unknown";
     }
   };
 
@@ -169,15 +221,18 @@ export default function VoiceChatScreen() {
 
   const renderTranscript = () => {
     if (!currentTranscript.text) return null;
-    
+
     return (
       <View style={styles.transcriptContainer}>
-        <Text style={[
-          styles.transcriptText,
-          { color: currentTranscript.isFinal ? COLORS.text : COLORS.warning }
-        ]}>
+        <Text
+          style={[
+            styles.transcriptText,
+            { color: currentTranscript.isFinal ? COLORS.text : COLORS.warning },
+          ]}>
           {currentTranscript.text}
-          {!currentTranscript.isFinal && <Text style={styles.pendingIndicator}>&nbsp;▌</Text>}
+          {!currentTranscript.isFinal && (
+            <Text style={styles.pendingIndicator}>&nbsp;▌</Text>
+          )}
         </Text>
       </View>
     );
@@ -185,7 +240,7 @@ export default function VoiceChatScreen() {
 
   const renderLastResponse = () => {
     if (!lastResponse) return null;
-    
+
     return (
       <View style={styles.responseContainer}>
         <View style={styles.responseHeader}>
@@ -212,10 +267,12 @@ export default function VoiceChatScreen() {
           </View>
         )}
         <View style={styles.confidenceBar}>
-          <View style={[
-            styles.confidenceFill,
-            { width: `${lastResponse.confidence * 100}%` }
-          ]} />
+          <View
+            style={[
+              styles.confidenceFill,
+              { width: `${lastResponse.confidence * 100}%` },
+            ]}
+          />
           <Text style={styles.confidenceLabel}>
             Confidence: {(lastResponse.confidence * 100).toFixed(0)}%
           </Text>
@@ -227,17 +284,18 @@ export default function VoiceChatScreen() {
   return (
     <SafeView
       safeAreaClassNames="bg-[#1B1B1E]"
-      containerStyle={{ flex: 1, backgroundColor: COLORS.background }}
-    >
+      containerStyle={{ flex: 1, backgroundColor: COLORS.background }}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Voice Assistant</Text>
         <View style={styles.headerActions}>
-          <Animated.View style={[
-            styles.statusDot,
-            { backgroundColor: getStateColor() },
-            { transform: [{ scale: pulseAnim }] }
-          ]} />
+          <Animated.View
+            style={[
+              styles.statusDot,
+              { backgroundColor: getStateColor() },
+              { transform: [{ scale: pulseAnim }] },
+            ]}
+          />
           <Text style={[styles.stateLabel, { color: getStateColor() }]}>
             {getStateLabel()}
           </Text>
@@ -251,26 +309,29 @@ export default function VoiceChatScreen() {
           <Animated.View
             style={[
               styles.centralCircle,
-              { 
+              {
                 transform: [{ scale: pulseAnim }],
                 borderColor: isRecording ? COLORS.recording : COLORS.accent,
-              }
-            ]}
-          >
-            {state === 'thinking' && (
+              },
+            ]}>
+            {state === "thinking" && (
               <Sparkle size={32} color={COLORS.thinking} weight="bold" />
             )}
-            {state === 'transcribing' && (
+            {state === "transcribing" && (
               <SpeakerHigh size={32} color={COLORS.warning} weight="bold" />
             )}
-            {state === 'listening' && (
+            {state === "listening" && (
               <Microphone size={32} color={COLORS.recording} weight="bold" />
             )}
-            {(state === 'idle' || state === 'responding') && (
-              <Microphone size={32} color={COLORS.textSecondary} weight="regular" />
+            {(state === "idle" || state === "responding") && (
+              <Microphone
+                size={32}
+                color={COLORS.textSecondary}
+                weight="regular"
+              />
             )}
           </Animated.View>
-          
+
           {renderWaveform()}
         </View>
 
@@ -295,15 +356,10 @@ export default function VoiceChatScreen() {
           style={[
             styles.mainButton,
             isRecording ? styles.mainButtonRecording : styles.mainButtonIdle,
-            { transform: [{ scale: pulseAnim }] }
+            { transform: [{ scale: pulseAnim }] },
           ]}
-          onPress={handleToggleRecording}
-        >
-          <Animated.View
-            style={[
-              { transform: [{ scale: pulseAnim }] }
-            ]}
-          >
+          onPress={handleToggleRecording}>
+          <Animated.View style={[{ transform: [{ scale: pulseAnim }] }]}>
             {isRecording ? (
               <X size={28} color="#FFF" weight="bold" />
             ) : (
@@ -318,7 +374,7 @@ export default function VoiceChatScreen() {
         <Text style={styles.helpTextItem}>
           Hold to speak · Releases on silence
         </Text>
-        {state === 'thinking' && (
+        {state === "thinking" && (
           <Text style={[styles.helpTextItem, { color: COLORS.thinking }]}>
             Processing with Gemma 4 E2B Hybrid...
           </Text>
@@ -334,21 +390,21 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 8,
   },
   title: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: "700",
     color: COLORS.text,
   },
   headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   statusDot: {
@@ -358,17 +414,17 @@ const styles = StyleSheet.create({
   },
   stateLabel: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   content: {
     flex: 1,
     paddingHorizontal: 20,
     paddingVertical: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   waveformWrapper: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 24,
   },
   centralCircle: {
@@ -377,8 +433,8 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     borderWidth: 3,
     borderColor: COLORS.accent,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: COLORS.surface,
     shadowColor: COLORS.accent,
     shadowOffset: { width: 0, height: 0 },
@@ -387,9 +443,9 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   waveformContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "center",
     gap: 3,
     marginTop: 16,
     height: 60,
@@ -400,7 +456,7 @@ const styles = StyleSheet.create({
     minHeight: 4,
   },
   transcriptContainer: {
-    width: '100%',
+    width: "100%",
     padding: 16,
     backgroundColor: COLORS.surface,
     borderRadius: 12,
@@ -414,10 +470,10 @@ const styles = StyleSheet.create({
   },
   pendingIndicator: {
     color: COLORS.warning,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   responseContainer: {
-    width: '100%',
+    width: "100%",
     padding: 16,
     backgroundColor: COLORS.surface,
     borderRadius: 12,
@@ -426,18 +482,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   responseHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   responseLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.textSecondary,
   },
   responseMeta: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   metaItem: {
@@ -460,36 +516,36 @@ const styles = StyleSheet.create({
   },
   thinkingLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.thinking,
     marginBottom: 4,
   },
   thinkingText: {
     fontSize: 14,
     color: COLORS.text,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
   confidenceBar: {
     height: 6,
     backgroundColor: COLORS.background,
     borderRadius: 3,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 4,
   },
   confidenceFill: {
-    height: '100%',
+    height: "100%",
     backgroundColor: COLORS.success,
     borderRadius: 3,
   },
   confidenceLabel: {
     fontSize: 12,
     color: COLORS.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
   },
   errorContainer: {
-    width: '100%',
+    width: "100%",
     padding: 12,
-    backgroundColor: 'rgba(249, 112, 102, 0.1)',
+    backgroundColor: "rgba(249, 112, 102, 0.1)",
     borderRadius: 8,
     borderWidth: 1,
     borderColor: COLORS.error,
@@ -498,20 +554,20 @@ const styles = StyleSheet.create({
   errorText: {
     color: COLORS.error,
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
   },
   controls: {
     paddingHorizontal: 20,
     paddingBottom: 32,
-    alignItems: 'center',
+    alignItems: "center",
   },
   mainButton: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -531,7 +587,7 @@ const styles = StyleSheet.create({
   helpTextItem: {
     fontSize: 12,
     color: COLORS.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });
 
