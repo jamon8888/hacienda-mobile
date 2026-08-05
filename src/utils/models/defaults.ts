@@ -135,15 +135,20 @@ export function resolveDestinationPathFromGGUFUrl(url: string) {
     return `${RNFS.DocumentDirectoryPath}/models/gguf/${creator.creator}/${creator.model}/${creator.file}`;
 }
 
-export interface CactusModelBundle {
+/**
+ * Voice pipeline model bundle. `slug` must be a key returned by cactus-react-native's
+ * getRegistry() (HuggingFace-backed, https://huggingface.co/Cactus-Compute) -- the SDK
+ * downloads and manages storage for it internally via CactusLM/CactusSTT's own
+ * `.download()`, there is no manual path resolution any more.
+ */
+export interface CactusVoiceModelBundle {
     id: string;
     name: string;
     description: string;
-    modelId: string;
-    cactusBundlePath: string;
-    quantization: 'CQ4' | 'CQ3.26' | 'CQ2.54' | 'CQ2' | 'CQ1';
+    slug: string;
+    quantization: 'int4' | 'int8';
+    pro?: boolean;
     size: string;
-    backend: 'cpu' | 'metal' | 'npu';
     hasConfidenceProbe: boolean;
     supportsCloudHandoff: boolean;
     multimodal: {
@@ -155,76 +160,66 @@ export interface CactusModelBundle {
     minRAM: string;
 }
 
-export const CACTUS_VOICE_MODELS: Record<string, CactusModelBundle> = {
-    'gemma-4-e2b-hybrid-cq4': {
-        id: 'gemma-4-e2b-hybrid-cq4',
-        name: 'Gemma 4 E2B Hybrid (4-bit)',
-        description: 'Best accuracy with confidence probe for cloud handoff. Matches Gemini Flash-Lite at 15-35% handoff.',
-        modelId: 'Cactus-Compute/gemma-4-e2b-it-hybrid',
-        cactusBundlePath: 'weights/gemma-4-e2b-it-hybrid-cq4',
-        quantization: 'CQ4',
+export const CACTUS_VOICE_MODELS: Record<string, CactusVoiceModelBundle> = {
+    'gemma-4-e2b-it-int8': {
+        id: 'gemma-4-e2b-it-int8',
+        name: 'Gemma 4 E2B (8-bit)',
+        description: 'Best accuracy. Vision, audio, completion and tool-calling capable.',
+        slug: 'gemma-4-e2b-it',
+        quantization: 'int8',
         size: '~1.2GB',
-        backend: 'metal',
-        hasConfidenceProbe: true,
-        supportsCloudHandoff: true,
+        hasConfidenceProbe: false,
+        supportsCloudHandoff: false,
         multimodal: { text: true, vision: true, audio: true },
         recommendedFor: 'voice-pipeline',
         minRAM: '4GB',
     },
-    'gemma-4-e2b-hybrid-cq2.54': {
-        id: 'gemma-4-e2b-hybrid-cq2.54',
-        name: 'Gemma 4 E2B Hybrid (2.54-bit mixed)',
-        description: '50% smaller, near-4-bit quality. 2.7 bpw production bundle with 4-bit LLM linears + 2-bit embeddings.',
-        modelId: 'Cactus-Compute/gemma-4-e2b-it-hybrid',
-        cactusBundlePath: 'weights/gemma-4-e2b-it-hybrid-cq2.54',
-        quantization: 'CQ2.54',
+    'gemma-4-e2b-it-int4': {
+        id: 'gemma-4-e2b-it-int4',
+        name: 'Gemma 4 E2B (4-bit)',
+        description: 'Smaller, faster, minor accuracy tradeoff vs. the 8-bit bundle.',
+        slug: 'gemma-4-e2b-it',
+        quantization: 'int4',
         size: '~650MB',
-        backend: 'metal',
-        hasConfidenceProbe: true,
-        supportsCloudHandoff: true,
+        hasConfidenceProbe: false,
+        supportsCloudHandoff: false,
         multimodal: { text: true, vision: true, audio: true },
         recommendedFor: 'voice-pipeline',
         minRAM: '3GB',
     },
-    'parakeet-tdt-0.6b-cq2': {
-        id: 'parakeet-tdt-0.6b-cq2',
-        name: 'Parakeet TDT 0.6B (2-bit)',
-        description: 'Best-in-class streaming ASR at 2-bit (WER 0.147). Non-autoregressive, real-time factor ~0.1x.',
-        modelId: 'nvidia/parakeet-tdt-0.6b-v3',
-        cactusBundlePath: 'weights/parakeet-tdt-0.6b-v3-cq2',
-        quantization: 'CQ2',
+    'parakeet-tdt-0.6b-v3-int4': {
+        id: 'parakeet-tdt-0.6b-v3-int4',
+        name: 'Parakeet TDT 0.6B (4-bit)',
+        description: 'Best-in-class streaming ASR, smallest bundle. Non-autoregressive, real-time factor ~0.1x.',
+        slug: 'parakeet-tdt-0.6b-v3',
+        quantization: 'int4',
         size: '~180MB',
-        backend: 'metal',
         hasConfidenceProbe: false,
         supportsCloudHandoff: false,
         multimodal: { text: false, vision: false, audio: true },
         recommendedFor: 'transcription',
         minRAM: '2GB',
     },
-    'parakeet-tdt-0.6b-cq4': {
-        id: 'parakeet-tdt-0.6b-cq4',
-        name: 'Parakeet TDT 0.6B (4-bit)',
-        description: 'Highest accuracy streaming ASR (WER 0.115). Use when RAM allows.',
-        modelId: 'nvidia/parakeet-tdt-0.6b-v3',
-        cactusBundlePath: 'weights/parakeet-tdt-0.6b-v3-cq4',
-        quantization: 'CQ4',
+    'parakeet-tdt-0.6b-v3-int8': {
+        id: 'parakeet-tdt-0.6b-v3-int8',
+        name: 'Parakeet TDT 0.6B (8-bit)',
+        description: 'Highest accuracy at this size. Use when RAM allows.',
+        slug: 'parakeet-tdt-0.6b-v3',
+        quantization: 'int8',
         size: '~320MB',
-        backend: 'metal',
         hasConfidenceProbe: false,
         supportsCloudHandoff: false,
         multimodal: { text: false, vision: false, audio: true },
         recommendedFor: 'transcription',
         minRAM: '3GB',
     },
-    'parakeet-tdt-1.1b-cq2': {
-        id: 'parakeet-tdt-1.1b-cq2',
-        name: 'Parakeet TDT 1.1B (2-bit)',
-        description: 'Larger model for challenging audio (accents, noise). Still usable at 2-bit.',
-        modelId: 'nvidia/parakeet-tdt-1.1b-v3',
-        cactusBundlePath: 'weights/parakeet-tdt-1.1b-v3-cq2',
-        quantization: 'CQ2',
-        size: '~300MB',
-        backend: 'metal',
+    'parakeet-ctc-1.1b-int8': {
+        id: 'parakeet-ctc-1.1b-int8',
+        name: 'Parakeet CTC 1.1B (8-bit)',
+        description: 'Larger model for challenging audio (accents, noise).',
+        slug: 'parakeet-ctc-1.1b',
+        quantization: 'int8',
+        size: '~600MB',
         hasConfidenceProbe: false,
         supportsCloudHandoff: false,
         multimodal: { text: false, vision: false, audio: true },
@@ -235,12 +230,7 @@ export const CACTUS_VOICE_MODELS: Record<string, CactusModelBundle> = {
 
 export type CactusVoiceModelId = keyof typeof CACTUS_VOICE_MODELS;
 
-export const DEFAULT_CACTUS_ASR_MODEL: CactusVoiceModelId = 'parakeet-tdt-0.6b-cq2';
-export const DEFAULT_CACTUS_LLM_MODEL: CactusVoiceModelId = 'gemma-4-e2b-hybrid-cq4';
-
-export function resolveCactusBundlePath(modelId: CactusVoiceModelId): string {
-    const model = CACTUS_VOICE_MODELS[modelId];
-    return `${RNFS.DocumentDirectoryPath}/models/cactus/${model.cactusBundlePath}`;
-}
+export const DEFAULT_CACTUS_ASR_MODEL: CactusVoiceModelId = 'parakeet-tdt-0.6b-v3-int4';
+export const DEFAULT_CACTUS_LLM_MODEL: CactusVoiceModelId = 'gemma-4-e2b-it-int8';
 
 export default MODEL_CARDS;

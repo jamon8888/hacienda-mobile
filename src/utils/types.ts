@@ -1,4 +1,4 @@
-import { CompletionParams } from 'cactus-react-native';
+import { CompletionParams } from '@/utils/chat/completionTypes';
 import { TemplateConfig } from 'chat-formatter';
 import * as React from 'react';
 import { ImageURISource, TextStyle } from 'react-native';
@@ -281,8 +281,8 @@ export interface Model {
   origin: ModelOrigin;
   defaultChatTemplate: ChatTemplateConfig;
   chatTemplate: ChatTemplateConfig;
-  defaultStopWords: CompletionParams['stop'];
-  stopWords: CompletionParams['stop'];
+  defaultStopWords: CompletionParams['stopSequences'];
+  stopWords: CompletionParams['stopSequences'];
   defaultCompletionSettings: CompletionParams;
   completionSettings: CompletionParams;
   hfModelFile?: ModelFile;

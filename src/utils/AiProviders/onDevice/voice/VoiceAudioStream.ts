@@ -193,6 +193,4 @@ export function useVoiceAudioStream(config: VoiceAudioConfig = {}) {
   };
 }
 
-export { VoiceAudioModule } from 'react-native';
-
 export default VoiceAudioStream;

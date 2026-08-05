@@ -1,5 +1,4 @@
 import { applyTemplate, Templates } from 'chat-formatter';
-import { JinjaFormattedChatResult, LlamaContext } from 'cactus-react-native';
 import { CompletionParams } from './completionTypes';
 import { defaultCompletionParams } from './completionSettingsVersions';
 import {
@@ -7,7 +6,6 @@ import {
   ChatTemplateConfig,
   HuggingFaceModel,
   MessageType,
-  Model,
 } from '../types';
 
 export const userId = 'y9d7f8pgn';
@@ -27,57 +25,6 @@ export function convertToChatMessages(
       } as ChatMessage;
     })
     .reverse();
-}
-
-/**
- * Formats chat messages using the appropriate template based on the model or context.
- *
- * @param messages - Array of OAI compatible chat messages
- * @param model - The model configuration, which may contain a custom chat template
- * @param context - The LlamaContext instance, which may contain a chat template
- * @returns A formatted prompt
- *
- * Priority of template selection:
- * 1. Model's custom chat template (if available)
- * 2. Context's model-specific template (if available)
- * 3. Default chat template as fallback
- */
-export async function applyChatTemplate(
-  messages: ChatMessage[],
-  model: Model | null,
-  context: LlamaContext | null,
-): Promise<string | JinjaFormattedChatResult> {
-  const modelChatTemplate = model?.chatTemplate;
-  const contextChatTemplate = (context?.model as any)?.metadata?.[
-    'tokenizer.chat_template'
-  ];
-
-  let formattedChat: string | JinjaFormattedChatResult | undefined;
-
-  try {
-    // Model's custom chat template. This uses chat-formatter, which is based on Nunjucks (as opposed to Jinja2).
-    if (modelChatTemplate?.chatTemplate) {
-      formattedChat = applyTemplate(messages, {
-        customTemplate: modelChatTemplate,
-        addGenerationPrompt: modelChatTemplate.addGenerationPrompt,
-      }) as string;
-    } else if (contextChatTemplate) {
-      // Context's model-specific chat template. This uses llama.cpp's getFormattedChat.
-      formattedChat = await context?.getFormattedChat(messages);
-    }
-
-    if (!formattedChat) {
-      // Default chat template
-      formattedChat = applyTemplate(messages, {
-        customTemplate: chatTemplates.default,
-        addGenerationPrompt: chatTemplates.default.addGenerationPrompt,
-      }) as string;
-    }
-  } catch (error) {
-    console.error('Error applying chat template:', error); // TODO: handle error
-  }
-
-  return formattedChat || ' ';
 }
 
 export const chatTemplates: Record<string, ChatTemplateConfig> = {
@@ -220,7 +167,7 @@ export function getHFDefaultSettings(hfModel: HuggingFaceModel): {
 
   const _defaultCompletionParams = {
     ...defaultCompletionParams,
-    stop: _defaultChatTemplate.eosToken ? [_defaultChatTemplate.eosToken] : [],
+    stopSequences: _defaultChatTemplate.eosToken ? [_defaultChatTemplate.eosToken] : [],
   };
 
   return {

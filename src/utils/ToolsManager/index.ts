@@ -1,10 +1,11 @@
 import uiStore from "@/store/UIStore";
-import { NativeCompletionResult } from "cactus-react-native";
 import { generateUUID } from "../constants";
 import { ICompleteResponse, IStreamCallback, IStreamEvent } from "../AiProviders/baseOpenAILikeProvider";
 import Tools from './tools';
 import { safeJsonParse } from "../formatters";
 import Telemetry from "../Telemetry";
+
+type ToolCall = NonNullable<ICompleteResponse['toolCalls']>[number];
 
 type ToolManagerTool = {
     /** Definition of the tool - this can be used to generate a tool call */
@@ -106,7 +107,7 @@ class ToolsManager {
         }
     }
 
-    private _generateToolCallSignature(toolCall: NativeCompletionResult['tool_calls'][number]) {
+    private _generateToolCallSignature(toolCall: ToolCall) {
         const { name, arguments: args } = toolCall.function;
         if (!name) return '';
         if (Object.keys(args).length > 0 && args !== "{}") {
@@ -122,7 +123,7 @@ class ToolsManager {
      * Manages the execution of tool calls and returns the next messages to be sent to the LLM
      */
     async manageToolCallExecutions(
-        toolCalls: NativeCompletionResult['tool_calls'],
+        toolCalls: ToolCall[] | undefined,
         streamEmitter: (event: IStreamEvent, data: any) => void,
         currentMessageHistory: any[],
     ): Promise<any[]> {

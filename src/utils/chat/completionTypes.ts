@@ -1,8 +1,8 @@
-import { CompletionParams as LlamaRNCompletionParams } from 'cactus-react-native';
+import { CactusLMCompleteOptions } from 'cactus-react-native';
 
 // Alias allows flexibility to switch API providers later
 // We should move towards OpenAI Compatible API Params
-export type ApiCompletionParams = LlamaRNCompletionParams;
+export type ApiCompletionParams = CactusLMCompleteOptions;
 
 /**
  * App-specific completion parameters that are not part of the cactus.lm API.

@@ -1,15 +1,15 @@
-import { CompletionParams, CactusLM } from 'cactus-react-native';
+import { CactusLM, CactusLMTool } from 'cactus-react-native';
 
 import * as RNFS from '@dr.pogodin/react-native-fs';
 import { Model } from '@/utils/types';
 import { defaultModels } from '@/utils/models';
-import { Platform } from 'react-native';
 import { stops } from '@/utils/chat';
+import { CompletionParams, toApiCompletionParams } from '@/utils/chat/completionTypes';
 import { ICompleteResponse } from "@/utils/AiProviders/baseOpenAILikeProvider";
 import type OnDeviceProvider from '@/utils/AiProviders/onDevice/index';
 
 export type NativeLlamaChatMessage = {
-  role: string
+  role: 'user' | 'assistant' | 'system'
   content: string
 }
 
@@ -38,7 +38,7 @@ export default class CactusLmWrapper {
   private model: string;
   private ggufFilePath: string | null = null;
   private cactusLmContext: CactusLM | null = null;
-  private keepAliveTimer: NodeJS.Timeout | null = null;
+  private keepAliveTimer: ReturnType<typeof setTimeout> | null = null;
   private keepAliveInterval = 1000 * 60 * 5;
 
   constructor({ model, parent }: { model: string; parent: OnDeviceProvider }) {
@@ -116,15 +116,8 @@ export default class CactusLmWrapper {
       if (!this.ggufFilePath) await this.determineGgufFilePath();
       if (!this.ggufFilePath) throw new Error(`CactusLmWrapper::initialize: No gguf file found for model ${this.model}`);
 
-      const { lm, error } = await CactusLM.init({
-        model: this.ggufFilePath,
-        use_mlock: true,
-        n_ctx: this.contextLength,
-        n_gpu_layers: Platform.OS === 'ios' ? 99 : 0,
-        embedding: false,
-      });
-
-      if (error) throw error;
+      const lm = new CactusLM({ model: this.ggufFilePath });
+      await lm.init();
       this.cactusLmContext = lm;
       this.log(`${this.name} initialized with model ${this.model} @ ${this.contextLength} context length`);
       return true;
@@ -142,15 +135,10 @@ export default class CactusLmWrapper {
    */
   private get defaultRuntimeConfig(): CompletionParams | {} {
     const extraParams: CompletionParams = {};
-    if (!!this.modelDefinition) {
-      if (this.modelDefinition.chatTemplateString) {
-        extraParams.chat_template = this.modelDefinition.chatTemplateString;
+    if (!!this.modelDefinition && this.modelDefinition.completionSettings) {
+      for (const [key, value] of Object.entries(this.modelDefinition.completionSettings)) {
+        (extraParams as Record<string, unknown>)[key] = value;
       }
-
-      if (this.modelDefinition.completionSettings)
-        for (const [key, value] of Object.entries(this.modelDefinition.completionSettings)) {
-          extraParams[key] = value;
-        }
     }
     return extraParams;
   }
@@ -172,25 +160,38 @@ export default class CactusLmWrapper {
     if (!this.cactusLmContext) await this.initialize();
     if (!this.cactusLmContext) throw new Error(`CactusLmWrapper::streamGetChatCompletion: Model not initialized`);
 
-    const msgResult = await this.cactusLmContext.completion(
+    const result = await this.cactusLmContext.complete({
       messages,
-      {
-        stop: [...stops],
-        n_predict: this.nPredict,
-        ...this.defaultRuntimeConfig as any,
+      options: {
+        stopSequences: [...stops],
+        maxTokens: this.nPredict,
+        ...toApiCompletionParams(this.defaultRuntimeConfig as CompletionParams),
         temperature: this.temperature,
-      });
+      },
+    });
 
     return {
-      textResponse: msgResult.content,
+      textResponse: result.response,
       metrics: {
-        prompt_tokens: msgResult.timings.prompt_n,
-        completion_tokens: msgResult.timings.predicted_n,
-        total_tokens: msgResult.timings.prompt_n + msgResult.timings.predicted_n,
-        outputTps: msgResult.timings.predicted_per_second,
-        duration: msgResult.timings.predicted_ms,
+        prompt_tokens: result.prefillTokens,
+        completion_tokens: result.decodeTokens,
+        total_tokens: result.totalTokens,
+        outputTps: result.decodeTps,
+        duration: result.totalTimeMs,
       },
     };
+  }
+
+  /**
+   * Converts the app's OpenAI-shaped tool definitions (as produced by ToolsManager)
+   * into the flat CactusLMTool shape the cactus-react-native SDK expects.
+   */
+  private toCactusTools(availableTools: { function: { name: string; description?: string; parameters: CactusLMTool['parameters'] } }[]): CactusLMTool[] {
+    return availableTools.map(tool => ({
+      name: tool.function.name,
+      description: tool.function.description ?? '',
+      parameters: tool.function.parameters,
+    }));
   }
 
   /**
@@ -205,36 +206,42 @@ export default class CactusLmWrapper {
     if (!this.cactusLmContext) await this.initialize();
     if (!this.cactusLmContext) throw new Error(`CactusLmWrapper::streamGetChatCompletion: Model not initialized`);
 
-    const msgResult = await this.cactusLmContext.completion(
+    const cactusTools = this.toCactusTools(availableTools ?? []);
+
+    const result = await this.cactusLmContext.complete({
       messages,
-      {
-        stop: [...stops],
-        n_predict: this.nPredict,
-        tools: availableTools,
-        tool_choice: 'auto',
-        jinja: this.cactusLmContext.isJinjaSupported(),
-        ...this.defaultRuntimeConfig as any,
+      tools: cactusTools.length > 0 ? cactusTools : undefined,
+      options: {
+        stopSequences: [...stops],
+        maxTokens: this.nPredict,
+        ...toApiCompletionParams(this.defaultRuntimeConfig as CompletionParams),
         temperature: this.temperature,
-      }, ({ token }: { token: string }) => {
-        callback(token);
-      });
+      },
+      onToken: callback,
+    });
 
     return {
-      textResponse: msgResult.content,
-      toolCalls: msgResult.tool_calls,
+      textResponse: result.response,
+      // CactusLM's functionCalls carry already-parsed argument objects, not the
+      // JSON-string arguments ToolsManager/ICompleteResponse expect elsewhere
+      // (that shape mirrors real OpenAI tool_calls) -- stringify here, once.
+      toolCalls: result.functionCalls?.map(fc => ({
+        type: 'function' as const,
+        function: { name: fc.name, arguments: JSON.stringify(fc.arguments) },
+      })),
       metrics: {
-        prompt_tokens: msgResult.timings.prompt_n,
-        completion_tokens: msgResult.timings.predicted_n,
-        total_tokens: msgResult.timings.prompt_n + msgResult.timings.predicted_n,
-        outputTps: msgResult.timings.predicted_per_second,
-        duration: msgResult.timings.predicted_ms,
+        prompt_tokens: result.prefillTokens,
+        completion_tokens: result.decodeTokens,
+        total_tokens: result.totalTokens,
+        outputTps: result.decodeTps,
+        duration: result.totalTimeMs,
       },
     };
   }
 
   async unloadModel(): Promise<void> {
     this.log('Unloading model');
-    if (this.cactusLmContext) await this.cactusLmContext.release();
+    if (this.cactusLmContext) await this.cactusLmContext.destroy();
     this.cactusLmContext = null;
   }
 

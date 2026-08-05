@@ -1,8 +1,7 @@
 import { EMBEDDING_MODEL, resolveDestinationPathFromGGUFUrl } from "@/utils/models/defaults";
 import TextSplitter, { TextSplitterConfig } from "@/utils/TextSplitter";
 import * as RNFS from '@dr.pogodin/react-native-fs';
-import { NativeEmbeddingResult, CactusLM } from "cactus-react-native";
-import { Platform } from "react-native";
+import { CactusLM } from "cactus-react-native";
 import { EmbeddingProvider, EmbedderPrefixType } from "../types";
 import { dedupeChunks } from "@/utils/chunking";
 
@@ -21,15 +20,9 @@ import { dedupeChunks } from "@/utils/chunking";
 export default class OnDeviceEmbedderProvider implements EmbeddingProvider {
     static instance: OnDeviceEmbedderProvider;
 
-    /**
-     * According to the llama.cpp documentation:
-     * -1: no normalization (default)
-     * 0: max absolute int16
-     * 1: taxicab (L1)
-     * 2: euclidean (L2)
-     * >2: p-norm
-     */
-    private EMBEDDING_NORMALIZATION = -1;
+    // cactus-react-native's CactusLM.embed() only exposes a boolean normalize
+    // flag (L2/unit-vector normalization), not the llama.cpp p-norm modes.
+    private EMBEDDING_NORMALIZE = false;
     private EMBED_PREFIXES: Record<EmbedderPrefixType, string> = {
         query: 'search_query: ',
         embed_document: 'search_document: ',
@@ -87,11 +80,9 @@ export default class OnDeviceEmbedderProvider implements EmbeddingProvider {
             if (!!this.cactusLmContext) return true;
             if (!(await RNFS.exists(this.modelPath))) await this.downloadModel();
 
-            this.cactusLmContext = await CactusLM.init({
-                model: this.modelPath,
-                n_gpu_layers: Platform.OS === 'ios' ? 99 : 0,
-                embedding: true,
-            }).then(result => result.lm)
+            const lm = new CactusLM({ model: this.modelPath });
+            await lm.init();
+            this.cactusLmContext = lm;
             return true;
         } catch (error) {
             console.error('Failed to initialize model:', error);
@@ -112,7 +103,7 @@ export default class OnDeviceEmbedderProvider implements EmbeddingProvider {
 
     private async unloadModel(): Promise<void> {
         this.log('Unloading model');
-        if (this.cactusLmContext) await this.cactusLmContext.release();
+        if (this.cactusLmContext) await this.cactusLmContext.destroy();
         this.cactusLmContext = null;
     }
 
@@ -163,7 +154,7 @@ export default class OnDeviceEmbedderProvider implements EmbeddingProvider {
             const prefix = this.EMBED_PREFIXES[as] || this.EMBED_PREFIXES.query;
             const prefixedText = `${prefix}${text}`;
             this.log(`Embedding text with prefix: ${prefixedText}`);
-            const msgResult: NativeEmbeddingResult = await this.cactusLmContext.embedding(prefixedText, { embd_normalize: this.EMBEDDING_NORMALIZATION });
+            const msgResult = await this.cactusLmContext.embed({ text: prefixedText, normalize: this.EMBEDDING_NORMALIZE });
 
             let embedding = msgResult.embedding;
             if (dimensions && dimensions < embedding.length) {
@@ -189,7 +180,7 @@ export default class OnDeviceEmbedderProvider implements EmbeddingProvider {
             const embeddings: number[][] = [];
             for (const text of texts) {
                 const prefixedText = `${prefix}${text}`;
-                const msgResult: NativeEmbeddingResult = await this.cactusLmContext.embedding(prefixedText, { embd_normalize: this.EMBEDDING_NORMALIZATION });
+                const msgResult = await this.cactusLmContext.embed({ text: prefixedText, normalize: this.EMBEDDING_NORMALIZE });
                 let embedding = msgResult.embedding;
                 if (dimensions && dimensions < embedding.length) {
                     embedding = embedding.slice(0, dimensions);

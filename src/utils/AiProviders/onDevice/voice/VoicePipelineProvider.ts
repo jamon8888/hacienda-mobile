@@ -1,11 +1,10 @@
 // VoicePipelineProvider.ts - Orchestrates ASR -> LLM -> TTS pipeline
 
-import { VoiceAudioStream } from './VoiceAudioStream';
-import { CactusLM } from 'cactus-react-native';
-import { Platform } from 'react-native';
-import { useDeviceCapabilities } from '@/hooks/useDeviceCapabilities';
-import { CACTUS_VOICE_MODELS, CactusVoiceModelId, resolveCactusBundlePath } from '@/utils/models/defaults';
-import { getDeviceCapabilities } from '@/utils/device';
+import VoiceAudioStream from './VoiceAudioStream';
+import { pcmBase64ToInt16Samples } from './audioEncoding';
+import { speakText } from './NativeTTS';
+import { CactusLM, CactusSTT } from 'cactus-react-native';
+import { CACTUS_VOICE_MODELS, CactusVoiceModelId, DEFAULT_CACTUS_ASR_MODEL, DEFAULT_CACTUS_LLM_MODEL } from '@/utils/models/defaults';
 
 export interface VoicePipelineConfig {
   asrModelId?: CactusVoiceModelId;
@@ -31,15 +30,16 @@ export interface VoiceResponse {
   };
 }
 
-type PipelineState = 'idle' | 'initializing' | 'listening' | 'transcribing' | 'thinking' | 'responding' | 'error';
+type PipelineState = 'idle' | 'downloading' | 'initializing' | 'listening' | 'transcribing' | 'thinking' | 'responding' | 'error';
 
 export class VoicePipelineProvider {
   private config: Required<VoicePipelineConfig>;
-  private asrModel: CactusLM | null = null;
+  private asrModel: CactusSTT | null = null;
   private llmModel: CactusLM | null = null;
   private audioStream: VoiceAudioStream | null = null;
   private state: PipelineState = 'idle';
   private stateListeners: ((state: PipelineState) => void)[] = [];
+  private downloadProgressListeners: ((info: { model: 'asr' | 'llm'; progress: number }) => void)[] = [];
   private responseListeners: ((response: VoiceResponse) => void)[] = [];
   private transcriptListeners: ((text: string, isFinal: boolean) => void)[] = [];
   private errorListeners: ((error: Error) => void)[] = [];
@@ -48,8 +48,8 @@ export class VoicePipelineProvider {
 
   // Default configuration
   private static readonly DEFAULT_CONFIG: Required<VoicePipelineConfig> = {
-    asrModelId: 'parakeet-tdt-0.6b-cq2',
-    llmModelId: 'gemma-4-e2b-hybrid-cq2.54',
+    asrModelId: DEFAULT_CACTUS_ASR_MODEL,
+    llmModelId: DEFAULT_CACTUS_LLM_MODEL,
     confidenceThreshold: 0.7,
     autoHandoff: true,
     processingDelayMs: 50,
@@ -70,30 +70,30 @@ export class VoicePipelineProvider {
     try {
       const asrId = asrModelId || this.config.asrModelId;
       const llmId = llmModelId || this.config.llmModelId;
+      const asrBundle = CACTUS_VOICE_MODELS[asrId];
+      const llmBundle = CACTUS_VOICE_MODELS[llmId];
 
       // Load ASR model (Parakeet)
-      const asrBundlePath = resolveCactusBundlePath(asrId);
-      const { lm: asrLM, error: asrError } = await CactusLM.init({
-        model: asrBundlePath,
-        n_gpu_layers: Platform.OS === 'ios' ? 99 : 0,
-        n_ctx: 512,
-        embedding: true,
+      const asrModel = new CactusSTT({
+        model: asrBundle.slug,
+        options: { quantization: asrBundle.quantization, pro: asrBundle.pro },
       });
+      this.setState('downloading');
+      await asrModel.download({ onProgress: p => this.notifyDownloadProgress('asr', p) });
+      this.setState('initializing');
+      await asrModel.init();
+      this.asrModel = asrModel;
 
-      if (asrError) throw asrError;
-      this.asrModel = asrLM!;
-
-      // Load LLM model (Gemma 4 E2B Hybrid)
-      const llmBundlePath = resolveCactusBundlePath(llmId);
-      const { lm: llmLM, error: llmError } = await CactusLM.init({
-        model: llmBundlePath,
-        n_gpu_layers: Platform.OS === 'ios' ? 99 : 0,
-        n_ctx: 4096,
-        embedding: false,
+      // Load LLM model (Gemma 4 E2B)
+      const llmModel = new CactusLM({
+        model: llmBundle.slug,
+        options: { quantization: llmBundle.quantization, pro: llmBundle.pro },
       });
-
-      if (llmError) throw llmError;
-      this.llmModel = llmLM!;
+      this.setState('downloading');
+      await llmModel.download({ onProgress: p => this.notifyDownloadProgress('llm', p) });
+      this.setState('initializing');
+      await llmModel.init();
+      this.llmModel = llmModel;
 
       this.setState('idle');
     } catch (error) {
@@ -135,11 +135,11 @@ export class VoicePipelineProvider {
   async cleanup(): Promise<void> {
     await this.stopListening();
     if (this.asrModel) {
-      await this.asrModel.release();
+      await this.asrModel.destroy();
       this.asrModel = null;
     }
     if (this.llmModel) {
-      await this.llmModel.release();
+      await this.llmModel.destroy();
       this.llmModel = null;
     }
   }
@@ -204,19 +204,11 @@ export class VoicePipelineProvider {
   }
 
   private async transcribeAudio(audioBase64: string): Promise<{ text: string }> {
-    // For ASR, we use the streaming transcription API
-    // This is a placeholder - actual implementation uses Cactus.streamTranscribeStart/Process/Stop
-    // For now, we'll use a simple completion with audio in messages
-    const result = await this.asrModel!.completion([{
-      role: 'user',
-      content: 'Transcribe the audio.',
-      // Note: audio in messages requires Cactus native support
-    }], {
-      temperature: 0.0,
-      max_tokens: 256,
+    const result = await this.asrModel!.transcribe({
+      audio: pcmBase64ToInt16Samples(audioBase64),
     });
 
-    return { text: result.content || '' };
+    return { text: result.response || '' };
   }
 
   private async generateResponse(transcript: string): Promise<{
@@ -227,40 +219,34 @@ export class VoicePipelineProvider {
   }> {
     const messages = [
       {
-        role: 'system',
+        role: 'system' as const,
         content: 'You are a helpful voice assistant. Respond naturally and concisely.',
       },
       {
-        role: 'user',
+        role: 'user' as const,
         content: transcript,
       },
     ];
 
-    const result = await this.llmModel!.completion(messages, {
-      temperature: this.config.autoHandoff ? 0.1 : 0.7,
-      max_tokens: 512,
-      // Note: confidence_threshold and auto_handoff are not yet in React Native bindings
+    const result = await this.llmModel!.complete({
+      messages,
+      options: {
+        temperature: this.config.autoHandoff ? 0.1 : 0.7,
+        maxTokens: 512,
+        confidenceThreshold: this.config.confidenceThreshold,
+      },
     });
 
-    // CactusLM NativeCompletionResult doesn't have confidence/cloud_handoff/thinking yet
-    // These will be available when React Native bindings are updated to match Cactus Engine C API
     return {
-      text: result.content || '',
-      confidence: 1.0, // Placeholder - will be available in future Cactus RN bindings
-      cloudHandoff: false, // Placeholder
-      thinking: result.reasoning_content || undefined,
+      text: result.response || '',
+      confidence: result.confidence ?? 1.0,
+      cloudHandoff: result.cloudHandoff ?? false,
+      thinking: result.thinking,
     };
   }
 
   private async speakResponse(text: string): Promise<void> {
-    // Native TTS implementation
-    if (Platform.OS === 'ios') {
-      // Use AVSpeechSynthesizer via native module
-      // await NativeModules.TextToSpeech.speak(text);
-    } else {
-      // Use Android TextToSpeech via native module
-      // await NativeModules.TextToSpeech.speak(text);
-    }
+    await speakText(text);
   }
 
   private sleep(ms: number): Promise<void> {
@@ -272,6 +258,13 @@ export class VoicePipelineProvider {
     this.stateListeners.push(listener);
     return () => {
       this.stateListeners = this.stateListeners.filter(l => l !== listener);
+    };
+  }
+
+  onDownloadProgress(listener: (info: { model: 'asr' | 'llm'; progress: number }) => void): () => void {
+    this.downloadProgressListeners.push(listener);
+    return () => {
+      this.downloadProgressListeners = this.downloadProgressListeners.filter(l => l !== listener);
     };
   }
 
@@ -301,6 +294,10 @@ export class VoicePipelineProvider {
     this.stateListeners.forEach(l => l(state));
   }
 
+  private notifyDownloadProgress(model: 'asr' | 'llm', progress: number) {
+    this.downloadProgressListeners.forEach(l => l({ model, progress }));
+  }
+
   private notifyResponse(response: VoiceResponse) {
     this.responseListeners.forEach(l => l(response));
   }
@@ -327,7 +324,7 @@ export class VoicePipelineProvider {
  */
 export function useVoicePipeline(config: VoicePipelineConfig = {}) {
   const [provider] = useState(() => new VoicePipelineProvider(config));
-  const [state, setState] = useState<'idle' | 'initializing' | 'listening' | 'transcribing' | 'thinking' | 'responding' | 'error'>('idle');
+  const [state, setState] = useState<PipelineState>('idle');
   const [lastResponse, setLastResponse] = useState<VoiceResponse | null>(null);
   const [currentTranscript, setCurrentTranscript] = useState({ text: '', isFinal: false });
   const [error, setError] = useState<Error | null>(null);

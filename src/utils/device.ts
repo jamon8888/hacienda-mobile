@@ -213,8 +213,8 @@ export function hfAsModel(
     chatTemplate: _.cloneDeep(defaultSettings.chatTemplate),
     defaultCompletionSettings: defaultSettings.completionParams,
     completionSettings: { ...defaultSettings.completionParams },
-    defaultStopWords: defaultSettings.completionParams.stop,
-    stopWords: defaultSettings.completionParams.stop,
+    defaultStopWords: defaultSettings.completionParams.stopSequences,
+    stopWords: defaultSettings.completionParams.stopSequences,
     hfModelFile: modelFile,
     hfModel: hfModel,
   };

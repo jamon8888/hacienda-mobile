@@ -1,8 +1,7 @@
 import { MULTILINGUAL_EMBEDDING_MODELS, MultilingualEmbeddingModelId } from '@/utils/models/defaults';
 import TextSplitter, { TextSplitterConfig } from '@/utils/TextSplitter';
 import * as RNFS from '@dr.pogodin/react-native-fs';
-import { NativeEmbeddingResult, CactusLM } from 'cactus-react-native';
-import { Platform } from 'react-native';
+import { CactusLM } from 'cactus-react-native';
 import { resolveDestinationPathFromGGUFUrl } from '@/utils/models/defaults';
 import { EmbeddingProvider, EmbedderPrefixType, MultilingualEmbeddingModelId as ModelIdType } from '../types';
 import { dedupeChunks } from '@/utils/chunking';
@@ -34,11 +33,14 @@ const MODEL_PREFIXES: Record<MultilingualEmbeddingModelId, Record<EmbedderPrefix
     },
 };
 
-const MODEL_NORMALIZATION: Record<MultilingualEmbeddingModelId, number> = {
-    'multilingual-e5-small': 2,
-    'multilingual-e5-base': 2,
-    'sentence-camembert-base': 2,
-    'nomic-embed-text-v2-moe': 2,
+// cactus-react-native's CactusLM.embed() only exposes a boolean normalize flag
+// (L2/unit-vector normalization), not the llama.cpp p-norm modes. All 4 models
+// used L2 (mode 2) under the old API, so all map to `true` here.
+const MODEL_NORMALIZE: Record<MultilingualEmbeddingModelId, boolean> = {
+    'multilingual-e5-small': true,
+    'multilingual-e5-base': true,
+    'sentence-camembert-base': true,
+    'nomic-embed-text-v2-moe': true,
 };
 
 export default class MultilingualEmbedderProvider implements EmbeddingProvider {
@@ -46,7 +48,7 @@ export default class MultilingualEmbedderProvider implements EmbeddingProvider {
 
     private modelConfig!: typeof MULTILINGUAL_EMBEDDING_MODELS[MultilingualEmbeddingModelId];
     private EMBED_PREFIXES!: Record<EmbedderPrefixType, string>;
-    private EMBEDDING_NORMALIZATION!: number;
+    private EMBEDDING_NORMALIZE!: boolean;
 
     private _isWorking: boolean = false;
     private modelPath!: string;
@@ -60,7 +62,7 @@ export default class MultilingualEmbedderProvider implements EmbeddingProvider {
         this.modelId = modelId;
         this.modelConfig = MULTILINGUAL_EMBEDDING_MODELS[modelId];
         this.EMBED_PREFIXES = MODEL_PREFIXES[modelId];
-        this.EMBEDDING_NORMALIZATION = MODEL_NORMALIZATION[modelId];
+        this.EMBEDDING_NORMALIZE = MODEL_NORMALIZE[modelId];
         this.modelPath = resolveDestinationPathFromGGUFUrl(this.modelConfig.tag);
 
         if (!MultilingualEmbedderProvider.instances.has(modelId)) {
@@ -118,17 +120,11 @@ export default class MultilingualEmbedderProvider implements EmbeddingProvider {
                 if (!downloaded) throw new Error('Failed to download model');
             }
 
-            const initConfig = {
-                model: this.modelPath,
-                n_gpu_layers: Platform.OS === 'ios' ? 99 : 0,
-                embedding: true,
-                n_ctx: this.modelConfig.contextLength,
-            };
+            this.log(`Initializing model at ${this.modelPath}`);
 
-            this.log(`Initializing with config:`, initConfig);
-
-            const result = await CactusLM.init(initConfig);
-            this.cactusLmContext = result.lm;
+            const lm = new CactusLM({ model: this.modelPath });
+            await lm.init();
+            this.cactusLmContext = lm;
 
             this.log(`Initialized successfully with context length ${this.modelConfig.contextLength}`);
             return true;
@@ -151,7 +147,7 @@ export default class MultilingualEmbedderProvider implements EmbeddingProvider {
 
     private async unloadModel(): Promise<void> {
         this.log('Unloading model');
-        if (this.cactusLmContext) await this.cactusLmContext.release();
+        if (this.cactusLmContext) await this.cactusLmContext.destroy();
         this.cactusLmContext = null;
     }
 
@@ -187,9 +183,7 @@ export default class MultilingualEmbedderProvider implements EmbeddingProvider {
             const prefixedText = `${prefix}${text}`;
             this.log(`Embedding (${as}): ${prefixedText.slice(0, 50)}...`);
 
-            const msgResult: NativeEmbeddingResult = await this.cactusLmContext.embedding(prefixedText, {
-                embd_normalize: this.EMBEDDING_NORMALIZATION,
-            });
+            const msgResult = await this.cactusLmContext.embed({ text: prefixedText, normalize: this.EMBEDDING_NORMALIZE });
 
             let embedding = msgResult.embedding;
             if (dimensions && dimensions < embedding.length) {
@@ -209,9 +203,7 @@ export default class MultilingualEmbedderProvider implements EmbeddingProvider {
             const embeddings: number[][] = [];
             for (const text of texts) {
                 const prefixedText = `${prefix}${text}`;
-                const msgResult: NativeEmbeddingResult = await this.cactusLmContext.embedding(prefixedText, {
-                    embd_normalize: this.EMBEDDING_NORMALIZATION,
-                });
+                const msgResult = await this.cactusLmContext.embed({ text: prefixedText, normalize: this.EMBEDDING_NORMALIZE });
                 let embedding = msgResult.embedding;
                 if (dimensions && dimensions < embedding.length) {
                     embedding = embedding.slice(0, dimensions);
