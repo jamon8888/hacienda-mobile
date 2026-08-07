@@ -61,8 +61,24 @@ export class VoicePipelineProvider {
   private transcriptListeners: ((text: string, isFinal: boolean) => void)[] =
     [];
   private errorListeners: ((error: Error) => void)[] = [];
+  private volumeListeners: ((volume: number) => void)[] = [];
+  private capturingListeners: ((capturing: boolean) => void)[] = [];
   private isProcessing = false;
   private processingTimer: ReturnType<typeof setTimeout> | null = null;
+  // Guards initialize() against being invoked concurrently -- startListening() calls
+  // initialize() whenever a model is missing, and VoiceChatScreen also calls it on mount, so
+  // without this two overlapping calls could each construct their own CactusSTT/CactusLM and
+  // race writing this.asrModel/this.llmModel, leaking whichever native instance loses the race.
+  private initPromise: Promise<void> | null = null;
+  // Set by cleanup() before it awaits anything, so a still-in-flight initialize() can tell it
+  // was torn down mid-download/init and destroy whatever it just finished loading instead of
+  // assigning it to this.asrModel/this.llmModel after cleanup already ran.
+  private disposed = false;
+  // Set by stopListening(), read in handleSpeechSegment()'s finally block -- without this, a
+  // user-initiated stop that lands while a segment is still transcribing/responding gets
+  // overwritten back to "listening" by that segment's finally block once it completes, even
+  // though stopListening() already tore the audio stream down.
+  private stopRequested = false;
 
   // Default configuration
   private static readonly DEFAULT_CONFIG: Required<VoicePipelineConfig> = {
@@ -83,7 +99,37 @@ export class VoicePipelineProvider {
     asrModelId?: CactusVoiceModelId,
     llmModelId?: CactusVoiceModelId,
   ): Promise<void> {
+    // Already loaded -- callers like startListening() call initialize() defensively whenever
+    // a model is missing, so a no-op fast path here avoids re-downloading/re-initializing
+    // models that are already ready.
+    if (this.asrModel && this.llmModel) return;
+    // Single-flight: share the in-flight promise instead of letting a second caller (e.g.
+    // startListening() firing while VoiceChatScreen's mount effect is still awaiting the first
+    // call) start a second, independent download/init that races the first to assign
+    // this.asrModel/this.llmModel.
+    if (this.initPromise) return this.initPromise;
+
+    this.initPromise = this.doInitialize(asrModelId, llmModelId).finally(
+      () => {
+        this.initPromise = null;
+      },
+    );
+    return this.initPromise;
+  }
+
+  private async doInitialize(
+    asrModelId?: CactusVoiceModelId,
+    llmModelId?: CactusVoiceModelId,
+  ): Promise<void> {
     this.setState("initializing");
+
+    // Track instances locally until both are fully loaded -- on partial failure (e.g. ASR
+    // succeeds but the LLM download fails) this lets the catch block destroy whatever was
+    // already created instead of leaking it, and this.asrModel/this.llmModel are only assigned
+    // once the whole pair succeeds so a failed initialize() never leaves the provider in a
+    // half-ready state that isReady() would misreport.
+    let asrModel: CactusSTT | null = null;
+    let llmModel: CactusLM | null = null;
 
     try {
       const asrId = asrModelId || this.config.asrModelId;
@@ -102,7 +148,7 @@ export class VoicePipelineProvider {
       if (!llmBundle) throw new Error(`Unknown LLM model id: ${llmId}`);
 
       // Load ASR model (Parakeet)
-      const asrModel = new CactusSTT({
+      asrModel = new CactusSTT({
         model: asrBundle.slug,
         options: { quantization: asrBundle.quantization, pro: asrBundle.pro },
       });
@@ -112,10 +158,10 @@ export class VoicePipelineProvider {
       });
       this.setState("initializing");
       await asrModel.init();
-      this.asrModel = asrModel;
+      if (this.disposed) throw new Error("Voice pipeline was disposed");
 
       // Load LLM model (Gemma 4 E2B)
-      const llmModel = new CactusLM({
+      llmModel = new CactusLM({
         model: llmBundle.slug,
         options: { quantization: llmBundle.quantization, pro: llmBundle.pro },
       });
@@ -125,10 +171,17 @@ export class VoicePipelineProvider {
       });
       this.setState("initializing");
       await llmModel.init();
-      this.llmModel = llmModel;
+      if (this.disposed) throw new Error("Voice pipeline was disposed");
 
+      this.asrModel = asrModel;
+      this.llmModel = llmModel;
       this.setState("idle");
     } catch (error) {
+      // Destroy whatever got loaded before the failure (or before cleanup() disposed this
+      // provider mid-flight) rather than leaking it -- neither instance was assigned to
+      // this.asrModel/this.llmModel yet, so cleanup() wouldn't otherwise know about them.
+      await asrModel?.destroy().catch(console.error);
+      await llmModel?.destroy().catch(console.error);
       this.setState("error");
       throw error;
     }
@@ -140,18 +193,36 @@ export class VoicePipelineProvider {
       await this.initialize();
     }
 
-    this.audioStream = new VoiceAudioStream({
+    this.stopRequested = false;
+    const audioStream = new VoiceAudioStream({
       vadThreshold: this.config.vadThreshold,
     });
+    // This is the pipeline's one and only capture session -- callers that also want live
+    // volume/recording state (e.g. VoiceChatScreen's waveform) subscribe via onVolumeChange/
+    // onCapturingChange below instead of creating their own VoiceAudioStream. Two independent
+    // streams both calling the native module's startRecording()/stopRecording() used to race
+    // and step on each other (the second start rejected as "ALREADY_RECORDING", or one side's
+    // stop tore down the other's still-active capture).
+    audioStream.on("onSpeechSegment", this.handleSpeechSegment.bind(this));
+    audioStream.on("onError", err => this.notifyError(err));
+    audioStream.on("onVolumeChange", v => this.notifyVolumeChange(v));
+    audioStream.on("onRecordingStart", () => this.notifyCapturing(true));
+    audioStream.on("onRecordingStop", () => this.notifyCapturing(false));
 
-    this.audioStream.on("onSpeechSegment", this.handleSpeechSegment.bind(this));
-    this.audioStream.on("onError", err => this.notifyError(err));
-
-    await this.audioStream.start();
+    try {
+      await audioStream.start();
+    } catch (error) {
+      // Don't leave a half-started stream assigned -- stopListening() would otherwise try to
+      // stop a stream that never actually started recording.
+      this.notifyCapturing(false);
+      throw error;
+    }
+    this.audioStream = audioStream;
     this.setState("listening");
   }
 
   async stopListening(): Promise<void> {
+    this.stopRequested = true;
     if (this.audioStream) {
       await this.audioStream.stop();
       this.audioStream = null;
@@ -165,7 +236,13 @@ export class VoicePipelineProvider {
   }
 
   async cleanup(): Promise<void> {
+    // Set before awaiting anything so an initialize() still in flight (e.g. mid-download when
+    // the screen unmounts) can see it was disposed and destroy the models it just finished
+    // loading instead of assigning them to this.asrModel/this.llmModel after cleanup below has
+    // already run and returned.
+    this.disposed = true;
     await this.stopListening();
+    if (this.initPromise) await this.initPromise.catch(() => {});
     if (this.asrModel) {
       await this.asrModel.destroy();
       this.asrModel = null;
@@ -235,7 +312,12 @@ export class VoicePipelineProvider {
       this.notifyError(error as Error);
     } finally {
       this.isProcessing = false;
-      if (this.state !== "error") {
+      // Only restore "listening" if nothing stopped the pipeline while this segment was being
+      // processed -- stopListening() already tore the audio stream down and set state to
+      // "idle"; without this check, that state got silently overwritten back to "listening"
+      // the moment the in-flight segment's ASR/LLM/TTS calls finished, misreporting an active
+      // capture session that no longer exists.
+      if (this.state !== "error" && !this.stopRequested) {
         this.setState("listening");
       }
     }
@@ -338,6 +420,22 @@ export class VoicePipelineProvider {
     };
   }
 
+  onVolumeChange(listener: (volume: number) => void): () => void {
+    this.volumeListeners.push(listener);
+    return () => {
+      this.volumeListeners = this.volumeListeners.filter(l => l !== listener);
+    };
+  }
+
+  onCapturingChange(listener: (capturing: boolean) => void): () => void {
+    this.capturingListeners.push(listener);
+    return () => {
+      this.capturingListeners = this.capturingListeners.filter(
+        l => l !== listener,
+      );
+    };
+  }
+
   private setState(state: PipelineState) {
     this.state = state;
     this.stateListeners.forEach(l => l(state));
@@ -357,6 +455,14 @@ export class VoicePipelineProvider {
 
   private notifyError(error: Error) {
     this.errorListeners.forEach(l => l(error));
+  }
+
+  private notifyVolumeChange(volume: number) {
+    this.volumeListeners.forEach(l => l(volume));
+  }
+
+  private notifyCapturing(capturing: boolean) {
+    this.capturingListeners.forEach(l => l(capturing));
   }
 
   getState(): PipelineState {
@@ -380,6 +486,8 @@ export function useVoicePipeline(config: VoicePipelineConfig = {}) {
     isFinal: false,
   });
   const [error, setError] = useState<Error | null>(null);
+  const [volume, setVolume] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
 
   useEffect(() => {
     const unsubState = provider.onStateChange(setState);
@@ -388,12 +496,20 @@ export function useVoicePipeline(config: VoicePipelineConfig = {}) {
       setCurrentTranscript({ text, isFinal }),
     );
     const unsubError = provider.onError(setError);
+    // Consumers that want a live waveform/recording indicator (e.g. VoiceChatScreen) read
+    // these instead of creating their own VoiceAudioStream -- the provider's own audioStream
+    // (created in startListening()) is the pipeline's single capture session; see the comment
+    // there for why a second, independent stream used to break things.
+    const unsubVolume = provider.onVolumeChange(setVolume);
+    const unsubCapturing = provider.onCapturingChange(setIsRecording);
 
     return () => {
       unsubState();
       unsubResponse();
       unsubTranscript();
       unsubError();
+      unsubVolume();
+      unsubCapturing();
       provider.cleanup().catch(console.error);
     };
   }, []);
@@ -428,6 +544,8 @@ export function useVoicePipeline(config: VoicePipelineConfig = {}) {
     lastResponse,
     currentTranscript,
     error,
+    volume,
+    isRecording,
     initialize,
     startListening,
     stopListening,

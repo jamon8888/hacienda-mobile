@@ -8,7 +8,6 @@ import {
   useVoicePipeline,
   VoicePipelineConfig,
 } from "@/utils/AiProviders/onDevice/voice";
-import { useVoiceAudioStream } from "@/utils/AiProviders/onDevice/voice/VoiceAudioStream";
 import {
   CACTUS_VOICE_MODELS,
   CactusVoiceModelId,
@@ -124,22 +123,12 @@ function VoiceChatScreenInner({ config }: { config: VoicePipelineConfig }) {
     lastResponse,
     currentTranscript,
     error,
+    volume,
+    isRecording,
     initialize,
     startListening,
     stopListening,
   } = useVoicePipeline(config);
-
-  const {
-    isRecording,
-    volume,
-    start: startAudio,
-    stop: stopAudio,
-  } = useVoiceAudioStream({
-    vadThreshold: config.vadThreshold,
-    minSpeechDurationMs: 300,
-    maxSpeechDurationMs: 30000,
-    silenceDurationMs: 800,
-  });
 
   const [isInitialized, setIsInitialized] = useState(false);
   const [waveformData, setWaveformData] = useState<number[]>(Array(50).fill(0));
@@ -168,8 +157,19 @@ function VoiceChatScreenInner({ config }: { config: VoicePipelineConfig }) {
       ]);
       return;
     }
+    // Stop once decay is effectively finished instead of running for the screen's entire idle
+    // lifetime -- prev.map() below always returns a new array even once every value has
+    // decayed near zero, so without this check React kept re-rendering on a 50ms timer for as
+    // long as the screen stayed open.
+    const DECAY_STOP_THRESHOLD = 0.1;
     const interval = setInterval(() => {
-      setWaveformData(prev => prev.map(v => v * 0.9));
+      setWaveformData(prev => {
+        if (prev.every(v => v < DECAY_STOP_THRESHOLD)) {
+          clearInterval(interval);
+          return prev.every(v => v === 0) ? prev : prev.map(() => 0);
+        }
+        return prev.map(v => v * 0.9);
+      });
     }, 50);
     return () => clearInterval(interval);
   }, [volume, isRecording]);
@@ -219,10 +219,8 @@ function VoiceChatScreenInner({ config }: { config: VoicePipelineConfig }) {
   const handleToggleRecording = async () => {
     try {
       if (isRecording) {
-        await stopAudio();
         await stopListening();
       } else {
-        await startAudio();
         await startListening();
       }
     } catch (err) {
