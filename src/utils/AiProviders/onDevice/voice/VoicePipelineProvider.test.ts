@@ -44,14 +44,14 @@ jest.mock("@/utils/models/defaults", () => ({
       slug: "parakeet-tdt-0.6b-v3",
       quantization: "int4",
     },
-    "gemma-4-e2b-it-int8": {
-      name: "Gemma 4 E2B (8-bit)",
+    "gemma-4-e2b-it-int4": {
+      name: "Gemma 4 E2B (4-bit)",
       slug: "gemma-4-e2b-it",
-      quantization: "int8",
+      quantization: "int4",
     },
   },
   DEFAULT_CACTUS_ASR_MODEL: "parakeet-tdt-0.6b-v3-int4",
-  DEFAULT_CACTUS_LLM_MODEL: "gemma-4-e2b-it-int8",
+  DEFAULT_CACTUS_LLM_MODEL: "gemma-4-e2b-it-int4",
 }));
 
 type SpeechSegmentHandler = (segment: {
@@ -100,7 +100,7 @@ describe("initialize", () => {
     });
     expect(mockCactusLM).toHaveBeenCalledWith({
       model: "gemma-4-e2b-it",
-      options: { quantization: "int8", pro: undefined },
+      options: { quantization: "int4", pro: undefined },
     });
     expect(mockSttInstance.download.mock.invocationCallOrder[0]).toBeLessThan(
       mockSttInstance.init.mock.invocationCallOrder[0],

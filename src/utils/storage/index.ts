@@ -21,10 +21,15 @@ export default class Storage {
 
     static async getRealPathFromUri(uri: string) {
         if (!Storage.needsStorageSearch(uri)) return uri;
-        if (uri.includes("%3A")) {
-            const docId = uri.split("%3A")[1];
-            return `content://media/external/file/${docId}`;
-        }
+        // Used to short-circuit here for any URI containing "%3A" (the URL-encoded ":" that
+        // separates type from id in a SAF document ID, e.g. "document%3A1000017076") and return
+        // a raw `content://media/external/file/${docId}` string instead of an actual filesystem
+        // path. That's not a real path -- every caller here (Xberg extraction, the RNFS-based
+        // fallback read in useAttachments) needs one, so it failed downstream with "File not
+        // found: content://media/external/file/...". Since almost every real-world SAF URI
+        // contains "%3A", this shortcut intercepted nearly every call before it ever reached the
+        // native resolver below, which does the real work of querying the MediaStore's `_data`
+        // column for an actual path.
         return await StorageModule.getRealPathFromUri(uri);
     }
 }

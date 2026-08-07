@@ -378,28 +378,25 @@ export interface CactusVoiceModelBundle {
 }
 
 export const CACTUS_VOICE_MODELS = {
-  "gemma-4-e2b-it-int8": {
-    id: "gemma-4-e2b-it-int8",
-    name: "Gemma 4 E2B (8-bit)",
-    description:
-      "Best accuracy. Vision, audio, completion and tool-calling capable.",
-    slug: "gemma-4-e2b-it",
-    quantization: "int8",
-    size: "~1.2GB",
-    hasConfidenceProbe: false,
-    supportsCloudHandoff: false,
-    multimodal: { text: true, vision: true, audio: true },
-    recommendedFor: "voice-pipeline",
-    minRAM: "4GB",
-  },
+  // No "gemma-4-e2b-it-int8" entry: cactus-react-native's registry resolver (modelRegistry.ts)
+  // picks the newest release tag on Cactus-Compute/gemma-4-E2B-it that is <= our pinned SDK's
+  // runtime version (1.13.1), which resolves to tag v1.13. That tag ships gemma-4-e2b-it-int4.zip
+  // but NOT gemma-4-e2b-it-int8.zip (added later, only present from v2.0 onward) -- so selecting
+  // the int8 bundle 404s partway through download every time. Verified directly against HF's API
+  // (curl -I .../resolve/v1.13/weights/gemma-4-e2b-it-int8.zip -> 404;
+  // .../resolve/v2.0/weights/gemma-4-e2b-it-int8.zip -> 302). Re-add int8 once
+  // cactus-react-native is upgraded past whatever runtime version resolves to v2.0+.
   "gemma-4-e2b-it-int4": {
     id: "gemma-4-e2b-it-int4",
     name: "Gemma 4 E2B (4-bit)",
     description:
-      "Smaller, faster, minor accuracy tradeoff vs. the 8-bit bundle.",
+      "Vision, audio, completion and tool-calling capable multimodal model.",
     slug: "gemma-4-e2b-it",
     quantization: "int4",
-    size: "~650MB",
+    // The actual weights/gemma-4-e2b-it-int4.zip on HF is ~3.85GB (verified via HEAD request),
+    // not the ~650MB previously listed here -- it bundles vision + audio encoders alongside the
+    // text model, not just a quantized text-only LLM.
+    size: "~3.85GB",
     hasConfidenceProbe: false,
     supportsCloudHandoff: false,
     multimodal: { text: true, vision: true, audio: true },
@@ -453,6 +450,6 @@ export type CactusVoiceModelId = keyof typeof CACTUS_VOICE_MODELS;
 export const DEFAULT_CACTUS_ASR_MODEL: CactusVoiceModelId =
   "parakeet-tdt-0.6b-v3-int4";
 export const DEFAULT_CACTUS_LLM_MODEL: CactusVoiceModelId =
-  "gemma-4-e2b-it-int8";
+  "gemma-4-e2b-it-int4";
 
 export default MODEL_CARDS;
