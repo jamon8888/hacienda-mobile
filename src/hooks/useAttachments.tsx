@@ -138,7 +138,44 @@ export default function useAttachments({
         },
       ],
     );
-  }, []);
+  }, [onClearWorkspaceVectors]);
+
+  const extractTextContentFromFile = useCallback(
+    async (
+      fileStoragePath: string,
+      mimeType: string,
+    ): Promise<string | null> => {
+      try {
+        const config: ExtractionConfig = XbergClient.defaultExtractionConfig();
+        const result = await XbergClient.extract(fileStoragePath, config);
+        return result.results[0]?.content || null;
+      } catch (e) {
+        console.log("Xberg extraction failed, falling back:", e);
+        // The fallback reads the file as UTF-8 text, which is only meaningful for formats
+        // that *are* text. Reading a PDF, DOCX or image this way yields binary noise that
+        // still looks like a successful extraction to every caller downstream — it gets
+        // embedded, stored, and later retrieved as context. Refusing is the honest answer:
+        // callers surface "could not be read" rather than silently poisoning the workspace.
+        if (!isPlainTextAttachment(fileStoragePath, mimeType)) {
+          console.log(
+            "No text fallback for this format; reporting extraction failure",
+          );
+          return null;
+        }
+        try {
+          const stats = await RNFS.stat(fileStoragePath).catch(e => {
+            console.log("error", e);
+            throw new Error("Attachment could not be read");
+          });
+          return await RNFS.read(fileStoragePath, stats.size, 0, "utf8");
+        } catch (fallbackError) {
+          console.log("Fallback extraction failed:", fallbackError);
+          return null;
+        }
+      }
+    },
+    [],
+  );
 
   /**
    * Process an attachment and add it to the attachments array
@@ -243,44 +280,14 @@ export default function useAttachments({
         await RNFS.unlink(temporaryFilePath);
       }
     }
-  }, [workspaceSlug]);
-
-  const extractTextContentFromFile = useCallback(
-    async (
-      fileStoragePath: string,
-      mimeType: string,
-    ): Promise<string | null> => {
-      try {
-        const config: ExtractionConfig = XbergClient.defaultExtractionConfig();
-        const result = await XbergClient.extract(fileStoragePath, config);
-        return result.results[0]?.content || null;
-      } catch (e) {
-        console.log("Xberg extraction failed, falling back:", e);
-        // The fallback reads the file as UTF-8 text, which is only meaningful for formats
-        // that *are* text. Reading a PDF, DOCX or image this way yields binary noise that
-        // still looks like a successful extraction to every caller downstream — it gets
-        // embedded, stored, and later retrieved as context. Refusing is the honest answer:
-        // callers surface "could not be read" rather than silently poisoning the workspace.
-        if (!isPlainTextAttachment(fileStoragePath, mimeType)) {
-          console.log(
-            "No text fallback for this format; reporting extraction failure",
-          );
-          return null;
-        }
-        try {
-          const stats = await RNFS.stat(fileStoragePath).catch(e => {
-            console.log("error", e);
-            throw new Error("Attachment could not be read");
-          });
-          return await RNFS.read(fileStoragePath, stats.size, 0, "utf8");
-        } catch (fallbackError) {
-          console.log("Fallback extraction failed:", fallbackError);
-          return null;
-        }
-      }
-    },
-    [],
-  );
+  }, [
+    workspaceSlug,
+    deviceInfo.isAndroid,
+    embedder,
+    embeddingConfig,
+    extractTextContentFromFile,
+    removeAttachment,
+  ]);
 
   const askForAttachment = useCallback(async () => {
     const result = await pick({
@@ -313,7 +320,7 @@ export default function useAttachments({
       addAttachment(attachmentObject);
       await processAttachment(attachmentObject);
     }
-  }, []);
+  }, [addAttachment, processAttachment]);
 
   const renderAttachments = useCallback(() => {
     if (attachments.length === 0) return null;

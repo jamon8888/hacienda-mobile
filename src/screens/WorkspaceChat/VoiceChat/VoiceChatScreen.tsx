@@ -135,7 +135,7 @@ function VoiceChatScreenInner({ config }: { config: VoicePipelineConfig }) {
     start: startAudio,
     stop: stopAudio,
   } = useVoiceAudioStream({
-    vadThreshold: 0.5,
+    vadThreshold: config.vadThreshold,
     minSpeechDurationMs: 300,
     maxSpeechDurationMs: 30000,
     silenceDurationMs: 800,
