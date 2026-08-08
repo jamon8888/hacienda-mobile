@@ -3,6 +3,7 @@ import { CactusLM, CactusLMTool } from "cactus-react-native";
 import * as RNFS from "@dr.pogodin/react-native-fs";
 import { Model } from "@/utils/types";
 import { defaultModels } from "@/utils/models";
+import { CACTUS_CHAT_MODELS } from "@/utils/models/defaults";
 import { stops } from "@/utils/chat";
 import {
   CompletionParams,
@@ -128,13 +129,25 @@ export default class CactusLmWrapper {
         return true;
       }
 
-      if (!this.ggufFilePath) await this.determineGgufFilePath();
-      if (!this.ggufFilePath)
+      // Registry slug, never a local .gguf path: cactus-react-native >= 1.x hands any path it
+      // is given straight to the native runtime, which expects one of Cactus's own bundles
+      // (config.txt + weights) and fails with "Failed to create model - check config.txt exists
+      // at: <path>" for a raw GGUF. See CACTUS_CHAT_MODELS for the full explanation.
+      const ref = CACTUS_CHAT_MODELS[this.model];
+      if (!ref)
         throw new Error(
-          `CactusLmWrapper::initialize: No gguf file found for model ${this.model}`,
+          `CactusLmWrapper::initialize: ${this.model} has no Cactus registry bundle. ` +
+            `Supported models: ${Object.keys(CACTUS_CHAT_MODELS).join(", ")}`,
         );
 
-      const lm = new CactusLM({ model: this.ggufFilePath });
+      const lm = new CactusLM({
+        model: ref.slug,
+        options: { quantization: ref.quantization },
+      });
+      // No-ops when the bundle is already on disk, so this is safe to call on every init --
+      // it's also the only way the bundle ever lands on the device now that the app's own
+      // GGUF downloader no longer produces something the runtime can load.
+      await lm.download();
       await lm.init();
       this.cactusLmContext = lm;
       this.log(

@@ -34,8 +34,11 @@ export default function NativeOptions({
         for (const model of models) {
           // @ts-ignore
           const path = resolveDestinationPathFromGGUFUrl(model.downloadUrl);
+          // No legacy GGUF path (e.g. the "powerful" tier, which has no Cactus registry
+          // equivalent for its old model) -- treat as downloaded so this screen doesn't try to
+          // run a pre-download step; CactusLmWrapper fetches the real bundle on first use.
           // @ts-ignore
-          model.isDownloaded = await RNFS.exists(path);
+          model.isDownloaded = path ? await RNFS.exists(path) : true;
         }
         setAvailableModels(models);
       } else setAvailableModels([]);

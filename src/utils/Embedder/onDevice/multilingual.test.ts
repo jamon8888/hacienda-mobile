@@ -1,6 +1,7 @@
 export {};
 
 const mockLmInstance = {
+  download: jest.fn().mockResolvedValue(undefined),
   init: jest.fn().mockResolvedValue(undefined),
   embed: jest.fn().mockResolvedValue({ embedding: [0.1, 0.2, 0.3, 0.4] }),
   destroy: jest.fn().mockResolvedValue(undefined),
@@ -10,24 +11,23 @@ jest.mock("cactus-react-native", () => ({
   CactusLM: mockCactusLM,
 }));
 
-jest.mock("@dr.pogodin/react-native-fs", () => ({
-  exists: jest.fn().mockResolvedValue(true),
-  mkdir: jest.fn().mockResolvedValue(undefined),
-  downloadFile: jest.fn(),
-}));
-
 jest.mock("@/utils/models/defaults", () => ({
   MULTILINGUAL_EMBEDDING_MODELS: {
-    "multilingual-e5-small": {
-      id: "multilingual-e5-small",
-      modelId: "cstr/multilingual-e5-small-GGUF",
-      tag: "https://huggingface.co/cstr/multilingual-e5-small-GGUF/resolve/main/multilingual-e5-small-q4_k.gguf",
-      dimensions: 384,
+    "nomic-embed-text-v2-moe": {
+      id: "nomic-embed-text-v2-moe",
+      modelId: "Cactus-Compute/nomic-embed-text-v2-moe",
+      tag: "",
+      dimensions: 768,
       contextLength: 512,
       languages: ["en", "fr"],
     },
   },
-  resolveDestinationPathFromGGUFUrl: () => "/mock/models/e5-small.gguf",
+  CACTUS_EMBEDDING_MODELS: {
+    "nomic-embed-text-v2-moe": {
+      slug: "nomic-embed-text-v2-moe",
+      quantization: "int8",
+    },
+  },
 }));
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -45,25 +45,29 @@ afterEach(() => {
 });
 
 describe("embed", () => {
-  it("constructs CactusLM from the local model path, initializes it, and embeds with L2 normalize enabled", async () => {
-    const provider = new MultilingualEmbedderProvider("multilingual-e5-small");
+  it("constructs CactusLM from the registry slug, downloads, initializes it, and embeds with L2 normalize enabled", async () => {
+    const provider = new MultilingualEmbedderProvider(
+      "nomic-embed-text-v2-moe",
+    );
 
     const embedding = await provider.embed("bonjour le monde", "query");
 
     expect(mockCactusLM).toHaveBeenCalledWith({
-      model: "/mock/models/e5-small.gguf",
+      model: "nomic-embed-text-v2-moe",
+      options: { quantization: "int8" },
     });
+    expect(mockLmInstance.download).toHaveBeenCalled();
     expect(mockLmInstance.init).toHaveBeenCalled();
     expect(mockLmInstance.embed).toHaveBeenCalledWith({
-      text: "query: bonjour le monde",
+      text: "search_query: bonjour le monde",
       normalize: true,
     });
     expect(embedding).toEqual([0.1, 0.2, 0.3, 0.4]);
   });
 
   it("reuses the same provider instance per model id", () => {
-    const a = new MultilingualEmbedderProvider("multilingual-e5-small");
-    const b = new MultilingualEmbedderProvider("multilingual-e5-small");
+    const a = new MultilingualEmbedderProvider("nomic-embed-text-v2-moe");
+    const b = new MultilingualEmbedderProvider("nomic-embed-text-v2-moe");
 
     expect(a).toBe(b);
   });
@@ -71,7 +75,9 @@ describe("embed", () => {
 
 describe("cleanup", () => {
   it("destroys the CactusLM instance", async () => {
-    const provider = new MultilingualEmbedderProvider("multilingual-e5-small");
+    const provider = new MultilingualEmbedderProvider(
+      "nomic-embed-text-v2-moe",
+    );
     await provider.embed("hello", "query");
 
     await provider.cleanup();

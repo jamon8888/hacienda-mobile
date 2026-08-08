@@ -1,6 +1,7 @@
 export {};
 
 const mockLmInstance = {
+  download: jest.fn().mockResolvedValue(undefined),
   init: jest.fn().mockResolvedValue(undefined),
   embed: jest.fn().mockResolvedValue({ embedding: [0.1, 0.2, 0.3, 0.4] }),
   destroy: jest.fn().mockResolvedValue(undefined),
@@ -10,21 +11,20 @@ jest.mock("cactus-react-native", () => ({
   CactusLM: mockCactusLM,
 }));
 
-jest.mock("@dr.pogodin/react-native-fs", () => ({
-  exists: jest.fn().mockResolvedValue(true),
-  mkdir: jest.fn().mockResolvedValue(undefined),
-  downloadFile: jest.fn(),
-}));
-
 jest.mock("@/utils/models/defaults", () => ({
   EMBEDDING_MODEL: {
-    modelId: "nomic-ai/nomic-embed-text-v1.5-GGUF",
-    tag: "https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.Q4_K_M.gguf",
+    modelId: "Cactus-Compute/nomic-embed-text-v2-moe",
+    tag: "",
     dimensions: 768,
-    contextLength: 8192,
+    contextLength: 512,
     languages: ["en"],
   },
-  resolveDestinationPathFromGGUFUrl: () => "/mock/models/embed.gguf",
+  CACTUS_EMBEDDING_MODELS: {
+    "nomic-embed-text-v2-moe": {
+      slug: "nomic-embed-text-v2-moe",
+      quantization: "int8",
+    },
+  },
 }));
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -42,14 +42,16 @@ afterEach(() => {
 });
 
 describe("embed", () => {
-  it("constructs CactusLM from the local model path, initializes it, and embeds with normalize disabled", async () => {
+  it("constructs CactusLM from the registry slug, downloads, initializes it, and embeds with normalize disabled", async () => {
     const provider = new OnDeviceEmbedderProvider();
 
     const embedding = await provider.embed("hello world", "query");
 
     expect(mockCactusLM).toHaveBeenCalledWith({
-      model: "/mock/models/embed.gguf",
+      model: "nomic-embed-text-v2-moe",
+      options: { quantization: "int8" },
     });
+    expect(mockLmInstance.download).toHaveBeenCalled();
     expect(mockLmInstance.init).toHaveBeenCalled();
     expect(mockLmInstance.embed).toHaveBeenCalledWith({
       text: "search_query: hello world",

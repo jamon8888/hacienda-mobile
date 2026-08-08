@@ -37,7 +37,10 @@ export default function useModelManager({ llmPreferences, fetchLLMPreference, LL
     const downloaded: { [key: string]: boolean } = {};
     for (const model of models) {
       const path = resolveDestinationPathFromGGUFUrl(model.downloadUrl);
-      downloaded[model.modelId] = await RNFS.exists(path);
+      // No legacy GGUF path means this model has no pre-download step here at all -- it's
+      // marked "downloaded" so the UI doesn't try to run one; CactusLmWrapper downloads the
+      // real Cactus-registry bundle lazily the first time the model is actually used.
+      downloaded[model.modelId] = path ? await RNFS.exists(path) : true;
     }
     setDownloadedModels(downloaded);
   };
@@ -101,7 +104,12 @@ export default function useModelManager({ llmPreferences, fetchLLMPreference, LL
     }
 
     setModelDownloadUrl(model.downloadUrl);
-    const storageLocation = resolveDestinationPathFromGGUFUrl(model.downloadUrl);
+    // checkModelDownloaded() above already returns true (short-circuiting to selectModel
+    // before this point) for a model with no legacy GGUF path, so storageLocation is
+    // guaranteed non-null here.
+    const storageLocation = resolveDestinationPathFromGGUFUrl(
+      model.downloadUrl,
+    ) as string;
 
     // Create the directory if it doesn't exist
     const dirPath = storageLocation.substring(0, storageLocation.lastIndexOf('/'));
@@ -183,7 +191,7 @@ export default function useModelManager({ llmPreferences, fetchLLMPreference, LL
 
     try {
       const path = resolveDestinationPathFromGGUFUrl(model.downloadUrl);
-      if (await RNFS.exists(path)) {
+      if (path && (await RNFS.exists(path))) {
         await RNFS.unlink(path);
 
         // Update downloaded models state
@@ -240,6 +248,8 @@ export default function useModelManager({ llmPreferences, fetchLLMPreference, LL
    */
   const checkModelDownloaded = async (downloadUrl: string): Promise<boolean> => {
     const storageLocation = resolveDestinationPathFromGGUFUrl(downloadUrl);
+    // No legacy GGUF path -- see updateDownloadedModels for why this counts as "downloaded".
+    if (!storageLocation) return true;
     return await RNFS.exists(storageLocation);
   };
 

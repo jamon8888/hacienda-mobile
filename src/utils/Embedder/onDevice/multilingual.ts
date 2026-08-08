@@ -3,9 +3,8 @@ import {
   MultilingualEmbeddingModelId,
 } from "@/utils/models/defaults";
 import TextSplitter, { TextSplitterConfig } from "@/utils/TextSplitter";
-import * as RNFS from "@dr.pogodin/react-native-fs";
 import { CactusLM } from "cactus-react-native";
-import { resolveDestinationPathFromGGUFUrl } from "@/utils/models/defaults";
+import { CACTUS_EMBEDDING_MODELS } from "@/utils/models/defaults";
 import { EmbeddingProvider, EmbedderPrefixType } from "../types";
 import { dedupeChunks } from "@/utils/chunking";
 
@@ -60,7 +59,6 @@ export default class MultilingualEmbedderProvider implements EmbeddingProvider {
   private EMBEDDING_NORMALIZE!: boolean;
 
   private _isWorking: boolean = false;
-  private modelPath!: string;
   private keepAliveTimer: ReturnType<typeof setTimeout> | null = null;
   private keepAliveInterval = 1000 * 60 * 3;
   private cactusLmContext: CactusLM | null = null;
@@ -72,7 +70,6 @@ export default class MultilingualEmbedderProvider implements EmbeddingProvider {
     this.modelConfig = MULTILINGUAL_EMBEDDING_MODELS[modelId];
     this.EMBED_PREFIXES = MODEL_PREFIXES[modelId];
     this.EMBEDDING_NORMALIZE = MODEL_NORMALIZE[modelId];
-    this.modelPath = resolveDestinationPathFromGGUFUrl(this.modelConfig.tag);
 
     if (!MultilingualEmbedderProvider.instances.has(modelId)) {
       MultilingualEmbedderProvider.instances.set(modelId, this);
@@ -96,49 +93,29 @@ export default class MultilingualEmbedderProvider implements EmbeddingProvider {
     );
   }
 
-  private async downloadModel(): Promise<boolean> {
-    try {
-      this.log("Downloading embedding model...");
-      const fileExists = await RNFS.exists(this.modelPath);
-      if (fileExists) {
-        this.log("Model already exists!");
-        return true;
-      } else {
-        const directory = this.modelPath.split("/").slice(0, -1).join("/");
-        this.log("Creating directory", directory);
-        await RNFS.mkdir(directory);
-      }
-
-      return RNFS.downloadFile({
-        fromUrl: this.modelConfig.tag,
-        toFile: this.modelPath,
-        progress: res => {
-          const progress = (res.bytesWritten / res.contentLength) * 100;
-          this.log("progress", progress);
-        },
-      })
-        .promise.then(() => true)
-        .catch(err => {
-          this.log("download error", err);
-          return false;
-        });
-    } catch (error) {
-      this.log("downloadEmbeddingModel:error", error);
-      return false;
-    }
-  }
-
   async initialize(): Promise<boolean> {
     try {
       if (!!this.cactusLmContext) return true;
-      if (!(await RNFS.exists(this.modelPath))) {
-        const downloaded = await this.downloadModel();
-        if (!downloaded) throw new Error("Failed to download model");
-      }
 
-      this.log(`Initializing model at ${this.modelPath}`);
+      // Registry slug, never a downloaded .gguf path -- see CACTUS_EMBEDDING_MODELS. The old
+      // path here fetched a GGUF from HuggingFace with RNFS and handed the file to CactusLM,
+      // which this runtime cannot load ("Failed to create model - check config.txt exists at").
+      const ref = CACTUS_EMBEDDING_MODELS[this.modelId];
+      if (!ref)
+        throw new Error(
+          `${this.modelId} has no Cactus registry bundle and cannot run on this runtime. ` +
+            `Available: ${Object.keys(CACTUS_EMBEDDING_MODELS).join(", ")}`,
+        );
 
-      const lm = new CactusLM({ model: this.modelPath });
+      this.log(`Initializing model ${ref.slug} (${ref.quantization})`);
+      const lm = new CactusLM({
+        model: ref.slug,
+        options: { quantization: ref.quantization },
+      });
+      // No-ops once the bundle is on disk; this replaces the RNFS download above entirely.
+      await lm.download({
+        onProgress: p => this.log(`download progress ${Math.round(p * 100)}%`),
+      });
       await lm.init();
       this.cactusLmContext = lm;
 

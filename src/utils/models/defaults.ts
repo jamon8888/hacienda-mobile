@@ -12,6 +12,61 @@ export type DefaultModel = {
   isPreset: boolean;
 };
 
+/**
+ * Cactus registry slug + quantization for an on-device model.
+ *
+ * cactus-react-native >= 1.x dropped raw-GGUF support: CactusLM.init() passes whatever it is
+ * given straight to the native runtime, which expects one of Cactus's own model bundles (a
+ * directory holding config.txt alongside the weights), not a .gguf file. A path starting with
+ * "/" is treated as an already-local bundle (see isModelPath() in the SDK's CactusLM.ts), so
+ * handing it a downloaded HuggingFace GGUF made every single load fail with
+ * "Failed to create model - check config.txt exists at: <path>".
+ *
+ * Models are therefore identified by registry slug now, and the SDK downloads the matching
+ * bundle itself via CactusLM.download() from https://huggingface.co/Cactus-Compute.
+ */
+export interface CactusModelRef {
+  slug: string;
+  quantization: "int4" | "int8";
+}
+
+/**
+ * Which bundle each chat model maps to in the Cactus registry, keyed by the app's own model id.
+ *
+ * Only slugs verified to resolve against our pinned SDK are listed. The SDK picks the newest
+ * release tag on the model's HF repo that is <= its own runtime version (1.13.1) -- a slug can
+ * exist upstream yet still 404 at that tag if the bundle was published later, which is exactly
+ * how gemma-4-e2b-it's int8 bundle broke (present from v2.0, absent at the v1.13 we resolve to).
+ * Verify any new entry with a HEAD request against the resolved tag before adding it.
+ */
+export const CACTUS_CHAT_MODELS: Record<string, CactusModelRef> = {
+  "unsloth/Qwen3-0.6B-GGUF": { slug: "qwen3-0.6b", quantization: "int8" },
+  "unsloth/Qwen3-1.7B-GGUF": { slug: "qwen3-1.7b", quantization: "int8" },
+  "Cactus-Compute/Qwen3.5-2B": { slug: "qwen3.5-2b", quantization: "int8" },
+  "unsloth/gemma-3-1b-it-GGUF": {
+    slug: "gemma-3-1b-it",
+    quantization: "int8",
+  },
+};
+
+/**
+ * Which embedding engines have a Cactus registry bundle, keyed by the app's engine id.
+ *
+ * Same constraint as CACTUS_CHAT_MODELS: the runtime can only load registry bundles, so an
+ * engine absent from this map cannot run at all. Of the four multilingual engines the app
+ * offers, only Nomic v2 MoE is published to the Cactus registry -- the E5 and CamemBERT
+ * entries exist upstream on HuggingFace as plain GGUF only, which this runtime cannot load.
+ * They are left in MULTILINGUAL_EMBEDDING_MODELS (so stored workspace configs referencing
+ * them still resolve for display) but selecting one now fails loudly at init instead of
+ * silently producing no vectors.
+ */
+export const CACTUS_EMBEDDING_MODELS: Record<string, CactusModelRef> = {
+  "nomic-embed-text-v2-moe": {
+    slug: "nomic-embed-text-v2-moe",
+    quantization: "int8",
+  },
+};
+
 export const MODEL_CARDS = [
   {
     id: "lightweight",
@@ -36,25 +91,33 @@ export const MODEL_CARDS = [
     name: "Powerful",
     description: "Heavier models for the best accuracy.",
     Icon: Barbell,
-    size: "2.09GB",
-    modelId: "unsloth/Llama-3.2-3B-Instruct-GGUF",
-    tag: "https://huggingface.co/unsloth/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_1.gguf",
+    // Was unsloth/Llama-3.2-3B-Instruct-GGUF, which has no Cactus registry equivalent -- and
+    // since the runtime can only load registry bundles now (see CACTUS_CHAT_MODELS above),
+    // keeping it would have left this tier permanently unloadable. Qwen3.5 2B is the closest
+    // available bundle and keeps all three tiers on the same model family.
+    size: "2.0GB",
+    modelId: "Cactus-Compute/Qwen3.5-2B",
+    tag: "",
   },
 ];
 
 export const EMBEDDING_MODEL = {
   id: "default",
   name: "Default",
-  description: "The default embedding model for AnythingLLM (English-only).",
-  size: "84.1MB",
+  description: "The default embedding model for AnythingLLM.",
+  size: "328MB",
 
-  // Nomic Embed Text works best, all the All-MiniLM-L6-v2 models are too compressed and suck.
-  // https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF
-  modelId: "nomic-ai/nomic-embed-text-v1.5-GGUF",
-  tag: "https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.Q4_K_M.gguf",
+  // Was nomic-ai/nomic-embed-text-v1.5-GGUF, a plain GGUF this runtime cannot load (see
+  // CACTUS_EMBEDDING_MODELS). Nomic v2 MoE is the closest match actually published to the
+  // Cactus registry -- same 768 dimensions, and OnDeviceEmbedderProvider now downloads it via
+  // CACTUS_EMBEDDING_MODELS["nomic-embed-text-v2-moe"] rather than modelId/tag below, which are
+  // kept only for display (size/dimensions/contextLength/languages) and no longer drive a
+  // download.
+  modelId: "Cactus-Compute/nomic-embed-text-v2-moe",
+  tag: "",
   dimensions: 768,
-  contextLength: 8192,
-  languages: ["en"],
+  contextLength: 512,
+  languages: ["en", "fr", "de", "es", "zh", "ja", "ko", "ar", "hi", "pt"],
 };
 
 export const MULTILINGUAL_EMBEDDING_MODELS = {
@@ -337,8 +400,23 @@ export const DEFAULT_MULTILINGUAL_EMBEDDING_MODEL: MultilingualEmbeddingModelId 
  * @param url - The url of the model
  * @returns The destination path for the model
  */
-export function resolveDestinationPathFromGGUFUrl(url: string) {
-  const splits = new URL(url).pathname.split("/");
+/**
+ * Returns null (rather than throwing) for models that no longer ship a legacy GGUF `tag`/
+ * `downloadUrl` -- e.g. MODEL_CARDS' "powerful" tier, which has no Cactus registry equivalent
+ * for Llama-3.2-3B and so has tag: "". useModelManager.ts's pre-download flow treats null as
+ * "nothing to pre-download here", which is correct: the actual model load now goes through
+ * CACTUS_CHAT_MODELS + CactusLM.download() (see CactusLmWrapper.initialize()), which is
+ * independent of this legacy path and downloads lazily on first use regardless.
+ */
+export function resolveDestinationPathFromGGUFUrl(url: string): string | null {
+  if (!url) return null;
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
+  const splits = parsed.pathname.split("/");
   const creator = {
     creator: splits[1],
     model: splits[2],

@@ -30,6 +30,11 @@ function useDownloadModelFromUrl() {
 
         try {
             const localStorageDestination = resolveDestinationPathFromGGUFUrl(url);
+            // Unreachable given the .gguf-suffix check above (which guarantees a URL
+            // resolveDestinationPathFromGGUFUrl can parse), but the return type is now
+            // `string | null` for models with no legacy GGUF tag at all -- narrow explicitly
+            // rather than assert.
+            if (!localStorageDestination) throw new Error(`Could not resolve a local path for ${url}`);
             const fileExists = await RNFS.exists(localStorageDestination);
 
             if (fileExists) {

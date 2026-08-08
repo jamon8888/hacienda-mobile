@@ -8,8 +8,6 @@ import { useNavigation } from "@react-navigation/native";
 import useLlmPreference from "@/hooks/useLLMPreference";
 import { FileDashed, Sparkle } from "phosphor-react-native";
 import Workspace from "@/database/models/Workspace";
-import { EMBEDDING_MODEL, resolveDestinationPathFromGGUFUrl } from "@/utils/models/defaults";
-import * as RNFS from '@dr.pogodin/react-native-fs';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Telemetry from "@/utils/Telemetry";
 
@@ -141,30 +139,3 @@ function PrivacyItem({ name, description, image, Icon }: { name: string, descrip
   )
 }
 
-async function downloadEmbeddingModel() {
-  try {
-    console.log('Downloading embedding model now to save time later...');
-    const localStorageDestination = resolveDestinationPathFromGGUFUrl(EMBEDDING_MODEL.tag);
-    const fileExists = await RNFS.exists(localStorageDestination);
-    if (fileExists) {
-      console.log('Model already exists!');
-      return true;
-    } else {
-      const directory = localStorageDestination.split('/').slice(0, -1).join('/');
-      console.log('Creating directory', directory);
-      await RNFS.mkdir(directory);
-    }
-
-    return RNFS.downloadFile({
-      fromUrl: EMBEDDING_MODEL.tag,
-      toFile: localStorageDestination,
-      progress: (res) => {
-        const progress = (res.bytesWritten / res.contentLength) * 100;
-        console.log('progress', progress);
-      }
-    }).promise.then(() => true).catch(() => false);
-  } catch (error) {
-    console.log('downloadEmbeddingModel:error', error)
-    return false;
-  }
-}

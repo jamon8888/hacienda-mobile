@@ -1,6 +1,7 @@
 export {};
 
 const mockLmInstance = {
+  download: jest.fn().mockResolvedValue(undefined),
   init: jest.fn().mockResolvedValue(undefined),
   complete: jest.fn().mockResolvedValue({
     success: true,
@@ -43,25 +44,38 @@ afterEach(() => {
 });
 
 describe("initialize", () => {
-  it("constructs CactusLM from the resolved gguf path and initializes it", async () => {
+  it("constructs CactusLM from the registry slug, downloads, and initializes it", async () => {
     const wrapper = new CactusLmWrapper({
-      model: "test-model.gguf",
+      model: "unsloth/Qwen3-0.6B-GGUF",
       parent: mockParent,
     });
 
     await wrapper.initialize();
 
     expect(mockCactusLM).toHaveBeenCalledWith({
-      model: "/mock/models/gguf/test-model.gguf",
+      model: "qwen3-0.6b",
+      options: { quantization: "int8" },
     });
+    expect(mockLmInstance.download).toHaveBeenCalled();
     expect(mockLmInstance.init).toHaveBeenCalled();
+  });
+
+  it("throws for a model with no Cactus registry bundle", async () => {
+    const wrapper = new CactusLmWrapper({
+      model: "test-model.gguf",
+      parent: mockParent,
+    });
+
+    await expect(wrapper.initialize()).rejects.toThrow(
+      "no Cactus registry bundle",
+    );
   });
 });
 
 describe("getChatCompletion", () => {
   it("maps the CactusLM result fields onto ICompleteResponse", async () => {
     const wrapper = new CactusLmWrapper({
-      model: "test-model.gguf",
+      model: "unsloth/Qwen3-0.6B-GGUF",
       parent: mockParent,
     });
 
@@ -91,7 +105,7 @@ describe("getChatCompletion", () => {
 describe("streamGetChatCompletion tool-call translation", () => {
   it("flattens OpenAI-shaped tool definitions into CactusLMTool before calling complete()", async () => {
     const wrapper = new CactusLmWrapper({
-      model: "test-model.gguf",
+      model: "unsloth/Qwen3-0.6B-GGUF",
       parent: mockParent,
     });
     const availableTools = [
@@ -136,7 +150,7 @@ describe("streamGetChatCompletion tool-call translation", () => {
       totalTimeMs: 1,
     });
     const wrapper = new CactusLmWrapper({
-      model: "test-model.gguf",
+      model: "unsloth/Qwen3-0.6B-GGUF",
       parent: mockParent,
     });
 
@@ -156,7 +170,7 @@ describe("streamGetChatCompletion tool-call translation", () => {
 
   it("forwards streamed tokens directly via onToken", async () => {
     const wrapper = new CactusLmWrapper({
-      model: "test-model.gguf",
+      model: "unsloth/Qwen3-0.6B-GGUF",
       parent: mockParent,
     });
     const tokens: string[] = [];
@@ -189,7 +203,7 @@ describe("streamGetChatCompletion tool-call translation", () => {
 describe("cleanup", () => {
   it("destroys the CactusLM instance", async () => {
     const wrapper = new CactusLmWrapper({
-      model: "test-model.gguf",
+      model: "unsloth/Qwen3-0.6B-GGUF",
       parent: mockParent,
     });
     await wrapper.initialize();
