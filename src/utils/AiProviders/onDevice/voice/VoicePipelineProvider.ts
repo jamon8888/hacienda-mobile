@@ -79,6 +79,11 @@ export class VoicePipelineProvider {
   // overwritten back to "listening" by that segment's finally block once it completes, even
   // though stopListening() already tore the audio stream down.
   private stopRequested = false;
+  // Tracks the in-flight handleSpeechSegment() call (fired-and-forgotten from the audio
+  // stream's onSpeechSegment callback) so cleanup() can await it before destroying
+  // asrModel/llmModel -- otherwise a screen unmount mid-segment destroys native models while
+  // a transcribe()/complete() call is still in flight against them.
+  private processingPromise: Promise<void> | null = null;
 
   // Default configuration
   private static readonly DEFAULT_CONFIG: Required<VoicePipelineConfig> = {
@@ -109,11 +114,9 @@ export class VoicePipelineProvider {
     // this.asrModel/this.llmModel.
     if (this.initPromise) return this.initPromise;
 
-    this.initPromise = this.doInitialize(asrModelId, llmModelId).finally(
-      () => {
-        this.initPromise = null;
-      },
-    );
+    this.initPromise = this.doInitialize(asrModelId, llmModelId).finally(() => {
+      this.initPromise = null;
+    });
     return this.initPromise;
   }
 
@@ -121,6 +124,7 @@ export class VoicePipelineProvider {
     asrModelId?: CactusVoiceModelId,
     llmModelId?: CactusVoiceModelId,
   ): Promise<void> {
+    if (this.disposed) throw new Error("Voice pipeline was disposed");
     this.setState("initializing");
 
     // Track instances locally until both are fully loaded -- on partial failure (e.g. ASR
@@ -188,7 +192,10 @@ export class VoicePipelineProvider {
   }
 
   async startListening(): Promise<void> {
-    if (this.state === "listening") return;
+    // Guard on the stream itself, not just "listening" state -- during transcribing/
+    // thinking/responding the stream is still active, and state === "listening" alone
+    // would miss those, letting a second call construct and leak a second VoiceAudioStream.
+    if (this.audioStream) return;
     if (!this.asrModel || !this.llmModel) {
       await this.initialize();
     }
@@ -203,7 +210,16 @@ export class VoicePipelineProvider {
     // streams both calling the native module's startRecording()/stopRecording() used to race
     // and step on each other (the second start rejected as "ALREADY_RECORDING", or one side's
     // stop tore down the other's still-active capture).
-    audioStream.on("onSpeechSegment", this.handleSpeechSegment.bind(this));
+    audioStream.on("onSpeechSegment", segment => {
+      // Return the promise (not just fire-and-forget it) so callers driving this handler
+      // directly -- e.g. tests invoking it like a plain event callback -- can await the
+      // segment finishing, same as when it was handleSpeechSegment.bind(this) directly.
+      const promise = this.handleSpeechSegment(segment).finally(() => {
+        this.processingPromise = null;
+      });
+      this.processingPromise = promise;
+      return promise;
+    });
     audioStream.on("onError", err => this.notifyError(err));
     audioStream.on("onVolumeChange", v => this.notifyVolumeChange(v));
     audioStream.on("onRecordingStart", () => this.notifyCapturing(true));
@@ -242,6 +258,10 @@ export class VoicePipelineProvider {
     // already run and returned.
     this.disposed = true;
     await this.stopListening();
+    // Let any segment already mid-transcribe/complete finish before destroying the models
+    // it's using -- stopListening() only tears the audio stream down, it doesn't cancel
+    // handleSpeechSegment() calls already in flight from before it ran.
+    if (this.processingPromise) await this.processingPromise.catch(() => {});
     if (this.initPromise) await this.initPromise.catch(() => {});
     if (this.asrModel) {
       await this.asrModel.destroy();

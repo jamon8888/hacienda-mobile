@@ -43,6 +43,19 @@ class StorageModule(reactContext: ReactApplicationContext) : ReactContextBaseJav
      * Get a file path from a Uri. This will get the the path for Storage Access
      * Framework Documents, as well as the _data field for the MediaStore and
      * other file-based ContentProviders.
+     *
+     * KNOWN LIMITATION: on scoped-storage devices (Android 10+), the /storage/emulated/0/...
+     * path this resolves to is a SAF/MediaStore *grant*, not a guaranteed filesystem-readable
+     * path -- java.io.File(path)/RNFS reads (see useAttachments.tsx's text fallback) and Xberg's
+     * native extraction both open it by path, which can fail for documents outside the app's
+     * legacy-storage compatibility even though the ContentResolver grant that produced this URI
+     * is still valid. This has not regressed anything that worked before (the prior code paths
+     * for this URI shape returned an unusable content:// string outright, see the "document"
+     * branch below), but it is not a complete fix either. The more correct approaches --
+     * (a) read via ContentResolver.openInputStream(uri) instead of a resolved path, or (b) copy
+     * the SAF grant into app-owned storage on import -- are a larger change across this module,
+     * XbergModule.kt, and useAttachments.tsx's fallback, deferred pending on-device verification
+     * of which document sources actually fail here.
      */
     private fun getPath(context: Context, uri: Uri): String? {
         val isKitKat = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT

@@ -62,6 +62,7 @@ export default class MultilingualEmbedderProvider implements EmbeddingProvider {
   private keepAliveTimer: ReturnType<typeof setTimeout> | null = null;
   private keepAliveInterval = 1000 * 60 * 3;
   private cactusLmContext: CactusLM | null = null;
+  private initPromise: Promise<boolean> | null = null;
 
   public readonly modelId: MultilingualEmbeddingModelId;
 
@@ -94,9 +95,19 @@ export default class MultilingualEmbedderProvider implements EmbeddingProvider {
   }
 
   async initialize(): Promise<boolean> {
-    try {
-      if (!!this.cactusLmContext) return true;
+    if (!!this.cactusLmContext) return true;
+    // Concurrent embed()/embedBatch() calls before the first init resolves must share
+    // one in-flight init instead of each racing to construct their own CactusLM.
+    if (this.initPromise) return this.initPromise;
 
+    this.initPromise = this.doInitialize().finally(() => {
+      this.initPromise = null;
+    });
+    return this.initPromise;
+  }
+
+  private async doInitialize(): Promise<boolean> {
+    try {
       // Registry slug, never a downloaded .gguf path -- see CACTUS_EMBEDDING_MODELS. The old
       // path here fetched a GGUF from HuggingFace with RNFS and handed the file to CactusLM,
       // which this runtime cannot load ("Failed to create model - check config.txt exists at").

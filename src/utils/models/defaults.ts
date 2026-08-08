@@ -39,7 +39,7 @@ export interface CactusModelRef {
  * how gemma-4-e2b-it's int8 bundle broke (present from v2.0, absent at the v1.13 we resolve to).
  * Verify any new entry with a HEAD request against the resolved tag before adding it.
  */
-export const CACTUS_CHAT_MODELS: Record<string, CactusModelRef> = {
+export const CACTUS_CHAT_MODELS = {
   "unsloth/Qwen3-0.6B-GGUF": { slug: "qwen3-0.6b", quantization: "int8" },
   "unsloth/Qwen3-1.7B-GGUF": { slug: "qwen3-1.7b", quantization: "int8" },
   "Cactus-Compute/Qwen3.5-2B": { slug: "qwen3.5-2b", quantization: "int8" },
@@ -47,7 +47,7 @@ export const CACTUS_CHAT_MODELS: Record<string, CactusModelRef> = {
     slug: "gemma-3-1b-it",
     quantization: "int8",
   },
-};
+} as const satisfies Record<string, CactusModelRef>;
 
 /**
  * Which embedding engines have a Cactus registry bundle, keyed by the app's engine id.
@@ -60,12 +60,12 @@ export const CACTUS_CHAT_MODELS: Record<string, CactusModelRef> = {
  * them still resolve for display) but selecting one now fails loudly at init instead of
  * silently producing no vectors.
  */
-export const CACTUS_EMBEDDING_MODELS: Record<string, CactusModelRef> = {
+export const CACTUS_EMBEDDING_MODELS = {
   "nomic-embed-text-v2-moe": {
     slug: "nomic-embed-text-v2-moe",
     quantization: "int8",
   },
-};
+} as const satisfies Record<string, CactusModelRef>;
 
 export const MODEL_CARDS = [
   {
@@ -113,6 +113,12 @@ export const EMBEDDING_MODEL = {
   // CACTUS_EMBEDDING_MODELS["nomic-embed-text-v2-moe"] rather than modelId/tag below, which are
   // kept only for display (size/dimensions/contextLength/languages) and no longer drive a
   // download.
+  // NOTE: switching the embedding model changes the vector space -- old and new vectors are
+  // not comparable. Not a migration concern here specifically because v1.5 never produced a
+  // vector on this runtime (CactusLM couldn't load it at all, see above), so there is no
+  // pre-existing v1.5-embedded corpus to invalidate. This DOES apply the next time
+  // EMBEDDING_MODEL changes to a different model with existing embedded documents: add a
+  // persisted embedding-model-version marker and a reindex gate before doing that.
   modelId: "Cactus-Compute/nomic-embed-text-v2-moe",
   tag: "",
   dimensions: 768,
@@ -479,7 +485,10 @@ export const CACTUS_VOICE_MODELS = {
     supportsCloudHandoff: false,
     multimodal: { text: true, vision: true, audio: true },
     recommendedFor: "voice-pipeline",
-    minRAM: "3GB",
+    // Was 3GB, inconsistent with the corrected ~3.85GB bundle size above -- resident memory
+    // for weights this size plus KV cache/runtime overhead won't fit in 3GB. Rounded up as an
+    // estimate; not yet measured against real device resident memory.
+    minRAM: "5GB",
   },
   "parakeet-tdt-0.6b-v3-int4": {
     id: "parakeet-tdt-0.6b-v3-int4",

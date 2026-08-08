@@ -36,6 +36,7 @@ export default class OnDeviceEmbedderProvider implements EmbeddingProvider {
   private keepAliveTimer: ReturnType<typeof setTimeout> | null = null;
   private keepAliveInterval = 1000 * (60 * 3); // 3 minutes
   private cactusLmContext: CactusLM | null = null;
+  private initPromise: Promise<boolean> | null = null;
 
   // Singleton, there are no props so nothing to ever reload.
   // Just keep the singleton instance alive.
@@ -50,9 +51,19 @@ export default class OnDeviceEmbedderProvider implements EmbeddingProvider {
   }
 
   private async initialize(): Promise<boolean> {
-    try {
-      if (!!this.cactusLmContext) return true;
+    if (!!this.cactusLmContext) return true;
+    // Concurrent embed()/embedBatch() calls before the first init resolves must share
+    // one in-flight init instead of each racing to construct their own CactusLM.
+    if (this.initPromise) return this.initPromise;
 
+    this.initPromise = this.doInitialize().finally(() => {
+      this.initPromise = null;
+    });
+    return this.initPromise;
+  }
+
+  private async doInitialize(): Promise<boolean> {
+    try {
       // Registry slug, never a downloaded .gguf path -- this runtime only loads Cactus bundles
       // (see CACTUS_EMBEDDING_MODELS). The previous code RNFS-downloaded nomic-embed-text-v1.5
       // from HuggingFace and handed the file to CactusLM, which always failed with
@@ -215,7 +226,14 @@ export default class OnDeviceEmbedderProvider implements EmbeddingProvider {
     options: TextSplitterConfig,
     as: EmbedderPrefixType = "embed_document",
   ): Promise<{ embedding: number[]; metadata: { content: string } }[]> {
-    const textSplitter = new TextSplitter(options);
+    const textSplitter = new TextSplitter({
+      ...options,
+      chunkSize: Math.min(
+        options.chunkSize || 400,
+        this.getContextLength() - 50,
+      ),
+      chunkOverlap: options.chunkOverlap || 50,
+    });
     let chunks = dedupeChunks(await textSplitter.splitText(documentText));
     this.log(
       `Split document into ${chunks.length} ~${

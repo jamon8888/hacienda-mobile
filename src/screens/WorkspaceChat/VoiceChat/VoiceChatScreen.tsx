@@ -1,7 +1,14 @@
 // VoiceChatScreen.tsx - Main voice chat interface
 
 import React, { useEffect, useState, useRef } from "react";
-import { View, Text, StyleSheet, Animated, Easing, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  Easing,
+  TouchableOpacity,
+} from "react-native";
 import SafeView from "@/components/SafeView";
 import { Microphone, X, SpeakerHigh, Sparkle } from "phosphor-react-native";
 import {
@@ -163,13 +170,19 @@ function VoiceChatScreenInner({ config }: { config: VoicePipelineConfig }) {
     // long as the screen stayed open.
     const DECAY_STOP_THRESHOLD = 0.1;
     const interval = setInterval(() => {
+      // Updater stays pure (no clearInterval inside -- React may invoke it more than once,
+      // e.g. in Strict Mode); `decayFinished` is only read after setState returns, so the
+      // interval is stopped exactly once per tick regardless of how many times React called
+      // the updater internally.
+      let decayFinished = false;
       setWaveformData(prev => {
         if (prev.every(v => v < DECAY_STOP_THRESHOLD)) {
-          clearInterval(interval);
+          decayFinished = true;
           return prev.every(v => v === 0) ? prev : prev.map(() => 0);
         }
         return prev.map(v => v * 0.9);
       });
+      if (decayFinished) clearInterval(interval);
     }, 50);
     return () => clearInterval(interval);
   }, [volume, isRecording]);
