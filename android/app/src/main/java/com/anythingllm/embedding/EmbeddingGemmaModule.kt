@@ -24,6 +24,23 @@ class EmbeddingGemmaModule(reactContext: ReactApplicationContext) :
     @ReactMethod
     fun initModel(promise: Promise) {
         try {
+            // Check if model file exists in assets
+            val assetManager = reactApplicationContext.assets
+            val modelExists = try {
+                assetManager.open(MODEL_FILE).close()
+                true
+            } catch (e: Exception) {
+                false
+            }
+
+            if (!modelExists) {
+                promise.reject(
+                    "MODEL_NOT_FOUND",
+                    "EmbeddingGemma model not found. Run 'scripts/downloadEmbeddingGemma.sh' to download the model."
+                )
+                return
+            }
+
             val model = loadModelFile()
             // Initialize LiteRT interpreter
             // Note: Actual LiteRT initialization requires the LiteRT SDK
