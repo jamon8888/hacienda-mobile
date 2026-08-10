@@ -1,6 +1,7 @@
 import { EmbeddingProvider, EmbeddingEngine } from "./types";
 import OnDeviceEmbedderProvider from "./onDevice";
 import MultilingualEmbedderProvider from "./onDevice/multilingual";
+import { EmbeddingGemmaProvider } from "./onDevice/embeddinggemma";
 
 let currentProvider: EmbeddingProvider | null = null;
 let currentEngine: EmbeddingEngine = "nomic-v1.5";
@@ -14,6 +15,8 @@ export function createEmbeddingProvider(
     case "sentence-camembert-base":
     case "nomic-embed-text-v2-moe":
       return new MultilingualEmbedderProvider(engine);
+    case "embeddinggemma-300m":
+      return EmbeddingGemmaProvider.getInstance();
     case "nomic-v1.5":
     default:
       return (

@@ -51,5 +51,6 @@ export type EmbeddingEngine =
   | "multilingual-e5-base"
   | "sentence-camembert-base"
   | "nomic-embed-text-v2-moe"
+  | "embeddinggemma-300m"
   | "auto";
 export type { MultilingualEmbeddingModelId };
