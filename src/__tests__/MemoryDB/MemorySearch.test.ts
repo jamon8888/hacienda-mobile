@@ -23,7 +23,7 @@ describe('MemorySearch', () => {
   });
 
   it('should not apply structural priority for conversations', () => {
-    const kind = 'conversation';
+    const kind = 'conversation' as 'conversation' | 'document';
     const structuralPriority = kind === 'document' ? 0.15 : 0;
     expect(structuralPriority).toBe(0);
   });

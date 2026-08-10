@@ -1,5 +1,5 @@
-import { getMemoryDB } from './index';
-import { MemoryRecord } from '../../store/MemoryStore';
+import { getMemoryDB } from "./index";
+import { MemoryRecord } from "../../store/MemoryStore";
 
 export interface SearchOptions {
   workspaceId: string;
@@ -31,13 +31,13 @@ export async function memorySearch(
   } = options;
 
   // Step 1: Vector search (top 50)
-  const embeddingBlob = Buffer.from(queryEmbedding.buffer);
-  const vectorResults = await db.executeAsync(
+  const embeddingBlob = new Uint8Array(queryEmbedding.buffer);
+  const vectorResults = await db.execute(
     `SELECT m.*, v.distance
      FROM memories_vec v
      JOIN memories m ON m.id = v.id
      WHERE v.embedding MATCH ? AND m.workspace_id = ?
-     ${clientId ? 'AND m.client_id = ?' : ''}
+     ${clientId ? "AND m.client_id = ?" : ""}
      ORDER BY v.distance ASC
      LIMIT 50`,
     clientId
@@ -46,12 +46,12 @@ export async function memorySearch(
   );
 
   // Step 2: BM25 search (top 20)
-  const bm25Results = await db.executeAsync(
+  const bm25Results = await db.execute(
     `SELECT m.*, fts.rank
      FROM memories_fts fts
      JOIN memories m ON m.rowid = fts.rowid
      WHERE memories_fts MATCH ? AND m.workspace_id = ?
-     ${clientId ? 'AND m.client_id = ?' : ''}
+     ${clientId ? "AND m.client_id = ?" : ""}
      ORDER BY fts.rank
      LIMIT 20`,
     clientId ? [query, workspaceId, clientId] : [query, workspaceId],
@@ -63,23 +63,23 @@ export async function memorySearch(
     { memory: MemoryRecord; vectorScore: number; bm25Score: number }
   >();
 
-  for (const row of vectorResults.rows || []) {
+  for (const row of (vectorResults.rows as any[]) || []) {
     merged.set(row.id, {
       memory: rowToRecord(row),
-      vectorScore: 1 / (1 + (row.distance || 0)),
+      vectorScore: 1 / (1 + (Number(row.distance) || 0)),
       bm25Score: 0,
     });
   }
 
-  for (const row of bm25Results.rows || []) {
+  for (const row of (bm25Results.rows as any[]) || []) {
     const existing = merged.get(row.id);
     if (existing) {
-      existing.bm25Score = Math.abs(row.rank || 0);
+      existing.bm25Score = Math.abs(Number(row.rank) || 0);
     } else {
       merged.set(row.id, {
         memory: rowToRecord(row),
         vectorScore: 0,
-        bm25Score: Math.abs(row.rank || 0),
+        bm25Score: Math.abs(Number(row.rank) || 0),
       });
     }
   }
@@ -88,9 +88,9 @@ export async function memorySearch(
   const results: SearchResult[] = [];
   for (const [, data] of merged) {
     const freshnessBonus = Math.exp(
-      -(Date.now() - data.memory.createdAt) / (1000 * 60 * 60 * 24) * 0.1,
+      (-(Date.now() - data.memory.createdAt) / (1000 * 60 * 60 * 24)) * 0.1,
     );
-    const structuralPriority = data.memory.kind === 'document' ? 0.15 : 0;
+    const structuralPriority = data.memory.kind === "document" ? 0.15 : 0;
     const importanceBonus = data.memory.importance * 0.1;
 
     const finalScore =

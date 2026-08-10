@@ -1,5 +1,5 @@
-import { memorySearch, SearchResult } from './MemorySearch';
-import { embedText } from '../Embedder/onDevice/EmbeddingGemmaBridge';
+import { memorySearch, SearchResult } from "./MemorySearch";
+import { embedText } from "../Embedder/onDevice/EmbeddingGemmaBridge";
 
 export interface RetrieveOptions {
   workspaceId: string;
@@ -31,6 +31,8 @@ export async function retrieveContext(
 
 export function buildContextString(results: SearchResult[]): string {
   return results
-    .map((r) => `[Source: ${r.memory.sourceUri || 'unknown'}]: ${r.memory.content}`)
-    .join('\n\n');
+    .map(
+      r => `[Source: ${r.memory.sourceUri || "unknown"}]: ${r.memory.content}`,
+    )
+    .join("\n\n");
 }

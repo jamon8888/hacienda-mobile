@@ -1,13 +1,13 @@
-import { memoryStore } from '../../store/MemoryStore';
-import { embedBatch } from '../Embedder/onDevice/EmbeddingGemmaBridge';
-import TextSplitter from '../TextSplitter';
+import { memoryStore } from "../../store/MemoryStore";
+import { embedBatch } from "../Embedder/onDevice/EmbeddingGemmaBridge";
+import TextSplitter from "../TextSplitter";
 
 export interface IngestOptions {
   workspaceId: string;
   clientId?: string;
   sourceUri?: string;
   sourceType?: string;
-  kind?: 'conversation' | 'document' | 'note';
+  kind?: "conversation" | "document" | "note";
 }
 
 const splitter = new TextSplitter({
@@ -26,13 +26,13 @@ export async function ingestText(
   for (let i = 0; i < chunks.length; i++) {
     await memoryStore.insertMemory({
       workspaceId: options.workspaceId,
-      kind: options.kind || 'document',
+      kind: options.kind || "document",
       content: chunks[i],
       sourceUri: options.sourceUri,
       sourceType: options.sourceType,
       clientId: options.clientId,
       embedding: embeddings[i],
-      embeddingModel: 'embeddinggemma-300m-q4_0',
+      embeddingModel: "embeddinggemma-300m-q4_0",
       embeddingDims: 128,
       importance: 0.5,
     });
@@ -56,6 +56,6 @@ export async function ingestDocument(
     clientId: metadata.clientId,
     sourceUri: metadata.filePath,
     sourceType: metadata.fileType,
-    kind: 'document',
+    kind: "document",
   });
 }

@@ -1,12 +1,12 @@
-import { makeAutoObservable } from 'mobx';
-import { getMemoryDB } from '../utils/MemoryDB';
-import { v4 as uuidv4 } from 'uuid';
-import 'react-native-get-random-values';
+import { makeAutoObservable } from "mobx";
+import { getMemoryDB } from "../utils/MemoryDB";
+import { v4 as uuidv4 } from "uuid";
+import "react-native-get-random-values";
 
 export interface MemoryRecord {
   id: string;
   workspaceId: string;
-  kind: 'conversation' | 'document' | 'note';
+  kind: "conversation" | "document" | "note";
   content: string;
   summary?: string;
   sourceUri?: string;
@@ -31,16 +31,16 @@ export class MemoryStore {
   async insertMemory(
     record: Omit<
       MemoryRecord,
-      'id' | 'createdAt' | 'updatedAt' | 'accessedAt' | 'accessCount'
+      "id" | "createdAt" | "updatedAt" | "accessedAt" | "accessCount"
     >,
   ): Promise<string> {
     const db = getMemoryDB();
     const id = uuidv4();
     const now = Date.now();
 
-    const embeddingBlob = Buffer.from(record.embedding.buffer);
+    const embeddingBlob = new Uint8Array(record.embedding.buffer);
 
-    await db.executeAsync(
+    await db.execute(
       `INSERT INTO memories (id, workspace_id, kind, content, summary, source_uri, source_type, client_id, embedding, embedding_model, embedding_dims, created_at, updated_at, accessed_at, access_count, importance, metadata)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
@@ -65,8 +65,8 @@ export class MemoryStore {
     );
 
     // Insert into vec index
-    await db.executeAsync(
-      `INSERT INTO memories_vec (rowid, embedding) VALUES ((SELECT rowid FROM memories WHERE id = ?), ?)`,
+    await db.execute(
+      "INSERT INTO memories_vec (rowid, embedding) VALUES ((SELECT rowid FROM memories WHERE id = ?), ?)",
       [id, embeddingBlob as any],
     );
 
@@ -75,13 +75,17 @@ export class MemoryStore {
 
   async getMemory(id: string): Promise<MemoryRecord | null> {
     const db = getMemoryDB();
-    const result = await db.executeAsync(`SELECT * FROM memories WHERE id = ?`, [id]);
+    const result = await db.execute("SELECT * FROM memories WHERE id = ?", [
+      id,
+    ]);
     const row = result.rows?.[0];
-    if (!row) return null;
+    if (!row) {
+      return null;
+    }
 
     // Update accessed_at
-    await db.executeAsync(
-      `UPDATE memories SET accessed_at = ?, access_count = access_count + 1 WHERE id = ?`,
+    await db.execute(
+      "UPDATE memories SET accessed_at = ?, access_count = access_count + 1 WHERE id = ?",
       [Date.now(), id],
     );
 
@@ -90,13 +94,16 @@ export class MemoryStore {
 
   async deleteMemory(id: string): Promise<void> {
     const db = getMemoryDB();
-    await db.executeAsync(`DELETE FROM memories WHERE id = ?`, [id]);
+    await db.execute("DELETE FROM memories WHERE id = ?", [id]);
   }
 
-  async getMemoriesByWorkspace(workspaceId: string, limit = 100): Promise<MemoryRecord[]> {
+  async getMemoriesByWorkspace(
+    workspaceId: string,
+    limit = 100,
+  ): Promise<MemoryRecord[]> {
     const db = getMemoryDB();
-    const result = await db.executeAsync(
-      `SELECT * FROM memories WHERE workspace_id = ? ORDER BY updated_at DESC LIMIT ?`,
+    const result = await db.execute(
+      "SELECT * FROM memories WHERE workspace_id = ? ORDER BY updated_at DESC LIMIT ?",
       [workspaceId, limit],
     );
     return (result.rows || []).map(this.rowToRecord);
