@@ -1,6 +1,7 @@
 import { makeAutoObservable } from "mobx";
 import { XbergClient } from "../utils/Xberg";
 import { ExtractionConfig, ExtractionResult } from "../utils/Xberg/types";
+import { ingestDocument } from "../utils/MemoryDB/IngestPipeline";
 
 export type ProcessingStatus = "idle" | "processing" | "completed" | "error";
 
@@ -18,6 +19,7 @@ export class XbergStore {
   async extractFile(
     filePath: string,
     config: ExtractionConfig = {},
+    workspaceId?: string,
   ): Promise<ExtractionResult | null> {
     this.status = "processing";
     this.currentFile = filePath;
@@ -28,6 +30,22 @@ export class XbergStore {
       this.lastResult = result;
       this.status = "completed";
       this.progress = 100;
+
+      // Ingest extracted text into memory store
+      if (workspaceId && result.results?.length > 0) {
+        const fullText = result.results
+          .map((r) => r.content)
+          .filter(Boolean)
+          .join("\n\n");
+        if (fullText) {
+          await ingestDocument(fullText, {
+            workspaceId,
+            filePath,
+            fileType: result.results[0]?.metadata?.format || "unknown",
+          });
+        }
+      }
+
       return result;
     } catch (e) {
       this.error = e instanceof Error ? e.message : "Extraction failed";
@@ -41,6 +59,7 @@ export class XbergStore {
   async extractBatch(
     filePaths: string[],
     config: ExtractionConfig = {},
+    workspaceId?: string,
   ): Promise<ExtractionResult | null> {
     this.status = "processing";
     this.progress = 0;
@@ -50,6 +69,20 @@ export class XbergStore {
       this.lastResult = result;
       this.status = "completed";
       this.progress = 100;
+
+      // Ingest extracted text into memory store
+      if (workspaceId && result.results?.length > 0) {
+        for (const item of result.results) {
+          if (item.content) {
+            await ingestDocument(item.content, {
+              workspaceId,
+              filePath: item.source || "unknown",
+              fileType: item.metadata?.format || "unknown",
+            });
+          }
+        }
+      }
+
       return result;
     } catch (e) {
       this.error = e instanceof Error ? e.message : "Batch extraction failed";
