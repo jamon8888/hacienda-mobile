@@ -11,6 +11,7 @@ import {
   DEFAULT_CACTUS_ASR_MODEL,
   DEFAULT_CACTUS_LLM_MODEL,
 } from "@/utils/models/defaults";
+import { retrieveContext, buildContextString } from "@/utils/MemoryDB/RetrievalPipeline";
 
 export interface VoicePipelineConfig {
   asrModelId?: CactusVoiceModelId;
@@ -295,11 +296,24 @@ export class VoicePipelineProvider {
     cloudHandoff: boolean;
     thinking?: string;
   }> {
+    // Retrieve relevant memories for context
+    let contextString = "";
+    try {
+      const contextResults = await retrieveContext(transcript, {
+        workspaceId: "default", // TODO: Get from current workspace
+        topK: 5,
+      });
+      contextString = buildContextString(contextResults);
+    } catch {
+      // Memory retrieval failed, continue without context
+    }
+
     const messages = [
       {
         role: "system" as const,
-        content:
-          "You are a helpful voice assistant. Respond naturally and concisely.",
+        content: contextString
+          ? `You are a helpful voice assistant. Use the following context to inform your response:\n\n${contextString}\n\nRespond naturally and concisely.`
+          : "You are a helpful voice assistant. Respond naturally and concisely.",
       },
       {
         role: "user" as const,
