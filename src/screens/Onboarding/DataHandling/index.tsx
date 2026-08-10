@@ -24,7 +24,7 @@ export default function DataHandling() {
       return workspace;
     }
     async function waitAtLeast(ms: number) {
-      return new Promise(resolve => setTimeout(resolve, ms));
+      return new Promise<void>(resolve => setTimeout(resolve, ms));
     }
 
     // Wait at least 3 seconds on this page just for the user to see the progress

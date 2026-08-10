@@ -6,7 +6,7 @@ import uiStore from "@/store/UIStore";
 
 export default function useDevShortcut({ workspace, thread }: { workspace?: any, thread?: any }) {
     const THRESHOLD = 5;
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setTimeout>;
     const [presses, setPresses] = useState(0);
     function registerPress() { setPresses(prevPresses => prevPresses + 1); }
 

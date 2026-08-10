@@ -1,4 +1,4 @@
-import { CactusLM, CactusLMTool } from "cactus-react-native";
+import { CactusLM, type CactusLMTool } from "cactus-react-native";
 
 import * as RNFS from "@dr.pogodin/react-native-fs";
 import { Model } from "@/utils/types";
@@ -19,23 +19,8 @@ export type NativeLlamaChatMessage = {
 
 export type ICactusLmStreamCallback = (token: string) => void;
 export default class CactusLmWrapper {
-  /**
-   * Hardcoded default values for the CactusLmWrapper class so everything is consistent when unset
-   * https://github.com/cactus-compute/cactus/tree/main/react/src/NativeCactus.ts#L10
-   */
-
-  /**
-   * This is the default context length for the CactusLmWrapper class, not the workspace settings.
-   * On overflow, the chats are auto-truncated by the CactusLmWrapper class. Maybe we can warn the user when
-   * they are overflowing?
-   */
   static DEFAULT_CONTEXT_LENGTH = 1024;
   static DEFAULT_TEMPERATURE = 0.7;
-
-  /**
-   * This is -1 (no limit) in the CactusLmWrapper class, but we definitely want to limit it on mobile
-   * Once we implement a way to abort the stream & have it user-controlled via workspace settings, we can set this to -1 or a higher number
-   */
   static DEFAULT_N_PREDICT = 2048;
 
   private parent: OnDeviceProvider;
@@ -55,10 +40,6 @@ export default class CactusLmWrapper {
     console.log(`\x1b[36m[${this.constructor.name}]\x1b[0m ${text}`, ...args);
   };
 
-  /**
-   * Presets the gguf file path for extra models we manually support
-   * we have to manually set the gguf file path because we may name the model differently
-   */
   private presetGGUFFilePath() {
     if (!this.modelDefinition?.ggufFilePath) return;
     this.ggufFilePath = `${RNFS.DocumentDirectoryPath}/models/gguf/${this.modelDefinition.ggufFilePath}`;
@@ -112,7 +93,6 @@ export default class CactusLmWrapper {
 
   get nPredict() {
     return CactusLmWrapper.DEFAULT_N_PREDICT;
-    // return this.parent.workspace?.nPredict ?? CactusLmWrapper.DEFAULT_N_PREDICT;
   }
 
   get contextLength() {
@@ -129,10 +109,6 @@ export default class CactusLmWrapper {
         return true;
       }
 
-      // Registry slug, never a local .gguf path: cactus-react-native >= 1.x hands any path it
-      // is given straight to the native runtime, which expects one of Cactus's own bundles
-      // (config.txt + weights) and fails with "Failed to create model - check config.txt exists
-      // at: <path>" for a raw GGUF. See CACTUS_CHAT_MODELS for the full explanation.
       const ref = CACTUS_CHAT_MODELS[this.model];
       if (!ref)
         throw new Error(
@@ -144,10 +120,10 @@ export default class CactusLmWrapper {
         model: ref.slug,
         options: { quantization: ref.quantization },
       });
-      // No-ops when the bundle is already on disk, so this is safe to call on every init --
-      // it's also the only way the bundle ever lands on the device now that the app's own
-      // GGUF downloader no longer produces something the runtime can load.
-      await lm.download();
+      // No-ops when the bundle is on disk; replaces the RNFS download entirely.
+      await lm.download({
+        onProgress: p => this.log(`download progress ${Math.round(p * 100)}%`),
+      });
       await lm.init();
       this.cactusLmContext = lm;
       this.log(
@@ -160,12 +136,6 @@ export default class CactusLmWrapper {
     }
   }
 
-  /**
-   * Parses the model runtime config from the model definition.
-   * This is used to add extra params to the model runtime config that might be recommended by the model provider.
-   * but are not directly user-configurable.
-   * @returns The model runtime config.
-   */
   private get defaultRuntimeConfig(): CompletionParams | {} {
     const extraParams: CompletionParams = {};
     if (!!this.modelDefinition && this.modelDefinition.completionSettings) {
@@ -189,10 +159,6 @@ export default class CactusLmWrapper {
     }, this.keepAliveInterval);
   }
 
-  /**
-   * Gets the chat completion from the model.
-   * Returns the text response
-   */
   async getChatCompletion(
     messages: NativeLlamaChatMessage[],
   ): Promise<ICompleteResponse> {
@@ -203,12 +169,13 @@ export default class CactusLmWrapper {
         `CactusLmWrapper::streamGetChatCompletion: Model not initialized`,
       );
 
+    const apiParams = toApiCompletionParams(this.defaultRuntimeConfig as CompletionParams);
     const result = await this.cactusLmContext.complete({
-      messages,
+      messages: messages as any,
       options: {
         stopSequences: [...stops],
         maxTokens: this.nPredict,
-        ...toApiCompletionParams(this.defaultRuntimeConfig as CompletionParams),
+        ...apiParams,
         temperature: this.temperature,
       },
     });
@@ -225,10 +192,6 @@ export default class CactusLmWrapper {
     };
   }
 
-  /**
-   * Converts the app's OpenAI-shaped tool definitions (as produced by ToolsManager)
-   * into the flat CactusLMTool shape the cactus-react-native SDK expects.
-   */
   private toCactusTools(
     availableTools: {
       function: {
@@ -245,9 +208,6 @@ export default class CactusLmWrapper {
     }));
   }
 
-  /**
-   * Streams the chat completion from the model.
-   */
   async streamGetChatCompletion(
     messages: NativeLlamaChatMessage[],
     callback: ICactusLmStreamCallback,
@@ -261,24 +221,24 @@ export default class CactusLmWrapper {
       );
 
     const cactusTools = this.toCactusTools(availableTools ?? []);
+    const apiParams = toApiCompletionParams(this.defaultRuntimeConfig as CompletionParams);
 
     const result = await this.cactusLmContext.complete({
-      messages,
-      tools: cactusTools.length > 0 ? cactusTools : undefined,
+      messages: messages as any,
       options: {
         stopSequences: [...stops],
         maxTokens: this.nPredict,
-        ...toApiCompletionParams(this.defaultRuntimeConfig as CompletionParams),
+        ...apiParams,
         temperature: this.temperature,
       },
-      onToken: callback,
+      tools: cactusTools.length > 0 ? cactusTools : undefined,
+      onToken: (token: string) => {
+        callback(token);
+      },
     });
 
     return {
       textResponse: result.response,
-      // CactusLM's functionCalls carry already-parsed argument objects, not the
-      // JSON-string arguments ToolsManager/ICompleteResponse expect elsewhere
-      // (that shape mirrors real OpenAI tool_calls) -- stringify here, once.
       toolCalls: result.functionCalls?.map(fc => ({
         type: "function" as const,
         function: { name: fc.name, arguments: JSON.stringify(fc.arguments) },

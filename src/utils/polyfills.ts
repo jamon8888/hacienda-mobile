@@ -12,22 +12,22 @@ import { polyfill as polyfillCrypto } from 'react-native-polyfill-globals/src/cr
 (async () => {
   let polyfilled: string[] = [];
 
-  if (!('structuredClone' in global)) {
+  if (!('structuredClone' in globalThis)) {
     polyfillGlobal('structuredClone', () => structuredClone);
     polyfilled.push('structuredClone');
   }
 
-  if (!('TextEncoderStream' in global)) {
+  if (!('TextEncoderStream' in globalThis)) {
     polyfillGlobal('TextEncoderStream', () => TextEncoderStream);
     polyfilled.push('TextEncoderStream');
   }
 
-  if (!('TextDecoderStream' in global)) {
+  if (!('TextDecoderStream' in globalThis)) {
     polyfillGlobal('TextDecoderStream', () => TextDecoderStream);
     polyfilled.push('TextDecoderStream');
   }
 
-  if (!('ReadableStream' in global)) {
+  if (!('ReadableStream' in globalThis)) {
     polyfillGlobal('ReadableStream', () => ReadableStream);
     polyfilled.push('ReadableStream');
   }

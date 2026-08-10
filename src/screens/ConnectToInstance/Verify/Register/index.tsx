@@ -63,7 +63,7 @@ export default function Register({ connectionUrl, registrationToken, updateStatu
                         });
                         break;
                     }
-                    await new Promise(resolve => setTimeout(resolve, 5000));
+                    await new Promise<void>(resolve => setTimeout(resolve, 5000));
                     attempts++;
                 }
 

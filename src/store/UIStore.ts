@@ -58,6 +58,8 @@ export class UIStore {
   // This is a flag to auto-navigate to the chat page after loading a model
   autoNavigatetoChat = true;
 
+  iOSBackgroundDownloading = false;
+
   //colorScheme = useColorScheme();
   colorScheme: "light" | "dark" = Appearance.getColorScheme() ?? "light";
 

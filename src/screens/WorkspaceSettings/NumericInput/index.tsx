@@ -35,7 +35,7 @@ export function NumericInputView({ workspace, goToPage, field, title, placeholde
     const insets = useSafeAreaInsets();
     const keyboardHeight = useKeyboardHeight();
     const { LLMProvider } = useLLMProvider();
-    const [value, setValue] = useState(workspace[field] ?? resetValue);
+    const [value, setValue] = useState<number>((workspace[field] as unknown as number) ?? resetValue);
     const [saveStatus, setSaveStatus] = useState(DEFAULT_SAVE_STATUS);
 
     const debouncedSave = useRef(

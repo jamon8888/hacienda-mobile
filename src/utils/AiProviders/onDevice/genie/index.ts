@@ -24,7 +24,7 @@ export default class GenieWrapper {
   private tokenListener: EmitterSubscription | null;
   public model: string;
   public genieWrapperHandle: number | null = null;
-  private keepAliveTimer: NodeJS.Timeout | null = null;
+  private keepAliveTimer: ReturnType<typeof setTimeout> | null = null;
   private keepAliveInterval = 1000 * 60 * 5;
   private parent: OnDeviceProvider;
 

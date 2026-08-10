@@ -21,24 +21,21 @@ export const CURRENT_COMPLETION_SETTINGS_VERSION = 2;
  */
 export const defaultCompletionParams: CompletionParams = {
   // App-specific properties
-  version: CURRENT_COMPLETION_SETTINGS_VERSION, // Schema version for migrations
-  include_thinking_in_context: true, // Whether to include thinking parts in the context sent to the model
+  version: CURRENT_COMPLETION_SETTINGS_VERSION,
+  include_thinking_in_context: true,
 
-  // cactus-react-native CactusLMCompleteOptions properties
-  temperature: 0.7, // The randomness of the generated text.
-  topK: 40, // Limit the next token selection to the K most probable tokens.
-  topP: 0.95, // Limit the next token selection to a subset of tokens with a cumulative probability above a threshold P.
-  maxTokens: 1024, // The maximum number of tokens to predict when generating text.
-  stopSequences: ["</s>"],
-  forceTools: false,
-  telemetryEnabled: true,
-  includeStopSequences: false,
-  useVad: false,
-  enableThinking: true,
+  // cactus-react-native 1.13.1 CompletionParams (llama.cpp style)
+  temperature: 0.7,
+  top_k: 40,
+  top_p: 0.95,
+  n_predict: 1024,
+  stop: [""],
+  // forceTools, telemetryEnabled, includeStopSequences, useVad, enableThinking
+  // are not in the native CompletionParams type
 };
 
 // Keys present in version-0/1 (llama.cpp-style) settings that have no equivalent
-// in cactus-react-native 1.13.1's CactusLMCompleteOptions and are dropped on migration.
+// in cactus-react-native 1.13.1's CompletionParams and are dropped on migration.
 const V1_KEYS_WITHOUT_SDK_EQUIVALENT = [
   "prompt",
   "min_p",
@@ -83,36 +80,29 @@ export function migrateCompletionSettings(settings: any): any {
 
   if (migratedSettings.version < 2) {
     // Migration to version 2: rename llama.cpp-style fields to the
-    // cactus-react-native 1.13.1 CactusLMCompleteOptions field names, and
+    // cactus-react-native 1.13.1 CompletionParams field names, and
     // drop sampling knobs that no longer exist in the SDK.
     if ("n_predict" in migratedSettings) {
-      migratedSettings.maxTokens = migratedSettings.n_predict;
-      delete migratedSettings.n_predict;
+      migratedSettings.n_predict = migratedSettings.n_predict;
+      delete migratedSettings.maxTokens;
     }
     if ("top_p" in migratedSettings) {
-      migratedSettings.topP = migratedSettings.top_p;
-      delete migratedSettings.top_p;
+      migratedSettings.top_p = migratedSettings.top_p;
+      delete migratedSettings.topP;
     }
     if ("top_k" in migratedSettings) {
-      migratedSettings.topK = migratedSettings.top_k;
-      delete migratedSettings.top_k;
+      migratedSettings.top_k = migratedSettings.top_k;
+      delete migratedSettings.topK;
     }
     if ("stop" in migratedSettings) {
-      migratedSettings.stopSequences = migratedSettings.stop;
-      delete migratedSettings.stop;
+      migratedSettings.stop = migratedSettings.stop;
+      delete migratedSettings.stopSequences;
     }
     for (const key of V1_KEYS_WITHOUT_SDK_EQUIVALENT) {
       delete migratedSettings[key];
     }
     migratedSettings.version = 2;
   }
-
-  // Add future migrations here as needed
-  // if (migratedSettings.version < 3) {
-  //   // Migration to version 3
-  //   migratedSettings.new_field = defaultCompletionParams.new_field;
-  //   migratedSettings.version = 3;
-  // }
 
   return migratedSettings;
 }

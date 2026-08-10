@@ -1,5 +1,6 @@
 import { polyfill as polyfillFetch } from 'react-native-polyfill-globals/src/fetch';
 import { safeParseJSON } from '../device';
+import { TextEncoder, TextDecoder } from 'react-native-polyfill-globals/src/encoding';
 
 type IMessage = {
   role: 'system' | 'user' | 'assistant';
@@ -32,10 +33,10 @@ export default class OpenAILite {
 
   private setupStreamingFetch() {
     this.log('setupStreamingFetch');
-    const originalFetch = global.fetch;
+    const originalFetch = globalThis.fetch;
     polyfillFetch();
-    this.streamingFetch = global.fetch;
-    global.fetch = originalFetch;
+    this.streamingFetch = globalThis.fetch;
+    globalThis.fetch = originalFetch;
     this.log('setupStreamingFetch completed - original fetch restored');
   }
 
@@ -49,16 +50,9 @@ export default class OpenAILite {
     console.log(`🛠️ \x1b[33m[OpenAILite]\x1b[0m ${text}`, ...args);
   }
 
-  /**
-   * Format the URL to ensure it is valid
-   * - if the path name has double slashes, eg: //v1, replace them with a single slash (some providers can handle this, but not all)
-   * @param urlString - The URL string to format
-   * @returns The formatted URL string
-   */
   private formatURL(urlString: string) {
     try {
       const url = new URL(urlString);
-      // if the path name has double slashes, eg: //v1, replace them with a single slash
       url.pathname = url.pathname.replace(/\/\//g, '/');
       return url.toString();
     } catch (error) {
@@ -104,16 +98,17 @@ export default class OpenAILite {
       reactNative: { textStreaming: true },
     });
 
-    const stream = response.body;
+    const stream = (response as any).body;
     if (!stream) return;
 
     const reader = stream.getReader();
+    const decoder = new TextDecoder();
     try {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const text = new TextDecoder().decode(value);
+        const text = decoder.decode(value);
         const lines = text.split('\n');
         for (const line of lines) {
           if (line.startsWith('data: ')) {

@@ -22,8 +22,6 @@ import { dedupeChunks } from "@/utils/chunking";
 export default class OnDeviceEmbedderProvider implements EmbeddingProvider {
   static instance: OnDeviceEmbedderProvider;
 
-  // cactus-react-native's CactusLM.embed() only exposes a boolean normalize
-  // flag (L2/unit-vector normalization), not the llama.cpp p-norm modes.
   private EMBEDDING_NORMALIZE = false;
   private EMBED_PREFIXES: Record<EmbedderPrefixType, string> = {
     query: "search_query: ",
@@ -34,12 +32,10 @@ export default class OnDeviceEmbedderProvider implements EmbeddingProvider {
 
   private _isWorking: boolean = false;
   private keepAliveTimer: ReturnType<typeof setTimeout> | null = null;
-  private keepAliveInterval = 1000 * (60 * 3); // 3 minutes
+  private keepAliveInterval = 1000 * (60 * 3);
   private cactusLmContext: CactusLM | null = null;
   private initPromise: Promise<boolean> | null = null;
 
-  // Singleton, there are no props so nothing to ever reload.
-  // Just keep the singleton instance alive.
   constructor() {
     if (!OnDeviceEmbedderProvider.instance)
       OnDeviceEmbedderProvider.instance = this;
@@ -52,8 +48,6 @@ export default class OnDeviceEmbedderProvider implements EmbeddingProvider {
 
   private async initialize(): Promise<boolean> {
     if (!!this.cactusLmContext) return true;
-    // Concurrent embed()/embedBatch() calls before the first init resolves must share
-    // one in-flight init instead of each racing to construct their own CactusLM.
     if (this.initPromise) return this.initPromise;
 
     this.initPromise = this.doInitialize().finally(() => {
@@ -64,24 +58,13 @@ export default class OnDeviceEmbedderProvider implements EmbeddingProvider {
 
   private async doInitialize(): Promise<boolean> {
     try {
-      // Registry slug, never a downloaded .gguf path -- this runtime only loads Cactus bundles
-      // (see CACTUS_EMBEDDING_MODELS). The previous code RNFS-downloaded nomic-embed-text-v1.5
-      // from HuggingFace and handed the file to CactusLM, which always failed with
-      // "Failed to create model - check config.txt exists at: <path>".
-      //
-      // v1.5 has no Cactus bundle, so this now runs Nomic v2 MoE: same 768 dimensions (so
-      // vectors stay dimension-compatible) and the same search_query/search_document prefixes
-      // this class already uses, with multilingual coverage on top.
       const ref = CACTUS_EMBEDDING_MODELS["nomic-embed-text-v2-moe"];
       this.log(`Initializing model ${ref.slug} (${ref.quantization})`);
       const lm = new CactusLM({
         model: ref.slug,
         options: { quantization: ref.quantization },
       });
-      // No-ops once the bundle is on disk; replaces the RNFS download entirely.
-      await lm.download({
-        onProgress: p => this.log(`download progress ${Math.round(p * 100)}%`),
-      });
+      await lm.download();
       await lm.init();
       this.cactusLmContext = lm;
       return true;
@@ -111,12 +94,6 @@ export default class OnDeviceEmbedderProvider implements EmbeddingProvider {
     this.cactusLmContext = null;
   }
 
-  /**
-   * Wraps a function in a keep alive mechanism. that will allow us to keep extending the keep alive timer
-   * for as long as any interations are happening.
-   * @param func - The function to wrap.
-   * @returns The result of the function.
-   */
   private async wrapInKeepAlive<T>(func: () => Promise<T>): Promise<T> {
     try {
       this._isWorking = true;
@@ -130,9 +107,6 @@ export default class OnDeviceEmbedderProvider implements EmbeddingProvider {
     }
   }
 
-  /**
-   * Cleans up the embedder.
-   */
   async cleanup(): Promise<void> {
     this.log("Cleaning up!");
     if (this.keepAliveTimer) {
@@ -142,13 +116,6 @@ export default class OnDeviceEmbedderProvider implements EmbeddingProvider {
     await this.unloadModel();
   }
 
-  /**
-   * Embeds a single text.
-   * @param text - The text to embed.
-   * @param as - The type of embedding (query, embed_document, classification, clustering)
-   * @param dimensions - Optional dimension truncation (Matryoshka)
-   * @returns The embedding.
-   */
   async embed(
     text: string,
     as: EmbedderPrefixType = "query",
@@ -179,12 +146,6 @@ export default class OnDeviceEmbedderProvider implements EmbeddingProvider {
     });
   }
 
-  /**
-   * Embeds a batch of texts.
-   * @param texts - The texts to embed.
-   * @param as - The type of embedding
-   * @param dimensions - Optional dimension truncation
-   */
   async embedBatch(
     texts: string[],
     as: EmbedderPrefixType = "query",
@@ -215,12 +176,6 @@ export default class OnDeviceEmbedderProvider implements EmbeddingProvider {
     });
   }
 
-  /**
-   * Splits the document text into chunks and embeds them.
-   * Returns an array of embeddings with their respective metadata.
-   *
-   * Assumes this is a document that is being embedded for semantic search.
-   */
   async splitAndEmbed(
     documentText: string,
     options: TextSplitterConfig,

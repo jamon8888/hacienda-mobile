@@ -38,9 +38,6 @@ const MODEL_PREFIXES: Record<
   },
 };
 
-// cactus-react-native's CactusLM.embed() only exposes a boolean normalize flag
-// (L2/unit-vector normalization), not the llama.cpp p-norm modes. All 4 models
-// used L2 (mode 2) under the old API, so all map to `true` here.
 const MODEL_NORMALIZE: Record<MultilingualEmbeddingModelId, boolean> = {
   "multilingual-e5-small": true,
   "multilingual-e5-base": true,
@@ -96,8 +93,6 @@ export default class MultilingualEmbedderProvider implements EmbeddingProvider {
 
   async initialize(): Promise<boolean> {
     if (!!this.cactusLmContext) return true;
-    // Concurrent embed()/embedBatch() calls before the first init resolves must share
-    // one in-flight init instead of each racing to construct their own CactusLM.
     if (this.initPromise) return this.initPromise;
 
     this.initPromise = this.doInitialize().finally(() => {
@@ -108,9 +103,6 @@ export default class MultilingualEmbedderProvider implements EmbeddingProvider {
 
   private async doInitialize(): Promise<boolean> {
     try {
-      // Registry slug, never a downloaded .gguf path -- see CACTUS_EMBEDDING_MODELS. The old
-      // path here fetched a GGUF from HuggingFace with RNFS and handed the file to CactusLM,
-      // which this runtime cannot load ("Failed to create model - check config.txt exists at").
       const ref = CACTUS_EMBEDDING_MODELS[this.modelId];
       if (!ref)
         throw new Error(
@@ -123,10 +115,7 @@ export default class MultilingualEmbedderProvider implements EmbeddingProvider {
         model: ref.slug,
         options: { quantization: ref.quantization },
       });
-      // No-ops once the bundle is on disk; this replaces the RNFS download above entirely.
-      await lm.download({
-        onProgress: p => this.log(`download progress ${Math.round(p * 100)}%`),
-      });
+      await lm.download();
       await lm.init();
       this.cactusLmContext = lm;
 

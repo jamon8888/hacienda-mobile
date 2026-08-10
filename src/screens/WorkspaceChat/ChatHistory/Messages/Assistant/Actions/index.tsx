@@ -2,6 +2,7 @@ import { Linking, Text, TouchableOpacity } from "react-native";
 import { type DynamicChatMessage } from "@/screens/WorkspaceChat/ChatHistory";
 import { ScrollView } from "react-native-gesture-handler";
 import { IAgentAction } from "@/database/models/WorkspaceChat";
+// @ts-ignore
 import IntentLauncher, { IntentConstant } from "@yz1311/react-native-intent-launcher";
 
 export default function ActionsContainer({ chat }: { chat: DynamicChatMessage }) {

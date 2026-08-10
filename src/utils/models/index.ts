@@ -60,13 +60,13 @@ const crossPlatformModels: Model[] = [
     chatTemplate: chatTemplates.gemma3,
     defaultCompletionSettings: {
       temperature: 1,
-      topP: 0.95,
-      topK: 64,
+      top_p: 0.95,
+      top_k: 64,
     },
     completionSettings: {
       temperature: 1,
-      topP: 0.95,
-      topK: 64,
+      top_p: 0.95,
+      top_k: 64,
     },
     defaultStopWords: ["<end_of_turn>"],
     stopWords: ["<end_of_turn>"],
@@ -295,8 +295,8 @@ const crossPlatformModels: Model[] = [
       "https://huggingface.co/Menlo/Lucy-gguf/resolve/main/Lucy-Q8_0.gguf",
     completionSettings: {
       temperature: 0.7,
-      topP: 0.8,
-      topK: 20,
+      top_p: 0.8,
+      top_k: 20,
     },
     imageUrl:
       "https://cdn-avatars.huggingface.co/v1/production/uploads/643b63fea856622f978fdc35/c8ZIKZbg-Y4ZxkUgMLV8q.png",
@@ -312,8 +312,8 @@ const crossPlatformModels: Model[] = [
     chatTemplate: { ...chatTemplates.qwen3 },
     defaultCompletionSettings: {
       temperature: 0.7,
-      topP: 0.9,
-      topK: 20,
+      top_p: 0.9,
+      top_k: 20,
     },
     defaultStopWords: ["<|im_end|>"],
     stopWords: ["<|im_end|>"],

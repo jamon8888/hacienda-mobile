@@ -196,4 +196,4 @@ class RecursiveSplitter {
     }
 }
 
-module.exports.TextSplitter = TextSplitter;
+export { TextSplitter };

@@ -78,7 +78,7 @@ export const useStorageCheck = (
     };
 
     checkStorage();
-    let intervalId: NodeJS.Timeout | undefined;
+    let intervalId: ReturnType<typeof setInterval> | undefined;
     if (enablePeriodicCheck) {
       intervalId = setInterval(checkStorage, checkInterval);
     }

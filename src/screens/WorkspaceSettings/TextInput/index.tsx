@@ -17,7 +17,7 @@ interface TextInputViewProps {
     workspace: WorkspaceType;
     goToPage: (page: IWorkspacePageKey) => void;
     field: keyof WorkspaceType;
-    resetValue: number;
+    resetValue: string;
     title: string;
     hint?: string;
     placeholder: string;
@@ -36,7 +36,7 @@ export function TextInputView({ workspace, goToPage, field, title, placeholder, 
     const keyboardHeight = useKeyboardHeight();
     const { LLMProvider } = useLLMProvider();
     // @ts-ignore
-    const [value, setValue] = useState(workspace[field] ?? resetValue);
+    const [value, setValue] = useState<string>((workspace[field] as unknown as string) ?? resetValue);
     const [saveStatus, setSaveStatus] = useState(DEFAULT_SAVE_STATUS);
 
     const debouncedSave = useRef(
