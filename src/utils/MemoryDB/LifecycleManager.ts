@@ -1,4 +1,4 @@
-import { getMemoryDB } from './index';
+import { getMemoryDB } from "./index";
 
 const DECAY_RATE = 0.05;
 const IMPORTANCE_THRESHOLD = 0.05;
@@ -11,7 +11,7 @@ export async function runMemoryDecay(): Promise<{
   const now = Date.now();
 
   // 1. Decay importance for unaccessed memories
-  const decayResult = await db.executeAsync(
+  const decayResult = await db.execute(
     `UPDATE memories
      SET importance = importance * exp(-? * (? - accessed_at) / (1000 * 60 * 60 * 24))
      WHERE (? - accessed_at) > 7 * 24 * 60 * 60 * 1000`,
@@ -19,13 +19,13 @@ export async function runMemoryDecay(): Promise<{
   );
 
   // 2. Prune memories below threshold
-  const pruneResult = await db.executeAsync(
-    `DELETE FROM memories WHERE importance < ?`,
+  const pruneResult = await db.execute(
+    "DELETE FROM memories WHERE importance < ?",
     [IMPORTANCE_THRESHOLD],
   );
 
   // 3. Compact vec index
-  await db.executeAsync(`VACUUM`);
+  await db.execute("VACUUM");
 
   return {
     pruned: pruneResult.rowsAffected || 0,
@@ -33,16 +33,14 @@ export async function runMemoryDecay(): Promise<{
   };
 }
 
-export async function getMemoryStats(
-  workspaceId: string,
-): Promise<{
+export async function getMemoryStats(workspaceId: string): Promise<{
   totalMemories: number;
   avgImportance: number;
   oldestMemory: number;
   newestMemory: number;
 }> {
   const db = getMemoryDB();
-  const result = await db.executeAsync(
+  const result = await db.execute(
     `SELECT
        COUNT(*) as total,
        AVG(importance) as avg_importance,
@@ -53,7 +51,7 @@ export async function getMemoryStats(
     [workspaceId],
   );
 
-  const row = result.rows?.[0];
+  const row = result.rows?.[0] as Record<string, number> | undefined;
   return {
     totalMemories: row?.total || 0,
     avgImportance: row?.avg_importance || 0,

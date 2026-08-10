@@ -2,20 +2,19 @@ import {
   EmbeddingProvider,
   EmbeddingResult,
   EmbedderPrefixType,
-} from '../types';
-import { TextSplitterConfig } from '@/utils/TextSplitter';
-import { splitText } from '@/utils/TextSplitter';
+} from "../types";
+import TextSplitter, { TextSplitterConfig } from "@/utils/TextSplitter";
 import {
   isEmbeddingGemmaAvailable,
   initEmbeddingGemma,
   embedText,
   embedBatch,
-} from './EmbeddingGemmaBridge';
+} from "./EmbeddingGemmaBridge";
 
 export class EmbeddingGemmaProvider implements EmbeddingProvider {
   private static instance: EmbeddingGemmaProvider | null = null;
   private initialized = false;
-  private readonly MODEL_ID = 'embeddinggemma-300m-q4_0';
+  private readonly MODEL_ID = "embeddinggemma-300m-q4_0";
   private readonly DIMENSIONS = 128;
   private readonly CONTEXT_LENGTH = 256;
 
@@ -30,7 +29,7 @@ export class EmbeddingGemmaProvider implements EmbeddingProvider {
 
   async embed(
     text: string,
-    _as: EmbedderPrefixType = 'query',
+    _as: EmbedderPrefixType = "query",
     dimensions?: number,
   ): Promise<number[]> {
     await this.initialize();
@@ -41,13 +40,13 @@ export class EmbeddingGemmaProvider implements EmbeddingProvider {
 
   async embedBatch(
     texts: string[],
-    _as: EmbedderPrefixType = 'query',
+    _as: EmbedderPrefixType = "query",
     dimensions?: number,
   ): Promise<number[][]> {
     await this.initialize();
     const dims = dimensions || this.DIMENSIONS;
     const embeddings = await embedBatch(texts, dims);
-    return embeddings.map((e) => Array.from(e));
+    return embeddings.map(e => Array.from(e));
   }
 
   async splitAndEmbed(
@@ -55,15 +54,16 @@ export class EmbeddingGemmaProvider implements EmbeddingProvider {
     options: TextSplitterConfig,
     as: EmbedderPrefixType,
   ): Promise<EmbeddingResult[]> {
-    const chunks = await splitText(documentText, options);
+    const splitter = new TextSplitter(options);
+    const chunks = await splitter.splitText(documentText);
     const embeddings = await this.embedBatch(
-      chunks.map((c) => c.text),
+      chunks.map(c => c.text || c),
       as,
     );
 
     return chunks.map((chunk, i) => ({
       embedding: embeddings[i],
-      metadata: { content: chunk.text },
+      metadata: { content: chunk.text || chunk },
     }));
   }
 
@@ -76,7 +76,7 @@ export class EmbeddingGemmaProvider implements EmbeddingProvider {
   }
 
   getSupportedLanguages(): string[] {
-    return ['en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'ja', 'ko', 'zh'];
+    return ["en", "es", "fr", "de", "it", "pt", "nl", "ja", "ko", "zh"];
   }
 
   getModelId(): string {
@@ -96,11 +96,13 @@ export class EmbeddingGemmaProvider implements EmbeddingProvider {
   }
 
   private async initialize(): Promise<void> {
-    if (this.initialized) return;
+    if (this.initialized) {
+      return;
+    }
 
     const available = await isEmbeddingGemmaAvailable();
     if (!available) {
-      throw new Error('EmbeddingGemma native module not available');
+      throw new Error("EmbeddingGemma native module not available");
     }
 
     await initEmbeddingGemma();

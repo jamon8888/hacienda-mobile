@@ -1,4 +1,4 @@
-import { MEMORY_SCHEMA, MEMORY_FTS_SCHEMA, MEMORY_VEC_SCHEMA } from '../../src/utils/MemoryDB/schema';
+import { MEMORY_SCHEMA, MEMORY_FTS_SCHEMA, MEMORY_VEC_SCHEMA } from '../../utils/MemoryDB/schema';
 
 describe('Memory Schema', () => {
   it('should have valid SQL syntax for memories table', () => {
