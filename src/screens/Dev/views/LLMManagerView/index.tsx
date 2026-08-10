@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity } from 'react-native';
-import uiStore from '@/store/UIStore';
-import { showToast } from '@/utils/Notification';
+import React, { useEffect, useState } from "react";
+import { View, Text, TextInput, TouchableOpacity } from "react-native";
+import uiStore from "@/store/UIStore";
+import { showToast } from "@/utils/Notification";
 
 export default function LLMManagerView() {
   const [llmpref, setLlmPref] = useState<{
@@ -11,9 +11,9 @@ export default function LLMManagerView() {
 
   useEffect(() => {
     uiStore
-      .getFromStorage('llmPreference', {
-        provider: 'openai',
-        config: { model: 'gpt-4' },
+      .getFromStorage("llmPreference", {
+        provider: "openai",
+        config: { model: "gpt-4" },
       })
       .then(value => {
         setLlmPref(value);
@@ -60,8 +60,8 @@ export default function LLMManagerView() {
           className="bg-[--cta-light-blue] rounded-lg p-4 mt-2"
           onPress={() => {
             if (llmpref) {
-              uiStore.setToStorage('llmPreference', llmpref);
-              showToast('LLM configuration saved');
+              uiStore.setToStorage("llmPreference", llmpref);
+              showToast("LLM configuration saved");
             }
           }}>
           <Text className="text-[--dark] font-bold text-center">

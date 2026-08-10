@@ -1,1 +1,1 @@
-export { default } from './VoiceChatScreen';
+export { default } from "./VoiceChatScreen";

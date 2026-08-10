@@ -7,28 +7,35 @@ import { useEffect, useState } from "react";
  * so that we remove the onboarding screens from the navigation stack when no longer needed
  */
 export function useOnboardingCompleted(): {
-    /**
-     * Whether the onboarding is still loading
-     */
-    loadingOnboardingCompleted: boolean,
-    /**
-     * Whether the onboarding is completed
-     */
-    onboardingCompleted: boolean,
+  /**
+   * Whether the onboarding is still loading
+   */
+  loadingOnboardingCompleted: boolean;
+  /**
+   * Whether the onboarding is completed
+   */
+  onboardingCompleted: boolean;
 } {
-    const [loading, setLoading] = useState(true);
-    const [onboardingCompleted, setOnboardingCompleted] = useState(false);
-    useEffect(() => {
-        uiStore.getFromStorage('onboarding_welcome_completed', false)
-            .then(isOnboardingCompleted => setOnboardingCompleted(isOnboardingCompleted))
-            .finally(() => setLoading(false));
-    }, []);
+  const [loading, setLoading] = useState(true);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(false);
+  useEffect(() => {
+    uiStore
+      .getFromStorage("onboarding_welcome_completed", false)
+      .then(isOnboardingCompleted =>
+        setOnboardingCompleted(isOnboardingCompleted),
+      )
+      .finally(() => setLoading(false));
+  }, []);
 
-    useEffect(() => {
-        uiStore.emitter.addListener(uiStore.globalEvents.ONBOARDING_COMPLETED, () => setOnboardingCompleted(true));
-        return () => {
-            uiStore.emitter.removeAllListeners(uiStore.globalEvents.ONBOARDING_COMPLETED);
-        };
-    }, []);
-    return { loadingOnboardingCompleted: loading, onboardingCompleted };
+  useEffect(() => {
+    uiStore.emitter.addListener(uiStore.globalEvents.ONBOARDING_COMPLETED, () =>
+      setOnboardingCompleted(true),
+    );
+    return () => {
+      uiStore.emitter.removeAllListeners(
+        uiStore.globalEvents.ONBOARDING_COMPLETED,
+      );
+    };
+  }, []);
+  return { loadingOnboardingCompleted: loading, onboardingCompleted };
 }

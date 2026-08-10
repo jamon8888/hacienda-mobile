@@ -1,11 +1,15 @@
 import { applyTemplate } from "chat-formatter";
-import { defaultModels } from '@/utils/models';
-import TokenManager from '@/utils/tiktoken';
-import { NPUEnabledModel } from '@/utils/types';
-import { NativeModules, NativeEventEmitter, EmitterSubscription } from 'react-native';
-import { NativeLlamaChatMessage } from '@/utils/AiProviders/onDevice/cactus';
+import { defaultModels } from "@/utils/models";
+import TokenManager from "@/utils/tiktoken";
+import { NPUEnabledModel } from "@/utils/types";
+import {
+  NativeModules,
+  NativeEventEmitter,
+  EmitterSubscription,
+} from "react-native";
+import { NativeLlamaChatMessage } from "@/utils/AiProviders/onDevice/cactus";
 import { ICompleteResponse } from "@/utils/AiProviders/baseOpenAILikeProvider";
-import type OnDeviceProvider from '@/utils/AiProviders/onDevice/index';
+import type OnDeviceProvider from "@/utils/AiProviders/onDevice/index";
 
 interface KotlinGenieModuleInterface {
   loadModel(modelFolderName: string): Promise<number>;
@@ -17,7 +21,9 @@ interface KotlinGenieModuleInterface {
 }
 
 export type IGenieStreamCallback = (token: string) => void;
-const { GenieModule } = NativeModules as { GenieModule: KotlinGenieModuleInterface };
+const { GenieModule } = NativeModules as {
+  GenieModule: KotlinGenieModuleInterface;
+};
 
 export default class GenieWrapper {
   private eventEmitter: NativeEventEmitter;
@@ -37,14 +43,16 @@ export default class GenieWrapper {
 
   log = (text: string, ...args: any[]) => {
     console.log(`\x1b[36m[${this.constructor.name}]\x1b[0m ${text}`, ...args);
-  }
+  };
 
   get name() {
-    return 'genie';
+    return "genie";
   }
 
   get modelDefinition(): NPUEnabledModel {
-    return defaultModels.find(model => model.id === this.model) as NPUEnabledModel;
+    return defaultModels.find(
+      model => model.id === this.model,
+    ) as NPUEnabledModel;
   }
 
   async ping(): Promise<string> {
@@ -52,7 +60,7 @@ export default class GenieWrapper {
       const result = await GenieModule.ping();
       return result;
     } catch (error) {
-      console.error('Failed to ping:', error);
+      console.error("Failed to ping:", error);
       throw error;
     }
   }
@@ -63,13 +71,15 @@ export default class GenieWrapper {
       this.log(`${this.name} initialized with model ${this.model}`);
       return true;
     } catch (error) {
-      console.error('Failed to initialize model:', error);
+      console.error("Failed to initialize model:", error);
       throw error;
     }
   }
 
   private keepAlive() {
-    this.log(`Model auto-unloading is disabled to to QNN corruption issues - stubbing for now`);
+    this.log(
+      `Model auto-unloading is disabled to to QNN corruption issues - stubbing for now`,
+    );
     // if(this.keepAliveTimer) this.log(`Keep alive timer already running - resetting timer for ${this.keepAliveInterval}ms`);
     // else this.log(`Starting keep alive timer for ${this.keepAliveInterval}ms`);
     // this.keepAliveTimer = setTimeout(() => {
@@ -78,7 +88,7 @@ export default class GenieWrapper {
   }
 
   defaultSystemMessage() {
-    return 'You are a helpful assistant that can answer questions and help with tasks.';
+    return "You are a helpful assistant that can answer questions and help with tasks.";
   }
 
   get chatTemplate() {
@@ -91,19 +101,20 @@ export default class GenieWrapper {
    * Gets the chat completion from the model.
    * Returns the text response
    */
-  async getChatCompletion(messages: NativeLlamaChatMessage[]): Promise<ICompleteResponse> {
+  async getChatCompletion(
+    messages: NativeLlamaChatMessage[],
+  ): Promise<ICompleteResponse> {
     const formattedChat = applyTemplate(messages, {
       customTemplate: this.chatTemplate,
       addGenerationPrompt: true,
     }) as string;
 
-
     this.keepAlive();
     const startTime = Date.now();
-    let accumulator = '';
+    let accumulator = "";
     this.tokenListener = this.eventEmitter.addListener(
-      'onTokenGenerated',
-      (event: { token: string }) => accumulator += event.token
+      "onTokenGenerated",
+      (event: { token: string }) => (accumulator += event.token),
     );
 
     await GenieModule.generateResponse(this.model, formattedChat);
@@ -128,24 +139,27 @@ export default class GenieWrapper {
   /**
    * Streams the chat completion from the model.
    */
-  async streamGetChatCompletion(messages: NativeLlamaChatMessage[], callback: IGenieStreamCallback): Promise<ICompleteResponse> {
+  async streamGetChatCompletion(
+    messages: NativeLlamaChatMessage[],
+    callback: IGenieStreamCallback,
+  ): Promise<ICompleteResponse> {
     const formattedChat = applyTemplate(messages, {
       customTemplate: this.chatTemplate,
       addGenerationPrompt: true,
     }) as string;
 
     this.keepAlive();
-    if (!callback) throw new Error('callback is required');
+    if (!callback) throw new Error("callback is required");
     if (this.tokenListener) this.tokenListener.remove();
 
     // Set up new listener
-    let accumulator = '';
+    let accumulator = "";
     this.tokenListener = this.eventEmitter.addListener(
-      'onTokenGenerated',
+      "onTokenGenerated",
       (event: { token: string }) => {
         callback(event.token);
         accumulator += event.token;
-      }
+      },
     );
 
     try {
@@ -168,7 +182,7 @@ export default class GenieWrapper {
         },
       };
     } catch (error) {
-      console.error('Failed to generate response:', error);
+      console.error("Failed to generate response:", error);
       throw error;
     } finally {
       this.tokenListener.remove();
@@ -176,12 +190,12 @@ export default class GenieWrapper {
   }
 
   async unloadModel(): Promise<void> {
-    this.log('Unloading model');
+    this.log("Unloading model");
     return await GenieModule.unloadModel();
   }
 
   async cleanup(): Promise<void> {
-    this.log('Cleaning up GenieWrapper');
+    this.log("Cleaning up GenieWrapper");
     await this.unloadModel();
     if (this.tokenListener) {
       this.tokenListener.remove();

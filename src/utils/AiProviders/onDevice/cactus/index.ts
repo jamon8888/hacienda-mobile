@@ -169,7 +169,9 @@ export default class CactusLmWrapper {
         `CactusLmWrapper::streamGetChatCompletion: Model not initialized`,
       );
 
-    const apiParams = toApiCompletionParams(this.defaultRuntimeConfig as CompletionParams);
+    const apiParams = toApiCompletionParams(
+      this.defaultRuntimeConfig as CompletionParams,
+    );
     const result = await this.cactusLmContext.complete({
       messages: messages as any,
       options: {
@@ -221,7 +223,9 @@ export default class CactusLmWrapper {
       );
 
     const cactusTools = this.toCactusTools(availableTools ?? []);
-    const apiParams = toApiCompletionParams(this.defaultRuntimeConfig as CompletionParams);
+    const apiParams = toApiCompletionParams(
+      this.defaultRuntimeConfig as CompletionParams,
+    );
 
     const result = await this.cactusLmContext.complete({
       messages: messages as any,

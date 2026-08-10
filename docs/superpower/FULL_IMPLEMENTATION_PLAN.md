@@ -9,18 +9,18 @@
 
 ## Codebase Conventions (MUST FOLLOW)
 
-| Aspect | Convention |
-|--------|-----------|
-| **Navigation** | Drawer Navigator only. Settings sub-pages use internal `goToPage()` + `NativeEventEmitter`. NO stack/tabs. |
-| **Styling** | NativeWind v4 `className` + inline `style={{}}` for dynamic values. Dark mode first. |
-| **Colors** | `#1B1B1E` bg, `#27282A` cards, `#9F9FA0` muted, `#FFF` text, `#3B82F6` accent, `#6CE9A6` success, `#F97066` error |
-| **Icons** | Phosphor only (`phosphor-react-native`). Size 18-24, color `#FFF` or `#9F9FA0`. |
-| **Bottom Sheets** | `@gorhom/bottom-sheet` v5 with `BottomSheetContext` registration pattern. |
-| **Settings Layout** | SafeView → absolute header → ScrollView with sections (uppercase label + card row + description). |
-| **Modals** | Overlay-based inline pickers (absolute positioned over screen) for settings. |
-| **State** | MobX `makeAutoObservable` + singleton exports. React Context for providers. |
-| **File Picker** | `react-native-document-picker` with `pick()`. |
-| **Settings Pages** | `IWorkspacePageKey` type + `goToPage()` function + `NativeEventEmitter` for sub-pages. |
+| Aspect              | Convention                                                                                                        |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Navigation**      | Drawer Navigator only. Settings sub-pages use internal `goToPage()` + `NativeEventEmitter`. NO stack/tabs.        |
+| **Styling**         | NativeWind v4 `className` + inline `style={{}}` for dynamic values. Dark mode first.                              |
+| **Colors**          | `#1B1B1E` bg, `#27282A` cards, `#9F9FA0` muted, `#FFF` text, `#3B82F6` accent, `#6CE9A6` success, `#F97066` error |
+| **Icons**           | Phosphor only (`phosphor-react-native`). Size 18-24, color `#FFF` or `#9F9FA0`.                                   |
+| **Bottom Sheets**   | `@gorhom/bottom-sheet` v5 with `BottomSheetContext` registration pattern.                                         |
+| **Settings Layout** | SafeView → absolute header → ScrollView with sections (uppercase label + card row + description).                 |
+| **Modals**          | Overlay-based inline pickers (absolute positioned over screen) for settings.                                      |
+| **State**           | MobX `makeAutoObservable` + singleton exports. React Context for providers.                                       |
+| **File Picker**     | `react-native-document-picker` with `pick()`.                                                                     |
+| **Settings Pages**  | `IWorkspacePageKey` type + `goToPage()` function + `NativeEventEmitter` for sub-pages.                            |
 
 ---
 
@@ -472,16 +472,16 @@ cd ios && pod install && ruby Pods/ObjectBox/setup.rb
 
 ```typescript
 export interface ExtractionConfig {
-  outputFormat?: 'text' | 'markdown' | 'html' | 'json';
+  outputFormat?: "text" | "markdown" | "html" | "json";
   forceOcr?: boolean;
   ocr?: {
-    backend: 'tesseract';
+    backend: "tesseract";
     language?: string;
     autoRotate?: boolean;
   };
   chunking?: {
     enabled: boolean;
-    strategy?: 'semantic' | 'text' | 'markdown';
+    strategy?: "semantic" | "text" | "markdown";
     maxChunkSize?: number;
     chunkOverlap?: number;
   };
@@ -517,35 +517,46 @@ export interface SupportedFormat {
 }
 
 export interface TranscriptionConfig {
-  model: 'tiny' | 'base' | 'small' | 'medium' | 'large-v3';
+  model: "tiny" | "base" | "small" | "medium" | "large-v3";
   language?: string;
   timestamps?: boolean;
 }
 
 export const SUPPORTED_FILE_TYPES = {
-  document: ['.pdf', '.docx', '.doc', '.pptx', '.ppt', '.xlsx', '.xls', '.odt', '.ods', '.odp'],
-  text: ['.txt', '.md', '.markdown', '.rst', '.org', '.rtf'],
-  data: ['.csv', '.tsv', '.json', '.yaml', '.xml'],
-  web: ['.html', '.htm'],
-  email: ['.eml', '.msg'],
-  audio: ['.mp3', '.m4a', '.wav', '.webm', '.mpga'],
-  video: ['.mp4', '.mpeg', '.webm'],
-  image: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.tiff'],
-  code: ['.js', '.ts', '.py', '.java', '.c', '.cpp', '.go', '.rs'],
+  document: [
+    ".pdf",
+    ".docx",
+    ".doc",
+    ".pptx",
+    ".ppt",
+    ".xlsx",
+    ".xls",
+    ".odt",
+    ".ods",
+    ".odp",
+  ],
+  text: [".txt", ".md", ".markdown", ".rst", ".org", ".rtf"],
+  data: [".csv", ".tsv", ".json", ".yaml", ".xml"],
+  web: [".html", ".htm"],
+  email: [".eml", ".msg"],
+  audio: [".mp3", ".m4a", ".wav", ".webm", ".mpga"],
+  video: [".mp4", ".mpeg", ".webm"],
+  image: [".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tiff"],
+  code: [".js", ".ts", ".py", ".java", ".c", ".cpp", ".go", ".rs"],
 };
 
 export const DOCUMENT_PICKER_TYPES = [
-  'application/pdf',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'text/plain',
-  'text/markdown',
-  'text/csv',
-  'audio/mpeg',
-  'audio/mp4',
-  'audio/wav',
-  'audio/webm',
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "text/plain",
+  "text/markdown",
+  "text/csv",
+  "audio/mpeg",
+  "audio/mp4",
+  "audio/wav",
+  "audio/webm",
 ];
 ```
 
@@ -554,17 +565,23 @@ export const DOCUMENT_PICKER_TYPES = [
 **File**: `src/utils/Xberg/XbergClient.ts`
 
 ```typescript
-import { NativeModules } from 'react-native';
-import { ExtractionConfig, ExtractionResult, SupportedFormat } from './types';
+import { NativeModules } from "react-native";
+import { ExtractionConfig, ExtractionResult, SupportedFormat } from "./types";
 
 const { XbergModule } = NativeModules;
 
 export class XbergClient {
-  static async extract(filePath: string, config: ExtractionConfig = {}): Promise<ExtractionResult> {
+  static async extract(
+    filePath: string,
+    config: ExtractionConfig = {},
+  ): Promise<ExtractionResult> {
     return XbergModule.extract(filePath, JSON.stringify(config));
   }
 
-  static async extractBatch(filePaths: string[], config: ExtractionConfig = {}): Promise<ExtractionResult> {
+  static async extractBatch(
+    filePaths: string[],
+    config: ExtractionConfig = {},
+  ): Promise<ExtractionResult> {
     return XbergModule.extractBatch(filePaths, JSON.stringify(config));
   }
 
@@ -573,11 +590,15 @@ export class XbergClient {
   }
 
   static isAudioFile(filePath: string): boolean {
-    return ['.mp3', '.m4a', '.wav', '.webm', '.mpga'].some(ext => filePath.toLowerCase().endsWith(ext));
+    return [".mp3", ".m4a", ".wav", ".webm", ".mpga"].some(ext =>
+      filePath.toLowerCase().endsWith(ext),
+    );
   }
 
   static isImageFile(filePath: string): boolean {
-    return ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.tiff'].some(ext => filePath.toLowerCase().endsWith(ext));
+    return [".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tiff"].some(
+      ext => filePath.toLowerCase().endsWith(ext),
+    );
   }
 }
 ```
@@ -587,8 +608,8 @@ export class XbergClient {
 **File**: `src/utils/Xberg/index.ts`
 
 ```typescript
-export { XbergClient } from './XbergClient';
-export * from './types';
+export { XbergClient } from "./XbergClient";
+export * from "./types";
 ```
 
 ---
@@ -602,58 +623,70 @@ export * from './types';
 **File**: `src/store/XbergStore.ts`
 
 ```typescript
-import { makeAutoObservable } from 'mobx';
-import { XbergClient } from '../utils/Xberg';
-import { ExtractionConfig, ExtractionResult } from '../utils/Xberg/types';
+import { makeAutoObservable } from "mobx";
+import { XbergClient } from "../utils/Xberg";
+import { ExtractionConfig, ExtractionResult } from "../utils/Xberg/types";
 
-export type ProcessingStatus = 'idle' | 'processing' | 'completed' | 'error';
+export type ProcessingStatus = "idle" | "processing" | "completed" | "error";
 
 export class XbergStore {
-  status: ProcessingStatus = 'idle';
+  status: ProcessingStatus = "idle";
   progress: number = 0;
   currentFile: string | null = null;
   lastResult: ExtractionResult | null = null;
   error: string | null = null;
 
-  constructor() { makeAutoObservable(this); }
+  constructor() {
+    makeAutoObservable(this);
+  }
 
-  async extractFile(filePath: string, config: ExtractionConfig = {}): Promise<ExtractionResult | null> {
-    this.status = 'processing';
+  async extractFile(
+    filePath: string,
+    config: ExtractionConfig = {},
+  ): Promise<ExtractionResult | null> {
+    this.status = "processing";
     this.currentFile = filePath;
     this.progress = 0;
     this.error = null;
     try {
       const result = await XbergClient.extract(filePath, config);
       this.lastResult = result;
-      this.status = 'completed';
+      this.status = "completed";
       this.progress = 100;
       return result;
     } catch (e) {
-      this.error = e instanceof Error ? e.message : 'Extraction failed';
-      this.status = 'error';
+      this.error = e instanceof Error ? e.message : "Extraction failed";
+      this.status = "error";
       return null;
-    } finally { this.currentFile = null; }
+    } finally {
+      this.currentFile = null;
+    }
   }
 
-  async extractBatch(filePaths: string[], config: ExtractionConfig = {}): Promise<ExtractionResult | null> {
-    this.status = 'processing';
+  async extractBatch(
+    filePaths: string[],
+    config: ExtractionConfig = {},
+  ): Promise<ExtractionResult | null> {
+    this.status = "processing";
     this.progress = 0;
     this.error = null;
     try {
       const result = await XbergClient.extractBatch(filePaths, config);
       this.lastResult = result;
-      this.status = 'completed';
+      this.status = "completed";
       this.progress = 100;
       return result;
     } catch (e) {
-      this.error = e instanceof Error ? e.message : 'Batch extraction failed';
-      this.status = 'error';
+      this.error = e instanceof Error ? e.message : "Batch extraction failed";
+      this.status = "error";
       return null;
-    } finally { this.currentFile = null; }
+    } finally {
+      this.currentFile = null;
+    }
   }
 
   reset() {
-    this.status = 'idle';
+    this.status = "idle";
     this.progress = 0;
     this.currentFile = null;
     this.lastResult = null;
@@ -669,30 +702,42 @@ export const xbergStore = new XbergStore();
 **File**: `src/hooks/useXberg.ts`
 
 ```typescript
-import { useState, useCallback } from 'react';
-import { xbergStore } from '../store/XbergStore';
-import { ExtractionConfig, ExtractionResult } from '../utils/Xberg/types';
+import { useState, useCallback } from "react";
+import { xbergStore } from "../store/XbergStore";
+import { ExtractionConfig, ExtractionResult } from "../utils/Xberg/types";
 
 export function useXberg() {
   const [status, setStatus] = useState(xbergStore.status);
   const [progress, setProgress] = useState(xbergStore.progress);
   const [error, setError] = useState(xbergStore.error);
 
-  const extractFile = useCallback(async (filePath: string, config: ExtractionConfig = {}) => {
-    setStatus('processing'); setProgress(0); setError(null);
-    const result = await xbergStore.extractFile(filePath, config);
-    setStatus(result ? 'completed' : 'error'); setProgress(100);
-    if (!result) setError(xbergStore.error);
-    return result;
-  }, []);
+  const extractFile = useCallback(
+    async (filePath: string, config: ExtractionConfig = {}) => {
+      setStatus("processing");
+      setProgress(0);
+      setError(null);
+      const result = await xbergStore.extractFile(filePath, config);
+      setStatus(result ? "completed" : "error");
+      setProgress(100);
+      if (!result) setError(xbergStore.error);
+      return result;
+    },
+    [],
+  );
 
-  const extractBatch = useCallback(async (filePaths: string[], config: ExtractionConfig = {}) => {
-    setStatus('processing'); setProgress(0); setError(null);
-    const result = await xbergStore.extractBatch(filePaths, config);
-    setStatus(result ? 'completed' : 'error'); setProgress(100);
-    if (!result) setError(xbergStore.error);
-    return result;
-  }, []);
+  const extractBatch = useCallback(
+    async (filePaths: string[], config: ExtractionConfig = {}) => {
+      setStatus("processing");
+      setProgress(0);
+      setError(null);
+      const result = await xbergStore.extractBatch(filePaths, config);
+      setStatus(result ? "completed" : "error");
+      setProgress(100);
+      if (!result) setError(xbergStore.error);
+      return result;
+    },
+    [],
+  );
 
   return { extractFile, extractBatch, status, progress, error };
 }
@@ -712,10 +757,17 @@ This follows the EXACT pattern from `WorkspaceSettings/Main/index.tsx` and `Embe
 
 ```typescript
 // Add to IWorkspacePageKey type:
-export type IWorkspacePageKey = 'main' | 'name' | 'system_prompt' | 'temperature' | 'context_length' | 'embedding' | 'documents';
+export type IWorkspacePageKey =
+  | "main"
+  | "name"
+  | "system_prompt"
+  | "temperature"
+  | "context_length"
+  | "embedding"
+  | "documents";
 
 // Add to PAGES object:
-import { DocumentsSettingsView } from './DocumentsSettings';
+import { DocumentsSettingsView } from "./DocumentsSettings";
 // 'documents': DocumentsSettingsView
 ```
 
@@ -728,29 +780,37 @@ Add after the Embedding row, before Vector Count:
 ```tsx
 import { Files } from "phosphor-react-native";
 
-{/* Documents */}
+{
+  /* Documents */
+}
 <View className="w-full flex flex-col" style={{ gap: 12 }}>
-    <Text style={{ color: '#9F9FA0' }} className="text-sm uppercase">Documents</Text>
-    <TouchableOpacity
-        style={{ backgroundColor: '#27282A', padding: 14, gap: 20 }}
-        className="w-full flex flex-row items-center rounded-lg"
-        onPress={() => goToPage('documents')}
-    >
-        <View className="flex flex-row gap-2 items-center">
-            <Files size={18} color="#FFF" />
-            <Text className="text-white text-lg">Documents</Text>
-        </View>
-        <View className="flex flex-1 flex-row gap-2 items-center justify-between">
-            <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: '#9F9FA0' }} className="text-lg flex-1 text-right">
-                {documentCount} files
-            </Text>
-            <CaretRight size={18} color="#FFF" />
-        </View>
-    </TouchableOpacity>
-    <Text style={{ color: '#9F9FA0' }} className="text-xs">
-        Import and manage documents for this workspace. Supports PDF, DOCX, audio, and 100+ formats via Xberg.
-    </Text>
-</View>
+  <Text style={{ color: "#9F9FA0" }} className="text-sm uppercase">
+    Documents
+  </Text>
+  <TouchableOpacity
+    style={{ backgroundColor: "#27282A", padding: 14, gap: 20 }}
+    className="w-full flex flex-row items-center rounded-lg"
+    onPress={() => goToPage("documents")}>
+    <View className="flex flex-row gap-2 items-center">
+      <Files size={18} color="#FFF" />
+      <Text className="text-white text-lg">Documents</Text>
+    </View>
+    <View className="flex flex-1 flex-row gap-2 items-center justify-between">
+      <Text
+        numberOfLines={1}
+        ellipsizeMode="tail"
+        style={{ color: "#9F9FA0" }}
+        className="text-lg flex-1 text-right">
+        {documentCount} files
+      </Text>
+      <CaretRight size={18} color="#FFF" />
+    </View>
+  </TouchableOpacity>
+  <Text style={{ color: "#9F9FA0" }} className="text-xs">
+    Import and manage documents for this workspace. Supports PDF, DOCX, audio,
+    and 100+ formats via Xberg.
+  </Text>
+</View>;
 ```
 
 ### Step 5.3: Create DocumentsSettings View
@@ -763,7 +823,15 @@ Follows EXACT layout pattern from EmbeddingSettings.tsx:
 import { Text, TouchableOpacity, View, ScrollView } from "react-native";
 import SafeView from "@/components/SafeView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ArrowLeft, Files, FolderOpen, FileText, Music, Trash, Warning } from "phosphor-react-native";
+import {
+  ArrowLeft,
+  Files,
+  FolderOpen,
+  FileText,
+  Music,
+  Trash,
+  Warning,
+} from "phosphor-react-native";
 import uiStore from "@/store/UIStore";
 import { useState, useCallback, useEffect } from "react";
 import type { IWorkspacePageKey } from "./index";
@@ -771,130 +839,159 @@ import { useBottomSheet } from "@/contexts/BottomSheetContext";
 import { BOTTOM_SHEET_NAMES } from "@/contexts/BottomSheetContext";
 
 interface DocumentsSettingsProps {
-    workspace: any;
-    goToPage: (page: IWorkspacePageKey) => void;
+  workspace: any;
+  goToPage: (page: IWorkspacePageKey) => void;
 }
 
-export function DocumentsSettingsView({ workspace, goToPage }: DocumentsSettingsProps) {
-    const insets = useSafeAreaInsets();
-    const { presentSheet } = useBottomSheet();
-    const [documents, setDocuments] = useState<any[]>([]);
-    const [documentCount, setDocumentCount] = useState(0);
+export function DocumentsSettingsView({
+  workspace,
+  goToPage,
+}: DocumentsSettingsProps) {
+  const insets = useSafeAreaInsets();
+  const { presentSheet } = useBottomSheet();
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [documentCount, setDocumentCount] = useState(0);
 
-    useEffect(() => {
-        // Load documents from WatermelonDB
-        loadDocuments();
-    }, [workspace.slug]);
+  useEffect(() => {
+    // Load documents from WatermelonDB
+    loadDocuments();
+  }, [workspace.slug]);
 
-    async function loadDocuments() {
-        // TODO: Query Document model for this workspace
-        // const docs = await Document.find([{ field: 'workspace_slug', value: workspace.slug }]);
-        // setDocuments(docs);
-        // setDocumentCount(docs.length);
-    }
+  async function loadDocuments() {
+    // TODO: Query Document model for this workspace
+    // const docs = await Document.find([{ field: 'workspace_slug', value: workspace.slug }]);
+    // setDocuments(docs);
+    // setDocumentCount(docs.length);
+  }
 
-    function handleImportPress() {
-        presentSheet(BOTTOM_SHEET_NAMES.WORKSPACE_FILES);
-    }
+  function handleImportPress() {
+    presentSheet(BOTTOM_SHEET_NAMES.WORKSPACE_FILES);
+  }
 
-    return (
-        <SafeView
-            scrollable={false}
-            safeAreaClassNames="pt-[21px]"
-            containerClassNames="flex-1 flex flex-col"
-            safeAreaStyle={{ backgroundColor: '#1B1B1E' }}
-        >
-            {/* Header — EXACT pattern from EmbeddingSettings */}
-            <View style={{ paddingHorizontal: 30, paddingTop: insets.top, paddingBottom: 20 }}
-                className="w-full flex flex-row items-center justify-center relative">
-                <TouchableOpacity onPress={() => goToPage('main')} className="absolute left-0 flex flex-row items-center gap-2">
-                    <ArrowLeft size={24} color="#FFF" weight="bold" />
-                </TouchableOpacity>
-                <Text style={{ maxWidth: '80%' }} numberOfLines={1} ellipsizeMode="middle"
-                    className="text-white text-lg font-medium">Documents</Text>
+  return (
+    <SafeView
+      scrollable={false}
+      safeAreaClassNames="pt-[21px]"
+      containerClassNames="flex-1 flex flex-col"
+      safeAreaStyle={{ backgroundColor: "#1B1B1E" }}>
+      {/* Header — EXACT pattern from EmbeddingSettings */}
+      <View
+        style={{
+          paddingHorizontal: 30,
+          paddingTop: insets.top,
+          paddingBottom: 20,
+        }}
+        className="w-full flex flex-row items-center justify-center relative">
+        <TouchableOpacity
+          onPress={() => goToPage("main")}
+          className="absolute left-0 flex flex-row items-center gap-2">
+          <ArrowLeft size={24} color="#FFF" weight="bold" />
+        </TouchableOpacity>
+        <Text
+          style={{ maxWidth: "80%" }}
+          numberOfLines={1}
+          ellipsizeMode="middle"
+          className="text-white text-lg font-medium">
+          Documents
+        </Text>
+      </View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerClassName="flex flex-col"
+        contentContainerStyle={{
+          paddingHorizontal: 18,
+          paddingBottom: 100,
+          gap: 24,
+          backgroundColor: "#1B1B1E",
+        }}>
+        {/* Import Actions */}
+        <View className="w-full flex flex-col" style={{ gap: 12 }}>
+          <Text style={{ color: "#9F9FA0" }} className="text-sm uppercase">
+            Import
+          </Text>
+
+          <TouchableOpacity
+            style={{ backgroundColor: "#27282A", padding: 14, gap: 20 }}
+            className="w-full flex flex-row items-center rounded-lg"
+            onPress={handleImportPress}>
+            <View className="flex flex-row gap-2 items-center">
+              <FolderOpen size={18} color="#6CE9A6" />
+              <Text className="text-white text-lg">Import Files</Text>
             </View>
+            <View className="flex flex-1 flex-row gap-2 items-center justify-between">
+              <Text
+                style={{ color: "#9F9FA0" }}
+                className="text-lg flex-1 text-right">
+                Select files or folder
+              </Text>
+            </View>
+          </TouchableOpacity>
+          <Text style={{ color: "#9F9FA0" }} className="text-xs">
+            Import documents, audio, or folders. Supports PDF, DOCX, PPTX, XLSX,
+            audio, images, and 100+ formats.
+          </Text>
+        </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}
-                contentContainerClassName="flex flex-col"
-                contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 100, gap: 24, backgroundColor: '#1B1B1E' }}>
+        {/* Imported Files List */}
+        <View className="w-full flex flex-col" style={{ gap: 12 }}>
+          <Text style={{ color: "#9F9FA0" }} className="text-sm uppercase">
+            Imported Files ({documentCount})
+          </Text>
 
-                {/* Import Actions */}
-                <View className="w-full flex flex-col" style={{ gap: 12 }}>
-                    <Text style={{ color: '#9F9FA0' }} className="text-sm uppercase">Import</Text>
-
-                    <TouchableOpacity
-                        style={{ backgroundColor: '#27282A', padding: 14, gap: 20 }}
-                        className="w-full flex flex-row items-center rounded-lg"
-                        onPress={handleImportPress}
-                    >
-                        <View className="flex flex-row gap-2 items-center">
-                            <FolderOpen size={18} color="#6CE9A6" />
-                            <Text className="text-white text-lg">Import Files</Text>
-                        </View>
-                        <View className="flex flex-1 flex-row gap-2 items-center justify-between">
-                            <Text style={{ color: '#9F9FA0' }} className="text-lg flex-1 text-right">
-                                Select files or folder
-                            </Text>
-                        </View>
-                    </TouchableOpacity>
-                    <Text style={{ color: '#9F9FA0' }} className="text-xs">
-                        Import documents, audio, or folders. Supports PDF, DOCX, PPTX, XLSX, audio, images, and 100+ formats.
-                    </Text>
+          {documents.length === 0 ? (
+            <View
+              style={{ backgroundColor: "#27282A", padding: 16 }}
+              className="rounded-lg items-center">
+              <Text style={{ color: "#9F9FA0" }} className="text-sm">
+                No documents imported yet
+              </Text>
+            </View>
+          ) : (
+            documents.map(doc => (
+              <TouchableOpacity
+                key={doc.uuid}
+                style={{ backgroundColor: "#27282A", padding: 12 }}
+                className="rounded-lg flex flex-row items-center"
+                onPress={() => {
+                  /* Show file details sheet */
+                }}>
+                {getFileIcon(doc.type)}
+                <View className="flex-1 ml-3">
+                  <Text className="text-white text-sm">{doc.name}</Text>
+                  <Text style={{ color: "#9F9FA0" }} className="text-xs">
+                    {doc.type.toUpperCase()} • {doc.chunkCount || 0} chunks
+                  </Text>
                 </View>
+                <TouchableOpacity onPress={() => handleDelete(doc)}>
+                  <Trash size={18} color="#F97066" />
+                </TouchableOpacity>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
 
-                {/* Imported Files List */}
-                <View className="w-full flex flex-col" style={{ gap: 12 }}>
-                    <Text style={{ color: '#9F9FA0' }} className="text-sm uppercase">
-                        Imported Files ({documentCount})
-                    </Text>
-
-                    {documents.length === 0 ? (
-                        <View style={{ backgroundColor: '#27282A', padding: 16 }} className="rounded-lg items-center">
-                            <Text style={{ color: '#9F9FA0' }} className="text-sm">No documents imported yet</Text>
-                        </View>
-                    ) : (
-                        documents.map((doc) => (
-                            <TouchableOpacity
-                                key={doc.uuid}
-                                style={{ backgroundColor: '#27282A', padding: 12 }}
-                                className="rounded-lg flex flex-row items-center"
-                                onPress={() => {/* Show file details sheet */}}
-                            >
-                                {getFileIcon(doc.type)}
-                                <View className="flex-1 ml-3">
-                                    <Text className="text-white text-sm">{doc.name}</Text>
-                                    <Text style={{ color: '#9F9FA0' }} className="text-xs">
-                                        {doc.type.toUpperCase()} • {doc.chunkCount || 0} chunks
-                                    </Text>
-                                </View>
-                                <TouchableOpacity onPress={() => handleDelete(doc)}>
-                                    <Trash size={18} color="#F97066" />
-                                </TouchableOpacity>
-                            </TouchableOpacity>
-                        ))
-                    )}
-                </View>
-
-                {/* Danger Zone */}
-                <View className="w-full flex flex-col" style={{ gap: 12 }}>
-                    <TouchableOpacity
-                        onPress={handleClearAll}
-                        style={{ backgroundColor: 'rgba(122,39,26,0.2)' }}
-                        className="flex flex-row items-center justify-center rounded-lg p-4 mb-4"
-                    >
-                        <Text style={{ color: '#F97066' }} className="text-lg font-medium">Clear All Documents</Text>
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
-        </SafeView>
-    );
+        {/* Danger Zone */}
+        <View className="w-full flex flex-col" style={{ gap: 12 }}>
+          <TouchableOpacity
+            onPress={handleClearAll}
+            style={{ backgroundColor: "rgba(122,39,26,0.2)" }}
+            className="flex flex-row items-center justify-center rounded-lg p-4 mb-4">
+            <Text style={{ color: "#F97066" }} className="text-lg font-medium">
+              Clear All Documents
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeView>
+  );
 }
 
 function getFileIcon(type: string) {
-    const { FileText, Music, File } = require('phosphor-react-native');
-    if (type?.includes('pdf')) return <FileText size={20} color="#F97066" />;
-    if (type?.includes('audio')) return <Music size={20} color="#6CE9A6" />;
-    return <File size={20} color="#9F9FA0" />;
+  const { FileText, Music, File } = require("phosphor-react-native");
+  if (type?.includes("pdf")) return <FileText size={20} color="#F97066" />;
+  if (type?.includes("audio")) return <Music size={20} color="#6CE9A6" />;
+  return <File size={20} color="#9F9FA0" />;
 }
 ```
 
@@ -906,102 +1003,123 @@ Uses EXACT pattern from CitationsActionSheet:
 
 ```tsx
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BottomSheetModal, BottomSheetBackdrop, BottomSheetBackdropProps, BottomSheetView } from "@gorhom/bottom-sheet";
+import {
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetBackdropProps,
+  BottomSheetView,
+} from "@gorhom/bottom-sheet";
 import { Text, TouchableOpacity, View } from "react-native";
 import { FolderOpen, File, Music, Camera } from "phosphor-react-native";
 import { useBottomSheet } from "@/contexts/BottomSheetContext";
 import { BOTTOM_SHEET_NAMES } from "@/contexts/BottomSheetContext";
-import DocumentPicker from 'react-native-document-picker';
+import DocumentPicker from "react-native-document-picker";
 import { DOCUMENT_PICKER_TYPES } from "@/utils/Xberg/types";
 
 export default function ImportOptionsSheet() {
-    const bottomSheetRef = useRef<BottomSheetModal>(null);
-    const { registerSheet, dismissSheet } = useBottomSheet();
+  const bottomSheetRef = useRef<BottomSheetModal>(null);
+  const { registerSheet, dismissSheet } = useBottomSheet();
 
-    useEffect(() => {
-        registerSheet(BOTTOM_SHEET_NAMES.WORKSPACE_FILES, bottomSheetRef);
-    }, [registerSheet]);
+  useEffect(() => {
+    registerSheet(BOTTOM_SHEET_NAMES.WORKSPACE_FILES, bottomSheetRef);
+  }, [registerSheet]);
 
-    const renderBackdrop = useCallback(
-        (props: BottomSheetBackdropProps) => (
-            <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.7} />
-        ), []
-    );
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.7}
+      />
+    ),
+    [],
+  );
 
-    async function handleFileImport() {
-        try {
-            const result = await DocumentPicker.pick({
-                type: DOCUMENT_PICKER_TYPES,
-                allowMultiSelection: true,
-            });
-            dismissSheet(BOTTOM_SHEET_NAMES.WORKSPACE_FILES);
-            // TODO: Process selected files with Xberg
-        } catch (e) {
-            if (!DocumentPicker.isCancel(e)) console.error('File picker error:', e);
-        }
+  async function handleFileImport() {
+    try {
+      const result = await DocumentPicker.pick({
+        type: DOCUMENT_PICKER_TYPES,
+        allowMultiSelection: true,
+      });
+      dismissSheet(BOTTOM_SHEET_NAMES.WORKSPACE_FILES);
+      // TODO: Process selected files with Xberg
+    } catch (e) {
+      if (!DocumentPicker.isCancel(e)) console.error("File picker error:", e);
     }
+  }
 
-    async function handleFolderImport() {
-        try {
-            const result = await DocumentPicker.pickDirectory();
-            dismissSheet(BOTTOM_SHEET_NAMES.WORKSPACE_FILES);
-            // TODO: Scan folder and import
-        } catch (e) {
-            if (!DocumentPicker.isCancel(e)) console.error('Folder picker error:', e);
-        }
+  async function handleFolderImport() {
+    try {
+      const result = await DocumentPicker.pickDirectory();
+      dismissSheet(BOTTOM_SHEET_NAMES.WORKSPACE_FILES);
+      // TODO: Scan folder and import
+    } catch (e) {
+      if (!DocumentPicker.isCancel(e)) console.error("Folder picker error:", e);
     }
+  }
 
-    return (
-        <BottomSheetModal
-            ref={bottomSheetRef}
-            index={0}
-            snapPoints={['40%']}
-            enableDynamicSizing={false}
-            backdropComponent={renderBackdrop}
-            backgroundStyle={{ backgroundColor: '#1B1B1E' }}
-            handleIndicatorStyle={{ backgroundColor: '#9F9FA0', width: 45, margin: 10 }}
-        >
-            <BottomSheetView className="px-6 pb-8">
-                <Text className="text-white text-lg font-semibold mb-4">Import to Workspace</Text>
+  return (
+    <BottomSheetModal
+      ref={bottomSheetRef}
+      index={0}
+      snapPoints={["40%"]}
+      enableDynamicSizing={false}
+      backdropComponent={renderBackdrop}
+      backgroundStyle={{ backgroundColor: "#1B1B1E" }}
+      handleIndicatorStyle={{
+        backgroundColor: "#9F9FA0",
+        width: 45,
+        margin: 10,
+      }}>
+      <BottomSheetView className="px-6 pb-8">
+        <Text className="text-white text-lg font-semibold mb-4">
+          Import to Workspace
+        </Text>
 
-                <TouchableOpacity
-                    style={{ backgroundColor: '#27282A', padding: 14 }}
-                    className="rounded-lg flex flex-row items-center gap-3 mb-3"
-                    onPress={handleFileImport}
-                >
-                    <File size={20} color="#3B82F6" />
-                    <View>
-                        <Text className="text-white text-base">Import Files</Text>
-                        <Text style={{ color: '#9F9FA0' }} className="text-xs">Select individual files</Text>
-                    </View>
-                </TouchableOpacity>
+        <TouchableOpacity
+          style={{ backgroundColor: "#27282A", padding: 14 }}
+          className="rounded-lg flex flex-row items-center gap-3 mb-3"
+          onPress={handleFileImport}>
+          <File size={20} color="#3B82F6" />
+          <View>
+            <Text className="text-white text-base">Import Files</Text>
+            <Text style={{ color: "#9F9FA0" }} className="text-xs">
+              Select individual files
+            </Text>
+          </View>
+        </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={{ backgroundColor: '#27282A', padding: 14 }}
-                    className="rounded-lg flex flex-row items-center gap-3 mb-3"
-                    onPress={handleFolderImport}
-                >
-                    <FolderOpen size={20} color="#6CE9A6" />
-                    <View>
-                        <Text className="text-white text-base">Import Folder</Text>
-                        <Text style={{ color: '#9F9FA0' }} className="text-xs">Import all supported files from a folder</Text>
-                    </View>
-                </TouchableOpacity>
+        <TouchableOpacity
+          style={{ backgroundColor: "#27282A", padding: 14 }}
+          className="rounded-lg flex flex-row items-center gap-3 mb-3"
+          onPress={handleFolderImport}>
+          <FolderOpen size={20} color="#6CE9A6" />
+          <View>
+            <Text className="text-white text-base">Import Folder</Text>
+            <Text style={{ color: "#9F9FA0" }} className="text-xs">
+              Import all supported files from a folder
+            </Text>
+          </View>
+        </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={{ backgroundColor: '#27282A', padding: 14 }}
-                    className="rounded-lg flex flex-row items-center gap-3"
-                    onPress={() => {/* Camera OCR */}}
-                >
-                    <Camera size={20} color="#F59E0B" />
-                    <View>
-                        <Text className="text-white text-base">Scan with Camera</Text>
-                        <Text style={{ color: '#9F9FA0' }} className="text-xs">OCR physical documents</Text>
-                    </View>
-                </TouchableOpacity>
-            </BottomSheetView>
-        </BottomSheetModal>
-    );
+        <TouchableOpacity
+          style={{ backgroundColor: "#27282A", padding: 14 }}
+          className="rounded-lg flex flex-row items-center gap-3"
+          onPress={() => {
+            /* Camera OCR */
+          }}>
+          <Camera size={20} color="#F59E0B" />
+          <View>
+            <Text className="text-white text-base">Scan with Camera</Text>
+            <Text style={{ color: "#9F9FA0" }} className="text-xs">
+              OCR physical documents
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </BottomSheetView>
+    </BottomSheetModal>
+  );
 }
 ```
 
@@ -1012,10 +1130,10 @@ export default function ImportOptionsSheet() {
 Add import and render alongside other sheets:
 
 ```tsx
-import ImportOptionsSheet from './Actions/ImportOptionsSheet';
+import ImportOptionsSheet from "./Actions/ImportOptionsSheet";
 
 // In the component JSX, alongside other bottom sheets:
-<ImportOptionsSheet />
+<ImportOptionsSheet />;
 ```
 
 ### Step 5.6: Add TranscriptionOptionsSheet
@@ -1038,53 +1156,61 @@ Changes to existing file:
 
 ```typescript
 // 1. Add Xberg import at top
-import { XbergClient } from '@/utils/Xberg';
-import { ExtractionConfig } from '@/utils/Xberg/types';
+import { XbergClient } from "@/utils/Xberg";
+import { ExtractionConfig } from "@/utils/Xberg/types";
 
 // 2. Expand allowed types in askForAttachment
 const askForAttachment = useCallback(async () => {
-    const result = await pick({
-        allowMultiSelection: true,  // Changed from false
-        type: [
-            'text/plain',
-            'application/pdf',
-            'text/markdown',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'text/csv',
-            'audio/mpeg',
-            'audio/mp4',
-            'audio/wav',
-            'audio/webm',
-        ],
-    });
-    // Process each file...
+  const result = await pick({
+    allowMultiSelection: true, // Changed from false
+    type: [
+      "text/plain",
+      "application/pdf",
+      "text/markdown",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "text/csv",
+      "audio/mpeg",
+      "audio/mp4",
+      "audio/wav",
+      "audio/webm",
+    ],
+  });
+  // Process each file...
 }, []);
 
 // 3. Update extractTextContentFromFile to use Xberg
-const extractTextContentFromFile = useCallback(async (fileStoragePath: string, mimeType: string): Promise<string | null> => {
+const extractTextContentFromFile = useCallback(
+  async (fileStoragePath: string, mimeType: string): Promise<string | null> => {
     try {
-        // Use Xberg for all formats
-        const config: ExtractionConfig = {
-            outputFormat: 'markdown',
-            ocr: { backend: 'tesseract', language: 'eng' },
-            chunking: { enabled: true, strategy: 'semantic', maxChunkSize: 512, chunkOverlap: 50 },
-        };
-        const result = await XbergClient.extract(fileStoragePath, config);
-        return result.results[0]?.content || null;
+      // Use Xberg for all formats
+      const config: ExtractionConfig = {
+        outputFormat: "markdown",
+        ocr: { backend: "tesseract", language: "eng" },
+        chunking: {
+          enabled: true,
+          strategy: "semantic",
+          maxChunkSize: 512,
+          chunkOverlap: 50,
+        },
+      };
+      const result = await XbergClient.extract(fileStoragePath, config);
+      return result.results[0]?.content || null;
     } catch (e) {
-        console.log('Xberg extraction failed, falling back:', e);
-        // Fallback to existing logic for plain text
-        switch (mimeType) {
-            case 'text/plain':
-                const stats = await RNFS.stat(fileStoragePath);
-                return await RNFS.read(fileStoragePath, stats.size, 0, 'utf8');
-            default:
-                return null;
-        }
+      console.log("Xberg extraction failed, falling back:", e);
+      // Fallback to existing logic for plain text
+      switch (mimeType) {
+        case "text/plain":
+          const stats = await RNFS.stat(fileStoragePath);
+          return await RNFS.read(fileStoragePath, stats.size, 0, "utf8");
+        default:
+          return null;
+      }
     }
-}, []);
+  },
+  [],
+);
 
 // 4. Update processAttachment to handle multi-file
 // (already handles single file, just needs the type expansion)
@@ -1100,16 +1226,21 @@ Update `renderAttachments` to show file type icons:
 import { FileText, Music, File, Image } from "phosphor-react-native";
 
 function getAttachmentIcon(type: string) {
-    if (type?.includes('pdf')) return <FileText size={14} color="#F97066" />;
-    if (type?.includes('audio')) return <Music size={14} color="#6CE9A6" />;
-    if (type?.includes('image')) return <Image size={14} color="#F59E0B" />;
-    if (type?.includes('word') || type?.includes('document')) return <FileText size={14} color="#3B82F6" />;
-    return <File size={14} color="#9F9FA0" />;
+  if (type?.includes("pdf")) return <FileText size={14} color="#F97066" />;
+  if (type?.includes("audio")) return <Music size={14} color="#6CE9A6" />;
+  if (type?.includes("image")) return <Image size={14} color="#F59E0B" />;
+  if (type?.includes("word") || type?.includes("document"))
+    return <FileText size={14} color="#3B82F6" />;
+  return <File size={14} color="#9F9FA0" />;
 }
 
 // In renderAttachments, add icon before text:
-{getAttachmentIcon(attachment.type)}
-<Text numberOfLines={1} ellipsizeMode="middle" className="text-white">{attachment.name}</Text>
+{
+  getAttachmentIcon(attachment.type);
+}
+<Text numberOfLines={1} ellipsizeMode="middle" className="text-white">
+  {attachment.name}
+</Text>;
 ```
 
 ---
@@ -1180,46 +1311,46 @@ yarn test
 
 ### Files to Create (14 files)
 
-| # | File | Purpose |
-|---|------|---------|
-| 1 | `android/.../xberg/XbergModule.kt` | Android native module |
-| 2 | `android/.../xberg/XbergPackage.kt` | Android package |
-| 3 | `ios/AnythingLLM/XbergModule.swift` | iOS native module |
-| 4 | `ios/AnythingLLM/XbergModule.m` | iOS ObjC bridge |
-| 5 | `ios/AnythingLLM/VectorBox.swift` | iOS ObjectBox wrapper |
-| 6 | `ios/AnythingLLM/VectorBox.m` | iOS ObjC bridge |
-| 7 | `ios/AnythingLLM/VectorEntity.swift` | iOS entity |
-| 8 | `src/utils/Xberg/types.ts` | Types |
-| 9 | `src/utils/Xberg/XbergClient.ts` | Client |
-| 10 | `src/utils/Xberg/index.ts` | Exports |
-| 11 | `src/store/XbergStore.ts` | MobX store |
-| 12 | `src/hooks/useXberg.ts` | Hook |
-| 13 | `src/screens/WorkspaceSettings/DocumentsSettings.tsx` | Settings page |
-| 14 | `src/screens/.../ImportOptionsSheet/index.tsx` | Bottom sheet |
+| #   | File                                                  | Purpose               |
+| --- | ----------------------------------------------------- | --------------------- |
+| 1   | `android/.../xberg/XbergModule.kt`                    | Android native module |
+| 2   | `android/.../xberg/XbergPackage.kt`                   | Android package       |
+| 3   | `ios/AnythingLLM/XbergModule.swift`                   | iOS native module     |
+| 4   | `ios/AnythingLLM/XbergModule.m`                       | iOS ObjC bridge       |
+| 5   | `ios/AnythingLLM/VectorBox.swift`                     | iOS ObjectBox wrapper |
+| 6   | `ios/AnythingLLM/VectorBox.m`                         | iOS ObjC bridge       |
+| 7   | `ios/AnythingLLM/VectorEntity.swift`                  | iOS entity            |
+| 8   | `src/utils/Xberg/types.ts`                            | Types                 |
+| 9   | `src/utils/Xberg/XbergClient.ts`                      | Client                |
+| 10  | `src/utils/Xberg/index.ts`                            | Exports               |
+| 11  | `src/store/XbergStore.ts`                             | MobX store            |
+| 12  | `src/hooks/useXberg.ts`                               | Hook                  |
+| 13  | `src/screens/WorkspaceSettings/DocumentsSettings.tsx` | Settings page         |
+| 14  | `src/screens/.../ImportOptionsSheet/index.tsx`        | Bottom sheet          |
 
 ### Files to Modify (6 files)
 
-| # | File | Changes |
-|---|------|---------|
-| 1 | `android/app/build.gradle` | Add Xberg dep |
-| 2 | `android/.../MainApplication.kt` | Register package |
-| 3 | `ios/Podfile` | Add ObjectBox |
-| 4 | `src/screens/WorkspaceSettings/index.tsx` | Add 'documents' page |
-| 5 | `src/screens/WorkspaceSettings/Main/index.tsx` | Add Documents row |
-| 6 | `src/hooks/useAttachments.tsx` | Xberg integration |
+| #   | File                                           | Changes              |
+| --- | ---------------------------------------------- | -------------------- |
+| 1   | `android/app/build.gradle`                     | Add Xberg dep        |
+| 2   | `android/.../MainApplication.kt`               | Register package     |
+| 3   | `ios/Podfile`                                  | Add ObjectBox        |
+| 4   | `src/screens/WorkspaceSettings/index.tsx`      | Add 'documents' page |
+| 5   | `src/screens/WorkspaceSettings/Main/index.tsx` | Add Documents row    |
+| 6   | `src/hooks/useAttachments.tsx`                 | Xberg integration    |
 
 ---
 
 ## Error Handling
 
-| Error | Code | User Message |
-|-------|------|--------------|
-| File too large | `FILE_TOO_LARGE` | "File exceeds 50MB limit" |
-| File not found | `FILE_NOT_FOUND` | "File not found" |
-| Unsupported | `UNSUPPORTED_FORMAT` | "Format not supported" |
-| OCR failed | `OCR_ERROR` | "OCR failed, using text only" |
-| Extraction | `EXTRACTION_ERROR` | "Extraction failed" |
-| Transcription | `TRANSCRIPTION_ERROR` | "Transcription failed" |
+| Error          | Code                  | User Message                  |
+| -------------- | --------------------- | ----------------------------- |
+| File too large | `FILE_TOO_LARGE`      | "File exceeds 50MB limit"     |
+| File not found | `FILE_NOT_FOUND`      | "File not found"              |
+| Unsupported    | `UNSUPPORTED_FORMAT`  | "Format not supported"        |
+| OCR failed     | `OCR_ERROR`           | "OCR failed, using text only" |
+| Extraction     | `EXTRACTION_ERROR`    | "Extraction failed"           |
+| Transcription  | `TRANSCRIPTION_ERROR` | "Transcription failed"        |
 
 ---
 

@@ -1,31 +1,34 @@
-import * as React from 'react';
-import { getApp } from '@react-native-firebase/app'
-import { observer } from 'mobx-react';
-import { NavigationContainer } from '@react-navigation/native';
-import { ActivityIndicator, Provider as PaperProvider } from 'react-native-paper';
-import { StatusBar } from 'react-native';
-import { createDrawerNavigator } from '@react-navigation/drawer';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { KeyboardProvider } from 'react-native-keyboard-controller';
+import * as React from "react";
+import { getApp } from "@react-native-firebase/app";
+import { observer } from "mobx-react";
+import { NavigationContainer } from "@react-navigation/native";
+import {
+  ActivityIndicator,
+  Provider as PaperProvider,
+} from "react-native-paper";
+import { StatusBar } from "react-native";
+import { createDrawerNavigator } from "@react-navigation/drawer";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import {
   gestureHandlerRootHOC,
   GestureHandlerRootView,
-} from 'react-native-gesture-handler';
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import useTheme from '@/hooks/useTheme';
-import { rootStyles } from '@/utils/theme';
-import WorkspaceDrawer from '@/components/WorkspaceDrawer';
-import { PATHS } from './src/utils/paths';
-import Screens from '@/screens';
-import './global.css';
-import { Suspense } from 'react';
-import SafeView from '@/components/SafeView';
-import useInitialRoute from '@/hooks/useInitialRoute';
-import './src/utils/polyfills';
-import { BottomSheetProvider } from '@/contexts/BottomSheetContext';
-import { LLMPreferenceProvider } from '@/contexts/LLMPreferenceContext';
-import { useEnablePushNotifications } from '@/utils/PushNotifications';
-import { useOnboardingCompleted } from '@/hooks/useOnboardingHook';
+} from "react-native-gesture-handler";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
+import useTheme from "@/hooks/useTheme";
+import { rootStyles } from "@/utils/theme";
+import WorkspaceDrawer from "@/components/WorkspaceDrawer";
+import { PATHS } from "./src/utils/paths";
+import Screens from "@/screens";
+import "./global.css";
+import { Suspense } from "react";
+import SafeView from "@/components/SafeView";
+import useInitialRoute from "@/hooks/useInitialRoute";
+import "./src/utils/polyfills";
+import { BottomSheetProvider } from "@/contexts/BottomSheetContext";
+import { LLMPreferenceProvider } from "@/contexts/LLMPreferenceContext";
+import { useEnablePushNotifications } from "@/utils/PushNotifications";
+import { useOnboardingCompleted } from "@/hooks/useOnboardingHook";
 
 const Drawer = createDrawerNavigator();
 const App = observer(() => {
@@ -33,7 +36,8 @@ const App = observer(() => {
   const theme = useTheme();
   const styles = rootStyles(theme);
   const { initialRoute, isLoading } = useInitialRoute();
-  const { onboardingCompleted, loadingOnboardingCompleted } = useOnboardingCompleted();
+  const { onboardingCompleted, loadingOnboardingCompleted } =
+    useOnboardingCompleted();
 
   if (isLoading || loadingOnboardingCompleted)
     return (
@@ -56,7 +60,11 @@ const App = observer(() => {
       <Suspense fallback={<ActivityIndicator />}>
         <GestureHandlerRootView style={styles.root}>
           <SafeAreaProvider>
-            <StatusBar barStyle='default' backgroundColor="transparent" translucent />
+            <StatusBar
+              barStyle="default"
+              backgroundColor="transparent"
+              translucent
+            />
             <KeyboardProvider statusBarTranslucent navigationBarTranslucent>
               <PaperProvider theme={theme}>
                 <LLMPreferenceProvider>
@@ -75,7 +83,7 @@ const App = observer(() => {
                                 swipeEnabled: false,
                                 gestureHandlerProps: {
                                   enabled: false,
-                                }
+                                },
                               }}
                             />
                             <Drawer.Screen
@@ -88,7 +96,7 @@ const App = observer(() => {
                                 swipeEnabled: false,
                                 gestureHandlerProps: {
                                   enabled: false,
-                                }
+                                },
                               }}
                             />
                             <Drawer.Screen
@@ -101,7 +109,7 @@ const App = observer(() => {
                                 swipeEnabled: false,
                                 gestureHandlerProps: {
                                   enabled: false,
-                                }
+                                },
                               }}
                             />
                             <Drawer.Screen
@@ -114,7 +122,7 @@ const App = observer(() => {
                                 swipeEnabled: false,
                                 gestureHandlerProps: {
                                   enabled: false,
-                                }
+                                },
                               }}
                             />
                           </>
@@ -135,9 +143,7 @@ const App = observer(() => {
                         />
                         <Drawer.Screen
                           name={PATHS.voice_chat}
-                          component={gestureHandlerRootHOC(
-                            Screens.VoiceChat,
-                          )}
+                          component={gestureHandlerRootHOC(Screens.VoiceChat)}
                           options={{ headerShown: false }}
                         />
                         <Drawer.Screen

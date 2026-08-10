@@ -1,4 +1,4 @@
-export const HF_DOMAIN = 'https://huggingface.co';
+export const HF_DOMAIN = "https://huggingface.co";
 export const HF_API_BASE = `${HF_DOMAIN}/api/models`;
 
 export const urls = {
@@ -8,6 +8,7 @@ export const urls = {
   modelSpecs: (modelId: string) => `${HF_API_BASE}/${modelId}`,
 
   // Web URLs
-  modelDownloadFile: (modelId: string, filename: string) => `${HF_DOMAIN}/${modelId}/resolve/main/${filename}`,
+  modelDownloadFile: (modelId: string, filename: string) =>
+    `${HF_DOMAIN}/${modelId}/resolve/main/${filename}`,
   modelWebPage: (modelId: string) => `${HF_DOMAIN}/${modelId}`,
 };

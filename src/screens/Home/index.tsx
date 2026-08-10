@@ -13,10 +13,10 @@ export default function Home() {
   const navigation = useNavigation();
 
   async function createWorkspace() {
-    await Workspace.create({ name: 'My Workspace' })
-      .then((workspace) => {
-        eventEmitter.emit('workspaceUpdate', {
-          type: 'add-workspace',
+    await Workspace.create({ name: "My Workspace" })
+      .then(workspace => {
+        eventEmitter.emit("workspaceUpdate", {
+          type: "add-workspace",
           details: {
             name: workspace.name,
             slug: workspace.slug,
@@ -26,27 +26,42 @@ export default function Home() {
         });
 
         // @ts-ignore
-        navigation.navigate(PATHS.workspace_chat, { wsSlug: workspace.slug, threadSlug: workspace.threads[0].slug });
+        navigation.navigate(PATHS.workspace_chat, {
+          wsSlug: workspace.slug,
+          threadSlug: workspace.threads[0].slug,
+        });
       })
-      .catch((error) => {
+      .catch(error => {
         console.error(error);
       });
   }
 
   return (
-    <SafeView scrollable={false} safeAreaClassNames="pt-[21px]" safeAreaStyle={{ backgroundColor: '#000' }} applyGradient>
+    <SafeView
+      scrollable={false}
+      safeAreaClassNames="pt-[21px]"
+      safeAreaStyle={{ backgroundColor: "#000" }}
+      applyGradient>
       <TopBar />
       <View className="flex flex-col h-[90vh] justify-center items-center gap-y-4">
         <View className="flex flex-col items-center justify-center gap-y-1">
-          <Text className="text-2xl font-bold text-white">Welcome to AnythingLLM</Text>
+          <Text className="text-2xl font-bold text-white">
+            Welcome to AnythingLLM
+          </Text>
           <Text className="text-white text-center">
             Get started by creating a new workspace.
           </Text>
         </View>
-        <TouchableOpacity activeOpacity={0.8} style={{ minWidth: 200 }} className="rounded-lg bg-white/10  py-2 px-4" onPress={createWorkspace}>
-          <Text className="text-white text-center text-xl">Create Workspace</Text>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={{ minWidth: 200 }}
+          className="rounded-lg bg-white/10  py-2 px-4"
+          onPress={createWorkspace}>
+          <Text className="text-white text-center text-xl">
+            Create Workspace
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeView>
   );
-};
+}

@@ -30,7 +30,10 @@ declare module "@yz1311/react-native-intent-launcher" {
     static startActivity(intent: Intent): Promise<void>;
     static isIntentAvailable(intent: Intent): Promise<boolean>;
     static getAvailableResolveInfos(intent: Intent): Promise<ResolveInfo[]>;
-    static startActivityForResult(intent: Intent, requestCode: number): Promise<void>;
+    static startActivityForResult(
+      intent: Intent,
+      requestCode: number,
+    ): Promise<void>;
   }
 
   export class AppUtils {

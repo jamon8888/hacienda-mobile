@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { database, databaseTables } from '@/database';
-import uiStore from '@/store/UIStore';
-import { showToast } from '@/utils/Notification';
+import React, { useEffect, useState } from "react";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import { database, databaseTables } from "@/database";
+import uiStore from "@/store/UIStore";
+import { showToast } from "@/utils/Notification";
 
 // Define the collections we want to inspect
 const COLLECTIONS = databaseTables;
@@ -127,7 +127,7 @@ const DatabaseInspectorView = () => {
   const renderRecordDetails = () => {
     if (!selectedRecord) return null;
 
-    const records = collectionData[selectedCollection || ''] || [];
+    const records = collectionData[selectedCollection || ""] || [];
     const currentIndex = records.findIndex(
       record => record.id === selectedRecord.id,
     );
@@ -150,7 +150,7 @@ const DatabaseInspectorView = () => {
             <View key={key} className="p-4 mb-2 bg-[--primary-bg] rounded-lg">
               <Text className="text-[#B2DDFF] font-medium mb-1">{key}</Text>
               <Text className="text-white font-mono">
-                {typeof value === 'object'
+                {typeof value === "object"
                   ? JSON.stringify(value, null, 2)
                   : String(value)}
               </Text>
@@ -168,11 +168,11 @@ const DatabaseInspectorView = () => {
               onPress={() => setSelectedRecord(records[currentIndex - 1])}
               disabled={!hasPrevious}
               className={`rounded-lg px-6 py-3 ${
-                hasPrevious ? 'bg-[--cta-light-blue]' : 'bg-[--primary-bg]'
+                hasPrevious ? "bg-[--cta-light-blue]" : "bg-[--primary-bg]"
               }`}>
               <Text
-                className={hasPrevious ? 'text-[--dark]' : 'text-[#6c757d]'}
-                style={{ fontWeight: '600' }}>
+                className={hasPrevious ? "text-[--dark]" : "text-[#6c757d]"}
+                style={{ fontWeight: "600" }}>
                 Previous
               </Text>
             </TouchableOpacity>
@@ -180,11 +180,11 @@ const DatabaseInspectorView = () => {
               onPress={() => setSelectedRecord(records[currentIndex + 1])}
               disabled={!hasNext}
               className={`rounded-lg px-6 py-3 ${
-                hasNext ? 'bg-[--cta-light-blue]' : 'bg-[--primary-bg]'
+                hasNext ? "bg-[--cta-light-blue]" : "bg-[--primary-bg]"
               }`}>
               <Text
-                className={hasNext ? 'text-[--dark]' : 'text-[#6c757d]'}
-                style={{ fontWeight: '600' }}>
+                className={hasNext ? "text-[--dark]" : "text-[#6c757d]"}
+                style={{ fontWeight: "600" }}>
                 Next
               </Text>
             </TouchableOpacity>
@@ -214,7 +214,7 @@ const DatabaseInspectorView = () => {
                 }
               });
               loadAllCollections();
-              showToast('Database has been reset');
+              showToast("Database has been reset");
             }}>
             <Text className="text-white text-center font-bold">
               Reset Database
@@ -225,7 +225,7 @@ const DatabaseInspectorView = () => {
             className="flex-1 bg-blue-500 rounded-lg p-4 shadow-sm"
             onPress={() => {
               uiStore.resetAllStorage();
-              showToast('Onboarding has been reset');
+              showToast("Onboarding has been reset");
             }}>
             <Text className="text-white text-center font-bold">
               Reset Onboarding

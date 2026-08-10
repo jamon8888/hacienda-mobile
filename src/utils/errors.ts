@@ -1,9 +1,8 @@
-import axios from 'axios';
+import axios from "axios";
 
 /**
  * Error classes for better error handling throughout the application
  */
-
 
 /**
  * NetworkError - Used for connectivity-related errors
@@ -12,7 +11,7 @@ import axios from 'axios';
 export class NetworkError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'NetworkError';
+    this.name = "NetworkError";
   }
 }
 
@@ -23,7 +22,7 @@ export class NetworkError extends Error {
 export class AppCheckError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'AppCheckError';
+    this.name = "AppCheckError";
   }
 }
 
@@ -34,7 +33,7 @@ export class AppCheckError extends Error {
 export class ServerError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'ServerError';
+    this.name = "ServerError";
   }
 }
 
@@ -43,15 +42,15 @@ export class ServerError extends Error {
  */
 export interface ErrorState {
   code:
-  | 'authentication'
-  | 'authorization'
-  | 'network'
-  | 'storage'
-  | 'server'
-  | 'unknown';
-  service?: 'huggingface' | 'firebase' | 'localapi';
+    | "authentication"
+    | "authorization"
+    | "network"
+    | "storage"
+    | "server"
+    | "unknown";
+  service?: "huggingface" | "firebase" | "localapi";
   message: string;
-  context: 'search' | 'download' | 'modelDetails';
+  context: "search" | "download" | "modelDetails";
   recoverable: boolean;
   metadata?: {
     modelId?: string;
@@ -64,12 +63,12 @@ export interface ErrorState {
  */
 export function createErrorState(
   error: unknown,
-  context: ErrorState['context'],
-  service?: ErrorState['service'],
-  metadata?: ErrorState['metadata'],
+  context: ErrorState["context"],
+  service?: ErrorState["service"],
+  metadata?: ErrorState["metadata"],
 ): ErrorState {
-  let code: ErrorState['code'] = 'unknown';
-  let message = 'An unexpected error occurred';
+  let code: ErrorState["code"] = "unknown";
+  let message = "An unexpected error occurred";
   let recoverable = true;
   let errorService = service;
 
@@ -78,54 +77,54 @@ export function createErrorState(
 
     // Check URL to determine service if not explicitly provided
     if (!errorService) {
-      const url = error.config?.url || '';
-      if (url.includes('huggingface.co') || url.includes('hf.co')) {
-        errorService = 'huggingface';
+      const url = error.config?.url || "";
+      if (url.includes("huggingface.co") || url.includes("hf.co")) {
+        errorService = "huggingface";
       }
     }
 
     if (statusCode === 401) {
-      code = 'authentication';
+      code = "authentication";
       message =
-        errorService === 'huggingface'
-          ? context === 'search'
-            ? 'Hugging Face authentication error: Invalid token'
-            : 'Hugging Face authentication error: Token is missing or invalid'
-          : 'Authentication error: Token is missing or invalid';
+        errorService === "huggingface"
+          ? context === "search"
+            ? "Hugging Face authentication error: Invalid token"
+            : "Hugging Face authentication error: Token is missing or invalid"
+          : "Authentication error: Token is missing or invalid";
     } else if (statusCode === 403) {
-      code = 'authorization';
+      code = "authorization";
       message =
-        errorService === 'huggingface'
-          ? 'Hugging Face authorization error: No permission to access this resource'
-          : 'Authorization error: No permission to access this resource';
+        errorService === "huggingface"
+          ? "Hugging Face authorization error: No permission to access this resource"
+          : "Authorization error: No permission to access this resource";
     } else if (statusCode && statusCode >= 500) {
-      code = 'server';
+      code = "server";
       message =
-        errorService === 'huggingface'
-          ? 'Hugging Face server error: API server issue'
-          : 'Server error: API server issue';
-    } else if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
-      code = 'network';
+        errorService === "huggingface"
+          ? "Hugging Face server error: API server issue"
+          : "Server error: API server issue";
+    } else if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
+      code = "network";
       message =
-        errorService === 'huggingface'
-          ? 'Network timeout: Request to Hugging Face took too long to complete'
-          : 'Network timeout: Request took too long to complete';
-    } else if (error.code === 'ERR_NETWORK') {
-      code = 'network';
+        errorService === "huggingface"
+          ? "Network timeout: Request to Hugging Face took too long to complete"
+          : "Network timeout: Request took too long to complete";
+    } else if (error.code === "ERR_NETWORK") {
+      code = "network";
       message =
-        errorService === 'huggingface'
-          ? 'Network error: Unable to connect to Hugging Face API'
-          : 'Network error: Unable to connect to API';
+        errorService === "huggingface"
+          ? "Network error: Unable to connect to Hugging Face API"
+          : "Network error: Unable to connect to API";
     }
   } else if (error instanceof NetworkError) {
-    code = 'network';
+    code = "network";
     message = error.message;
   } else if (error instanceof ServerError) {
-    code = 'server';
+    code = "server";
     message = error.message;
   } else if (error instanceof Error) {
     // Handle error messages containing HTTP status codes (e.g., 'Client error: 403')
-    if (typeof error.message === 'string') {
+    if (typeof error.message === "string") {
       const statusCodeMatch = error.message.match(
         /(?:Client error:|status:?)\s*(\d{3})/i,
       );
@@ -133,29 +132,29 @@ export function createErrorState(
         const statusCode = parseInt(statusCodeMatch[1], 10);
 
         if (statusCode === 401) {
-          code = 'authentication';
+          code = "authentication";
           message =
-            errorService === 'huggingface'
-              ? 'Hugging Face authentication error: Token is missing or invalid'
-              : 'Authentication error: Token is missing or invalid';
+            errorService === "huggingface"
+              ? "Hugging Face authentication error: Token is missing or invalid"
+              : "Authentication error: Token is missing or invalid";
         } else if (statusCode === 403) {
-          code = 'authorization';
+          code = "authorization";
           message =
-            errorService === 'huggingface'
-              ? 'Hugging Face authorization error: No permission to access this resource'
-              : 'Authorization error: No permission to access this resource';
+            errorService === "huggingface"
+              ? "Hugging Face authorization error: No permission to access this resource"
+              : "Authorization error: No permission to access this resource";
         } else if (statusCode >= 500) {
-          code = 'server';
+          code = "server";
           message =
-            errorService === 'huggingface'
-              ? 'Hugging Face server error: API server issue'
-              : 'Server error: API server issue';
+            errorService === "huggingface"
+              ? "Hugging Face server error: API server issue"
+              : "Server error: API server issue";
         }
       } else if (
-        error.message.includes('storage') ||
-        error.message.includes('space')
+        error.message.includes("storage") ||
+        error.message.includes("space")
       ) {
-        code = 'storage';
+        code = "storage";
         message = error.message;
       } else {
         message = error.message;

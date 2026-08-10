@@ -2,31 +2,32 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "On-Device",
     value: "native",
-    logo: require('@/assets/llmprovider/ondevice.png'),
+    logo: require("@/assets/llmprovider/ondevice.png"),
     description: "Install and run models on your phone.",
   },
   {
     name: "Ollama",
     value: "ollama",
-    logo: require('@/assets/llmprovider/ollama.png'),
+    logo: require("@/assets/llmprovider/ollama.png"),
     description: "Run LLMs locally on your own machine with Ollama.",
   },
   {
     name: "LM Studio",
     value: "lmstudio",
-    logo: require('@/assets/llmprovider/lmstudio.png'),
-    description: "Discover, download, and run thousands of cutting edge LLMs in a few clicks.",
+    logo: require("@/assets/llmprovider/lmstudio.png"),
+    description:
+      "Discover, download, and run thousands of cutting edge LLMs in a few clicks.",
   },
   {
     name: "OpenAI",
     value: "openai",
-    logo: require('@/assets/llmprovider/openai.png'),
+    logo: require("@/assets/llmprovider/openai.png"),
     description: "Leverage OpenAI's powerful models.",
   },
   {
     name: "OpenRouter",
     value: "openrouter",
-    logo: require('@/assets/llmprovider/openrouter.jpeg'),
+    logo: require("@/assets/llmprovider/openrouter.jpeg"),
     description: "A unified API of AI services from leading providers",
   },
   // {
@@ -220,7 +221,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Generic OpenAI",
     value: "generic-openai",
-    logo: require('@/assets/llmprovider/generic-openai.png'),
+    logo: require("@/assets/llmprovider/generic-openai.png"),
     description:
       "Connect to any OpenAi-compatible service via a custom configuration",
   },

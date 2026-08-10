@@ -1,46 +1,52 @@
-import { polyfill as polyfillFetch } from 'react-native-polyfill-globals/src/fetch';
-import { safeParseJSON } from '../device';
-import { TextEncoder, TextDecoder } from 'react-native-polyfill-globals/src/encoding';
+import { polyfill as polyfillFetch } from "react-native-polyfill-globals/src/fetch";
+import { safeParseJSON } from "../device";
+import {
+  TextEncoder,
+  TextDecoder,
+} from "react-native-polyfill-globals/src/encoding";
 
 type IMessage = {
-  role: 'system' | 'user' | 'assistant';
+  role: "system" | "user" | "assistant";
   content: string;
-}
+};
 
 type IAsyncChatCompletionRequestBody = {
   model: string;
   messages: IMessage[];
   temperature?: number;
-}
+};
 
 export default class OpenAILite {
-  private baseURL: string = 'https://api.openai.com/v1';
+  private baseURL: string = "https://api.openai.com/v1";
   private apiKey: string | null = null;
   private streamingFetch: typeof fetch | null = null;
 
   public models = {
-    list: () => this.listModels()
+    list: () => this.listModels(),
   };
 
   public chat = {
     completions: {
       create: (body: any, options?: any) => {
-        if (body.stream) return this.streamChatCompletion(body, options)
-        return this.createChatCompletion(body, options)
-      }
+        if (body.stream) return this.streamChatCompletion(body, options);
+        return this.createChatCompletion(body, options);
+      },
     },
-  }
+  };
 
   private setupStreamingFetch() {
-    this.log('setupStreamingFetch');
+    this.log("setupStreamingFetch");
     const originalFetch = globalThis.fetch;
     polyfillFetch();
     this.streamingFetch = globalThis.fetch;
     globalThis.fetch = originalFetch;
-    this.log('setupStreamingFetch completed - original fetch restored');
+    this.log("setupStreamingFetch completed - original fetch restored");
   }
 
-  constructor({ apiKey, baseURL }: { apiKey?: string | null, baseURL?: string } = {}) {
+  constructor({
+    apiKey,
+    baseURL,
+  }: { apiKey?: string | null; baseURL?: string } = {}) {
     this.apiKey = apiKey || this.apiKey;
     this.baseURL = baseURL || this.baseURL;
     this.setupStreamingFetch();
@@ -48,33 +54,38 @@ export default class OpenAILite {
 
   private log = (text: string, ...args: any[]) => {
     console.log(`🛠️ \x1b[33m[OpenAILite]\x1b[0m ${text}`, ...args);
-  }
+  };
 
   private formatURL(urlString: string) {
     try {
       const url = new URL(urlString);
-      url.pathname = url.pathname.replace(/\/\//g, '/');
+      url.pathname = url.pathname.replace(/\/\//g, "/");
       return url.toString();
     } catch (error) {
       return urlString;
     }
   }
 
-  async createChatCompletion(body: IAsyncChatCompletionRequestBody, _options: any = {}) {
+  async createChatCompletion(
+    body: IAsyncChatCompletionRequestBody,
+    _options: any = {},
+  ) {
     const formattedURL = this.formatURL(`${this.baseURL}/chat/completions`);
-    console.log('createChatCompletion', formattedURL, { hasApiKey: !!this.apiKey });
+    console.log("createChatCompletion", formattedURL, {
+      hasApiKey: !!this.apiKey,
+    });
     return await fetch(formattedURL, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        ...(this.apiKey ? { 'Authorization': `Bearer ${this.apiKey}` } : {}),
+        "Content-Type": "application/json",
+        ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}),
       },
       body: JSON.stringify({
         ...body,
         stream: false,
       }),
       // @ts-ignore
-      reactNative: { textStreaming: true }
+      reactNative: { textStreaming: true },
     })
       .then(res => res.json())
       .catch(err => {
@@ -83,14 +94,19 @@ export default class OpenAILite {
       });
   }
 
-  async *streamChatCompletion(body: IAsyncChatCompletionRequestBody, options: { controller?: AbortController } = {}) {
+  async *streamChatCompletion(
+    body: IAsyncChatCompletionRequestBody,
+    options: { controller?: AbortController } = {},
+  ) {
     const formattedURL = this.formatURL(`${this.baseURL}/chat/completions`);
-    console.log('streamingChatCompletion', formattedURL, { hasApiKey: !!this.apiKey });
+    console.log("streamingChatCompletion", formattedURL, {
+      hasApiKey: !!this.apiKey,
+    });
     const response = await this.streamingFetch!(formattedURL, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        ...(this.apiKey ? { 'Authorization': `Bearer ${this.apiKey}` } : {}),
+        "Content-Type": "application/json",
+        ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}),
       },
       body: JSON.stringify(body),
       ...(options.controller ? { signal: options.controller.signal } : {}),
@@ -109,17 +125,17 @@ export default class OpenAILite {
         if (done) break;
 
         const text = decoder.decode(value);
-        const lines = text.split('\n');
+        const lines = text.split("\n");
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
+          if (line.startsWith("data: ")) {
             const data = line.slice(6);
-            if (data === '[DONE]') continue;
+            if (data === "[DONE]") continue;
 
             try {
               const parsed = safeParseJSON(data);
               yield parsed;
             } catch (e) {
-              console.error('Failed to parse streaming response:', e);
+              console.error("Failed to parse streaming response:", e);
             }
           }
         }
@@ -131,13 +147,13 @@ export default class OpenAILite {
 
   async listModels() {
     const formattedURL = this.formatURL(`${this.baseURL}/models`);
-    console.log('listModels', formattedURL, { hasApiKey: !!this.apiKey });
+    console.log("listModels", formattedURL, { hasApiKey: !!this.apiKey });
     return await fetch(formattedURL, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
-        ...(this.apiKey ? { 'Authorization': `Bearer ${this.apiKey}` } : {}),
-      }
+        "Content-Type": "application/json",
+        ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}),
+      },
     })
       .then(res => res.json())
       .catch(err => {

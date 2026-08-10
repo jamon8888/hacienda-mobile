@@ -14,14 +14,14 @@ Integrate Xberg (document intelligence engine) into AnythingLLM Mobile for on-de
 
 ## Requirements
 
-| Requirement | Spec |
-|-------------|------|
-| **Input** | User picks entire folder OR single file in conversations |
-| **Bridge** | Native (Kotlin Android, Swift iOS) |
-| **Max File Size** | 50MB for local processing |
-| **OCR** | Yes, on-device (Tesseract/PaddleOCR) |
-| **Offline** | Full offline support with cloud fallback |
-| **VectorDB** | ObjectBox (existing Android, needs iOS implementation) |
+| Requirement       | Spec                                                     |
+| ----------------- | -------------------------------------------------------- |
+| **Input**         | User picks entire folder OR single file in conversations |
+| **Bridge**        | Native (Kotlin Android, Swift iOS)                       |
+| **Max File Size** | 50MB for local processing                                |
+| **OCR**           | Yes, on-device (Tesseract/PaddleOCR)                     |
+| **Offline**       | Full offline support with cloud fallback                 |
+| **VectorDB**      | ObjectBox (existing Android, needs iOS implementation)   |
 
 ---
 
@@ -80,6 +80,7 @@ Integrate Xberg (document intelligence engine) into AnythingLLM Mobile for on-de
 ### Android (Kotlin)
 
 **Dependency**:
+
 ```gradle
 // android/app/build.gradle
 dependencies {
@@ -88,6 +89,7 @@ dependencies {
 ```
 
 **Native Module** (`XbergModule.kt`):
+
 ```kotlin
 package com.anythingllm.xberg
 
@@ -101,11 +103,11 @@ import com.facebook.react.bridge.WritableArray
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.bridge.Arguments
 
-class XbergModule(reactContext: ReactApplicationContext) : 
+class XbergModule(reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
-    
+
     override fun getName(): String = "XbergModule"
-    
+
     // Implemented bridge (android/app/src/main/java/com/anythingllm/xberg/XbergModule.kt) --
     // consolidated from the extractFile/extractFolder/extractWithOCR/batchExtract/detectFormat
     // surface originally sketched here, once the real xberg-android API (typed Kotlin objects,
@@ -113,19 +115,20 @@ class XbergModule(reactContext: ReactApplicationContext) :
     // extractBatch, not separate methods; there is no client-facing detectFormat.
     @ReactMethod
     fun extract(filePath: String, configJson: String, promise: Promise)
-    
+
     @ReactMethod
     fun extractBatch(filePaths: ReadableArray, configJson: String, promise: Promise)
-    
+
     @ReactMethod
     fun getSupportedFormats(promise: Promise)
-    
+
     @ReactMethod
     fun transcribeAudio(filePath: String, model: String, language: String?, promise: Promise)
 }
 ```
 
 **Package Registration** (`XbergPackage.kt`):
+
 ```kotlin
 package com.anythingllm.xberg
 
@@ -141,7 +144,7 @@ class XbergPackage : ReactPackage {
             add(XbergModule(reactContext))
         }
     }
-    
+
     override fun createViewManagers(
         reactContext: ReactApplicationContext
     ): MutableList<com.facebook.react.uimanager.ViewManager<*, *>> {
@@ -151,6 +154,7 @@ class XbergPackage : ReactPackage {
 ```
 
 **MainApplication.kt Registration**:
+
 ```kotlin
 // Add to getPackages()
 packages.add(XbergPackage())
@@ -159,6 +163,7 @@ packages.add(XbergPackage())
 ### iOS (Swift)
 
 **Dependencies** (`ios/Podfile`):
+
 ```ruby
 # Xberg document extraction
 pod 'Xberg', :git => 'https://github.com/xberg-io/xberg.git', :tag => '1.0.8'
@@ -168,17 +173,18 @@ pod 'ObjectBox'
 ```
 
 **Native Module** (`XbergModule.swift`):
+
 ```swift
 import Foundation
 import Xberg
 
 @objc(XbergModule)
 class XbergModule: NSObject {
-    
+
     @objc static func requiresMainQueueSetup() -> Bool {
         return false
     }
-    
+
     @objc func extractFile(
         _ filePath: String,
         options: NSDictionary,
@@ -187,7 +193,7 @@ class XbergModule: NSObject {
     ) {
         // Xberg extraction logic
     }
-    
+
     @objc func extractFolder(
         _ folderPath: String,
         options: NSDictionary,
@@ -196,7 +202,7 @@ class XbergModule: NSObject {
     ) {
         // Xberg batch extraction
     }
-    
+
     @objc func extractWithOCR(
         _ filePath: String,
         ocrOptions: NSDictionary,
@@ -205,7 +211,7 @@ class XbergModule: NSObject {
     ) {
         // Xberg OCR extraction
     }
-    
+
     @objc func batchExtract(
         _ filePaths: NSArray,
         options: NSDictionary,
@@ -214,7 +220,7 @@ class XbergModule: NSObject {
     ) {
         // Xberg batch processing
     }
-    
+
     @objc func detectFormat(
         _ filePath: String,
         resolver resolve: @escaping RCTPromiseResolveBlock,
@@ -222,7 +228,7 @@ class XbergModule: NSObject {
     ) {
         // Format detection
     }
-    
+
     @objc func getSupportedFormats(
         _ resolve: @escaping RCTPromiseResolveBlock,
         rejecter reject: @escaping RCTPromiseRejectBlock
@@ -233,6 +239,7 @@ class XbergModule: NSObject {
 ```
 
 **Bridge Header** (`AnythingLLM-Bridging-Header.h`):
+
 ```objc
 #import <React/RCTBridgeModule.h>
 #import <React/RCTViewManager.h>
@@ -243,6 +250,7 @@ class XbergModule: NSObject {
 ## VectorDB: ObjectBox iOS Support
 
 ### Current State
+
 - **Android**: Fully integrated (ObjectBox 4.3.0, HNSW vector search, 768 dims)
 - **iOS**: NOT integrated (no native module)
 
@@ -251,12 +259,14 @@ class XbergModule: NSObject {
 **Installation Options**:
 
 #### Option 1: Swift Package Manager (Recommended)
+
 ```swift
 // Package.swift
 .package(url: "https://github.com/objectbox/objectbox-swift-spm.git", from: "4.0.0")
 ```
 
 #### Option 2: CocoaPods
+
 ```ruby
 # ios/Podfile
 pod 'ObjectBox'
@@ -265,22 +275,23 @@ pod 'ObjectBox'
 ### iOS VectorBox Implementation
 
 **VectorBox.swift**:
+
 ```swift
 import Foundation
 import ObjectBox
 
 class VectorBox {
     static let shared = VectorBox()
-    
+
     private let store: Store
     private let box: Box<VectorEntity>
-    
+
     init() throws {
         // Initialize ObjectBox store
         self.store = try Store()
         self.box = store.box(for: VectorEntity.self)
     }
-    
+
     // MARK: - Insert
     func insert(workspaceSlug: String, embedding: [Float], metadata: String) throws -> Int64 {
         let entity = VectorEntity(
@@ -290,7 +301,7 @@ class VectorBox {
         )
         return try box.put(entity)
     }
-    
+
     func bulkInsert(workspaceSlug: String, vectors: [(embedding: [Float], metadata: String)]) throws -> [Int64] {
         let entities = vectors.map { VectorEntity(
             embedding: $0.embedding,
@@ -299,7 +310,7 @@ class VectorBox {
         )}
         return try box.put(entities)
     }
-    
+
     // MARK: - Search (HNSW)
     func semanticSearch(workspaceSlug: String, queryVector: [Float], topN: Int) throws -> [(id: Int64, metadata: String, score: Float)] {
         // HNSW nearest neighbor search with cosine distance
@@ -307,14 +318,14 @@ class VectorBox {
             VectorEntity.workspaceSlug.equal(workspaceSlug)
                 .and(VectorEntity.embedding.nearestNeighbors(queryVector, topN: topN))
         ).build()
-        
+
         return try query.findWithScores().map { result in
-            (id: result.object.id, 
-             metadata: result.object.metadata ?? "{}", 
+            (id: result.object.id,
+             metadata: result.object.metadata ?? "{}",
              score: result.score)
         }
     }
-    
+
     // MARK: - Delete
     func resetVectorsForWorkspace(workspaceSlug: String) throws {
         let query = try box.query(
@@ -322,15 +333,15 @@ class VectorBox {
         ).build()
         try box.remove(query.find())
     }
-    
+
     func deleteVectorsByIds(ids: [Int64]) throws {
         try box.remove(ids)
     }
-    
+
     func reset() throws {
         try box.removeAll()
     }
-    
+
     func count() throws -> Int {
         return try box.count()
     }
@@ -338,20 +349,21 @@ class VectorBox {
 ```
 
 **VectorEntity.swift**:
+
 ```swift
 import ObjectBox
 
 // objectbox: entity
 class VectorEntity {
     var id: Id = 0
-    
+
     // objectbox: annotation = HnswIndex(dimensions: 768, distanceType: VectorDistanceType.cosine)
     var embedding: [Float]?
     var metadata: String?
     var workspaceSlug: String?
-    
+
     init() {}
-    
+
     init(embedding: [Float]?, metadata: String?, workspaceSlug: String?) {
         self.embedding = embedding
         self.metadata = metadata
@@ -361,6 +373,7 @@ class VectorEntity {
 ```
 
 **Note**: ObjectBox Swift uses code generation via Sourcery. After defining entities, run:
+
 ```bash
 Pods/ObjectBox/setup.rb
 ```
@@ -372,18 +385,18 @@ Pods/ObjectBox/setup.rb
 ### XbergClient.ts
 
 ```typescript
-import { NativeModules, Platform } from 'react-native';
+import { NativeModules, Platform } from "react-native";
 
 const { XbergModule } = NativeModules;
 
 export interface XbergExtractOptions {
-  outputFormat?: 'text' | 'markdown' | 'html' | 'json';
+  outputFormat?: "text" | "markdown" | "html" | "json";
   enableOCR?: boolean;
-  ocrBackend?: 'tesseract' | 'paddleocr';
+  ocrBackend?: "tesseract" | "paddleocr";
   ocrLanguage?: string;
   enableTableExtraction?: boolean;
   enableCodeIntelligence?: boolean;
-  chunkingStrategy?: 'semantic' | 'text' | 'markdown';
+  chunkingStrategy?: "semantic" | "text" | "markdown";
   maxFileSize?: number; // MB
 }
 
@@ -423,7 +436,7 @@ export class XbergClient {
    */
   static async extractFile(
     filePath: string,
-    options: XbergExtractOptions = {}
+    options: XbergExtractOptions = {},
   ): Promise<XbergExtractResult> {
     return XbergModule.extractFile(filePath, options);
   }
@@ -433,7 +446,7 @@ export class XbergClient {
    */
   static async extractFolder(
     folderPath: string,
-    options: XbergExtractOptions = {}
+    options: XbergExtractOptions = {},
   ): Promise<XbergBatchResult> {
     return XbergModule.extractFolder(folderPath, options);
   }
@@ -444,9 +457,9 @@ export class XbergClient {
   static async extractWithOCR(
     filePath: string,
     ocrOptions: {
-      backend?: 'tesseract' | 'paddleocr';
+      backend?: "tesseract" | "paddleocr";
       language?: string;
-    } = {}
+    } = {},
   ): Promise<XbergExtractResult> {
     return XbergModule.extractWithOCR(filePath, ocrOptions);
   }
@@ -456,7 +469,7 @@ export class XbergClient {
    */
   static async batchExtract(
     filePaths: string[],
-    options: XbergExtractOptions = {}
+    options: XbergExtractOptions = {},
   ): Promise<XbergBatchResult> {
     return XbergModule.batchExtract(filePaths, options);
   }
@@ -480,19 +493,23 @@ export class XbergClient {
 ### XbergStore.ts (MobX)
 
 ```typescript
-import { makeAutoObservable } from 'mobx';
-import { XbergClient, XbergExtractOptions, XbergExtractResult } from './XbergClient';
+import { makeAutoObservable } from "mobx";
+import {
+  XbergClient,
+  XbergExtractOptions,
+  XbergExtractResult,
+} from "./XbergClient";
 
-export type ProcessingMode = 'local' | 'cloud' | 'auto';
-export type ProcessingStatus = 'idle' | 'processing' | 'completed' | 'error';
+export type ProcessingMode = "local" | "cloud" | "auto";
+export type ProcessingStatus = "idle" | "processing" | "completed" | "error";
 
 export interface XbergConfig {
   enabled: boolean;
   processingMode: ProcessingMode;
-  chunkingStrategy: 'semantic' | 'text' | 'markdown';
+  chunkingStrategy: "semantic" | "text" | "markdown";
   maxFileSize: number; // MB (default: 50)
   enableOCR: boolean;
-  ocrBackend: 'tesseract' | 'paddleocr';
+  ocrBackend: "tesseract" | "paddleocr";
   enableTableExtraction: boolean;
   enableCodeIntelligence: boolean;
 }
@@ -500,16 +517,16 @@ export interface XbergConfig {
 export class XbergStore {
   config: XbergConfig = {
     enabled: true,
-    processingMode: 'local',
-    chunkingStrategy: 'semantic',
+    processingMode: "local",
+    chunkingStrategy: "semantic",
     maxFileSize: 50,
     enableOCR: true,
-    ocrBackend: 'tesseract',
+    ocrBackend: "tesseract",
     enableTableExtraction: true,
     enableCodeIntelligence: true,
   };
 
-  status: ProcessingStatus = 'idle';
+  status: ProcessingStatus = "idle";
   progress: number = 0;
   currentFile: string | null = null;
   lastResult: XbergExtractResult | null = null;
@@ -524,7 +541,7 @@ export class XbergStore {
   }
 
   async extractFile(filePath: string): Promise<XbergExtractResult | null> {
-    this.status = 'processing';
+    this.status = "processing";
     this.currentFile = filePath;
     this.progress = 0;
     this.error = null;
@@ -532,12 +549,12 @@ export class XbergStore {
     try {
       const result = await XbergClient.extractFile(filePath, this.config);
       this.lastResult = result;
-      this.status = 'completed';
+      this.status = "completed";
       this.progress = 100;
       return result;
     } catch (e) {
-      this.error = e instanceof Error ? e.message : 'Extraction failed';
-      this.status = 'error';
+      this.error = e instanceof Error ? e.message : "Extraction failed";
+      this.status = "error";
       return null;
     } finally {
       this.currentFile = null;
@@ -545,19 +562,19 @@ export class XbergStore {
   }
 
   async extractFolder(folderPath: string): Promise<XbergBatchResult | null> {
-    this.status = 'processing';
+    this.status = "processing";
     this.currentFile = folderPath;
     this.progress = 0;
     this.error = null;
 
     try {
       const result = await XbergClient.extractFolder(folderPath, this.config);
-      this.status = 'completed';
+      this.status = "completed";
       this.progress = 100;
       return result;
     } catch (e) {
-      this.error = e instanceof Error ? e.message : 'Folder extraction failed';
-      this.status = 'error';
+      this.error = e instanceof Error ? e.message : "Folder extraction failed";
+      this.status = "error";
       return null;
     } finally {
       this.currentFile = null;
@@ -565,7 +582,7 @@ export class XbergStore {
   }
 
   reset() {
-    this.status = 'idle';
+    this.status = "idle";
     this.progress = 0;
     this.currentFile = null;
     this.lastResult = null;
@@ -583,14 +600,17 @@ export const xbergStore = new XbergStore();
 ### useXberg.ts
 
 ```typescript
-import { useState, useCallback } from 'react';
-import { xbergStore, XbergConfig } from '../store/XbergStore';
-import { XbergExtractResult, XbergBatchResult } from '../utils/Xberg/XbergClient';
+import { useState, useCallback } from "react";
+import { xbergStore, XbergConfig } from "../store/XbergStore";
+import {
+  XbergExtractResult,
+  XbergBatchResult,
+} from "../utils/Xberg/XbergClient";
 
 export interface UseXbergReturn {
   extractFile: (filePath: string) => Promise<XbergExtractResult | null>;
   extractFolder: (folderPath: string) => Promise<XbergBatchResult | null>;
-  status: 'idle' | 'processing' | 'completed' | 'error';
+  status: "idle" | "processing" | "completed" | "error";
   progress: number;
   error: string | null;
   config: XbergConfig;
@@ -603,35 +623,35 @@ export function useXberg(): UseXbergReturn {
   const [error, setError] = useState(xbergStore.error);
 
   const extractFile = useCallback(async (filePath: string) => {
-    setStatus('processing');
+    setStatus("processing");
     setProgress(0);
     setError(null);
 
     try {
       const result = await xbergStore.extractFile(filePath);
-      setStatus(result ? 'completed' : 'error');
+      setStatus(result ? "completed" : "error");
       setProgress(100);
       return result;
     } catch (e) {
-      setStatus('error');
-      setError(e instanceof Error ? e.message : 'Extraction failed');
+      setStatus("error");
+      setError(e instanceof Error ? e.message : "Extraction failed");
       return null;
     }
   }, []);
 
   const extractFolder = useCallback(async (folderPath: string) => {
-    setStatus('processing');
+    setStatus("processing");
     setProgress(0);
     setError(null);
 
     try {
       const result = await xbergStore.extractFolder(folderPath);
-      setStatus(result ? 'completed' : 'error');
+      setStatus(result ? "completed" : "error");
       setProgress(100);
       return result;
     } catch (e) {
-      setStatus('error');
-      setError(e instanceof Error ? e.message : 'Folder extraction failed');
+      setStatus("error");
+      setError(e instanceof Error ? e.message : "Folder extraction failed");
       return null;
     }
   }, []);
@@ -676,7 +696,7 @@ export function useXberg(): UseXbergReturn {
 
 ```typescript
 // Add Xberg integration
-import { useXberg } from '../hooks/useXberg';
+import { useXberg } from "../hooks/useXberg";
 
 const { extractFile, extractFolder } = useXberg();
 
@@ -692,7 +712,8 @@ const handleDocumentPick = async (file: DocumentPickerFile) => {
   const embeddings = await embedder.embedBatch(chunks);
 
   // 4. Store in VectorDB
-  const vectorBoxIds = await VectorDB.bulkInsert(workspaceSlug, 
+  const vectorBoxIds = await VectorDB.bulkInsert(
+    workspaceSlug,
     chunks.map((chunk, i) => ({
       embedding: embeddings[i],
       metadata: JSON.stringify({
@@ -700,7 +721,7 @@ const handleDocumentPick = async (file: DocumentPickerFile) => {
         source: file.name,
         format: extracted.metadata.format,
       }),
-    }))
+    })),
   );
 
   // 5. Store in WatermelonDB
@@ -759,14 +780,15 @@ src/
 ### Workspace Config (WatermelonDB)
 
 Add to Workspace model:
+
 ```typescript
 xbergConfig: {
   enabled: boolean;
-  processingMode: 'local' | 'cloud' | 'auto';
-  chunkingStrategy: 'semantic' | 'text' | 'markdown';
+  processingMode: "local" | "cloud" | "auto";
+  chunkingStrategy: "semantic" | "text" | "markdown";
   maxFileSize: number; // MB
   enableOCR: boolean;
-  ocrBackend: 'tesseract' | 'paddleocr';
+  ocrBackend: "tesseract" | "paddleocr";
   enableTableExtraction: boolean;
   enableCodeIntelligence: boolean;
 }
@@ -790,14 +812,14 @@ xbergConfig: {
 
 ## Error Handling
 
-| Error | Handling |
-|-------|----------|
-| File too large (>50MB) | Show warning, suggest cloud mode |
-| Unsupported format | Show "format not supported" message |
-| OCR failed | Retry with different backend, fallback to text-only |
-| Network error (cloud mode) | Fallback to local WASM if available |
-| Memory error | Reduce batch size, process sequentially |
-| ObjectBox error | Retry with exponential backoff |
+| Error                      | Handling                                            |
+| -------------------------- | --------------------------------------------------- |
+| File too large (>50MB)     | Show warning, suggest cloud mode                    |
+| Unsupported format         | Show "format not supported" message                 |
+| OCR failed                 | Retry with different backend, fallback to text-only |
+| Network error (cloud mode) | Fallback to local WASM if available                 |
+| Memory error               | Reduce batch size, process sequentially             |
+| ObjectBox error            | Retry with exponential backoff                      |
 
 ---
 
@@ -814,18 +836,21 @@ xbergConfig: {
 ## Implementation Phases
 
 ### Phase 1: Core (Week 1-2)
+
 - [x] Android native module (XbergModule.kt)
 - [x] TypeScript wrapper (XbergClient.ts)
 - [x] Basic extraction (single file)
 - [x] Integration with useAttachments
 
 ### Phase 2: iOS (Week 3)
+
 - [x] iOS native module (XbergModule.swift)
 - [x] ObjectBox iOS integration (VectorBox.swift)
 - [x] Run ObjectBox code generator (`Pods/ObjectBox/setup.rb`)
 - [ ] Cross-platform testing — **not started; nothing below has run on a device**
 
 ### Phase 3: Advanced (Week 4)
+
 - [x] Folder extraction — recursive walk + `FolderPickerModule` for iOS, where
       `react-native-document-picker`'s `pickDirectory()` always rejects
 - [x] OCR integration — `forceOcr` is applied automatically to images, which have no text layer.
@@ -836,6 +861,7 @@ xbergConfig: {
       since extraction happens for the whole batch before any file is embedded
 
 ### Phase 4: Polish (Week 5)
+
 - [x] Error handling — a rejected batch chunk no longer discards the chunks that succeeded;
       untagged results are re-extracted per file rather than position-guessed
 - [x] Offline fallback — `XbergUnavailableError` for builds without the native module; the
@@ -848,14 +874,14 @@ xbergConfig: {
 
 ## Dependencies
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `io.xberg:xberg-android` | 1.0.8 | Android document extraction |
-| `Xberg` (SPM) | 1.0.8 | iOS document extraction |
-| `ObjectBox` (Android) | 4.3.0 | Vector DB (existing) |
-| `ObjectBox` (iOS) | 4.x | Vector DB (new - SPM or CocoaPods) |
-| `react-native-document-picker` | 9.3.1 | File/folder selection |
-| `cactus-react-native` | 0.2.10 | Embeddings (existing) |
+| Package                        | Version | Purpose                            |
+| ------------------------------ | ------- | ---------------------------------- |
+| `io.xberg:xberg-android`       | 1.0.8   | Android document extraction        |
+| `Xberg` (SPM)                  | 1.0.8   | iOS document extraction            |
+| `ObjectBox` (Android)          | 4.3.0   | Vector DB (existing)               |
+| `ObjectBox` (iOS)              | 4.x     | Vector DB (new - SPM or CocoaPods) |
+| `react-native-document-picker` | 9.3.1   | File/folder selection              |
+| `cactus-react-native`          | 0.2.10  | Embeddings (existing)              |
 
 ---
 
