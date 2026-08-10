@@ -34,6 +34,8 @@ import {
   NPUEnabledModel,
 } from "@/utils/types";
 import { ErrorState, createErrorState } from "@/utils/errors";
+import { initMemoryDB } from "@/utils/MemoryDB";
+import { runMemoryDecay } from "@/utils/MemoryDB/LifecycleManager";
 
 class ModelStore {
   models: Model[] = [];
@@ -258,6 +260,14 @@ class ModelStore {
     }
 
     this.initializeUseMetal();
+
+    // Initialize memory database
+    try {
+      await initMemoryDB();
+      await runMemoryDecay();
+    } catch (error) {
+      console.warn("Memory database initialization failed:", error);
+    }
   };
 
   mergeModelLists = () => {
