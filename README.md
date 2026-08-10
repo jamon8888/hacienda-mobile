@@ -48,14 +48,14 @@ The design thesis of a "Local AI First" of AnythingLLM applies to the mobile app
 
 ### Supported Providers
 
-| Provider | Type |
-|----------|------|
-| On-device (GGUF via cactus) | Local inference |
-| AnythingLLM Instance | Delegated (LAN/remote) |
-| Ollama | Local/remote |
-| LM Studio | Local/remote |
-| OpenRouter | Cloud |
-| Any OpenAI-compatible API | Cloud/local |
+| Provider                    | Type                   |
+| --------------------------- | ---------------------- |
+| On-device (GGUF via cactus) | Local inference        |
+| AnythingLLM Instance        | Delegated (LAN/remote) |
+| Ollama                      | Local/remote           |
+| LM Studio                   | Local/remote           |
+| OpenRouter                  | Cloud                  |
+| Any OpenAI-compatible API   | Cloud/local            |
 
 ### Supported Operating Systems
 

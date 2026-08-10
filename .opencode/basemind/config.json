@@ -22,21 +22,8 @@
     "watch": true
   },
   "symbols": {
-    "extract": [
-      "class",
-      "interface",
-      "type",
-      "function",
-      "const",
-      "export"
-    ],
-    "relations": [
-      "imports",
-      "extends",
-      "implements",
-      "calls",
-      "references"
-    ]
+    "extract": ["class", "interface", "type", "function", "const", "export"],
+    "relations": ["imports", "extends", "implements", "calls", "references"]
   },
   "providers": {
     "typescript": {

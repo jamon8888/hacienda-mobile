@@ -1,16 +1,16 @@
 import { Alert } from "react-native";
 
 export interface AwaitableAlertButton {
-    text?: string;
-    style?: 'cancel' | 'default' | 'destructive';
-    onPress?: () => void;
+  text?: string;
+  style?: "cancel" | "default" | "destructive";
+  onPress?: () => void;
 }
 
 export interface AwaitableAlertOptions {
-    title: string;
-    message: string;
-    rejectButton: AwaitableAlertButton;
-    resolveButton: AwaitableAlertButton;
+  title: string;
+  message: string;
+  rejectButton: AwaitableAlertButton;
+  resolveButton: AwaitableAlertButton;
 }
 
 /**
@@ -22,18 +22,28 @@ export interface AwaitableAlertOptions {
  * @returns A promise that resolves to the value of the resolve button
  */
 export default async function AwaitableAlert(
-    title: string,
-    message: string,
-    rejectButton: AwaitableAlertButton,
-    resolveButton: AwaitableAlertButton
+  title: string,
+  message: string,
+  rejectButton: AwaitableAlertButton,
+  resolveButton: AwaitableAlertButton,
 ) {
-    return await new Promise<any>((resolve) => {
-        const rejectionButton: AwaitableAlertButton = { text: 'Cancel', style: 'cancel', onPress: () => { resolve(false) }, ...rejectButton }
-        const resolutionButton: AwaitableAlertButton = { text: 'Continue', style: 'default', onPress: () => { resolve(true) }, ...resolveButton }
-        return Alert.alert(
-            title,
-            message,
-            [rejectionButton, resolutionButton]
-        )
-    })
+  return await new Promise<any>(resolve => {
+    const rejectionButton: AwaitableAlertButton = {
+      text: "Cancel",
+      style: "cancel",
+      onPress: () => {
+        resolve(false);
+      },
+      ...rejectButton,
+    };
+    const resolutionButton: AwaitableAlertButton = {
+      text: "Continue",
+      style: "default",
+      onPress: () => {
+        resolve(true);
+      },
+      ...resolveButton,
+    };
+    return Alert.alert(title, message, [rejectionButton, resolutionButton]);
+  });
 }

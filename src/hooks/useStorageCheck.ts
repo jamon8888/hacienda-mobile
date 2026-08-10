@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
-import DeviceInfo from 'react-native-device-info';
-import { formatBytes } from '@/utils/formatters';
-import { hasEnoughSpace } from '@/utils/device';
-import { Model, ModelOrigin } from '@/utils/types';
+import { useEffect, useState } from "react";
+import DeviceInfo from "react-native-device-info";
+import { formatBytes } from "@/utils/formatters";
+import { hasEnoughSpace } from "@/utils/device";
+import { Model, ModelOrigin } from "@/utils/types";
 
 interface StorageCheckOptions {
   /**
@@ -25,7 +25,7 @@ export const useStorageCheck = (
   const { enablePeriodicCheck = true, checkInterval = 10000 } = options;
   const [storageStatus, setStorageStatus] = useState({
     isOk: true,
-    message: '',
+    message: "",
   });
   //const [freeDiskStorage, setFreeDiskStorage] = useState<number | null>(null);
 
@@ -49,15 +49,16 @@ export const useStorageCheck = (
         }
 
         if (!isEnoughSpace) {
-          const freeDisk = await DeviceInfo.getFreeDiskStorage('important');
+          const freeDisk = await DeviceInfo.getFreeDiskStorage("important");
           if (abortController.signal.aborted) {
             return;
           }
 
           // Use localized template string with variables
-          const message = 'Storage low! Model {{modelSize}} > {{freeSpace}} free'
-            .replace('{{modelSize}}', formatBytes(model.size))
-            .replace('{{freeSpace}}', formatBytes(freeDisk));
+          const message =
+            "Storage low! Model {{modelSize}} > {{freeSpace}} free"
+              .replace("{{modelSize}}", formatBytes(model.size))
+              .replace("{{freeSpace}}", formatBytes(freeDisk));
 
           setStorageStatus({
             isOk: false,
@@ -66,13 +67,13 @@ export const useStorageCheck = (
         } else {
           setStorageStatus({
             isOk: true,
-            message: '',
+            message: "",
           });
         }
       } catch (error) {
         if (!abortController.signal.aborted) {
-          console.error('Storage check failed:', error);
-          setStorageStatus({ isOk: false, message: 'Failed to check storage' });
+          console.error("Storage check failed:", error);
+          setStorageStatus({ isOk: false, message: "Failed to check storage" });
         }
       }
     };

@@ -1,19 +1,19 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   Image,
   TouchableOpacity,
   NativeEventEmitter,
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { List, Microphone } from 'phosphor-react-native';
-import useDevShortcut from './useDevShortcut';
-import NewThreadIcon from '@/assets/new-thread.svg';
-import WorkspaceThread from '@/database/models/WorkspaceThread';
-import { PATHS } from '@/utils/paths';
-import ModelChip from './ModelChip';
-import uiStore from '@/store/UIStore';
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { DrawerNavigationProp } from "@react-navigation/drawer";
+import { List, Microphone } from "phosphor-react-native";
+import useDevShortcut from "./useDevShortcut";
+import NewThreadIcon from "@/assets/new-thread.svg";
+import WorkspaceThread from "@/database/models/WorkspaceThread";
+import { PATHS } from "@/utils/paths";
+import ModelChip from "./ModelChip";
+import uiStore from "@/store/UIStore";
 
 export default function TopBar({
   workspace,
@@ -29,8 +29,8 @@ export default function TopBar({
   function handleNewThread() {
     const eventEmitter = new NativeEventEmitter();
     WorkspaceThread.create({ workspaceSlug: workspace.slug }).then(thread => {
-      eventEmitter.emit('workspaceUpdate', {
-        type: 'add-thread',
+      eventEmitter.emit("workspaceUpdate", {
+        type: "add-thread",
         details: {
           workspaceSlug: workspace.slug,
           thread,
@@ -64,7 +64,7 @@ export default function TopBar({
           onPress={registerPress}
           className="flex flex-col items-center gap-y-0">
           <Image
-            source={require('@/assets/logo/anything-llm.png')}
+            source={require("@/assets/logo/anything-llm.png")}
             style={{
               width: 150,
               height: 50,
@@ -79,14 +79,17 @@ export default function TopBar({
           <TouchableOpacity onPress={handleNewThread}>
             <NewThreadIcon width={32} height={32} fill="white" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate(PATHS.voice_chat)} className="ml-2">
+          <TouchableOpacity
+            onPress={() => navigation.navigate(PATHS.voice_chat)}
+            className="ml-2">
             <Microphone size={32} color="white" weight="bold" />
           </TouchableOpacity>
         </>
       ) : (
         <>
           <View className="w-[32px]" />
-          <TouchableOpacity onPress={() => navigation.navigate(PATHS.voice_chat)}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate(PATHS.voice_chat)}>
             <Microphone size={32} color="white" weight="bold" />
           </TouchableOpacity>
         </>

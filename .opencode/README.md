@@ -15,28 +15,31 @@ opencode --agent ui            # React Native UI
 
 ## Agent Overview
 
-| Agent | Purpose | Context Files |
-|-------|---------|---------------|
-| `default` | General React Native development | All |
-| `typescript` | Type safety, strict mode | tsconfig.json, Embedder types, Workspace |
-| `embedding` | Multilingual embeddings, GGUF, vector search | defaults.ts, Embedder/*, VectorDB |
-| `database` | WatermelonDB schema, migrations | models/*, schema.ts, VectorDB |
-| `ui` | NativeWind, Paper, navigation | screens/*, components/*, theme.ts |
+| Agent        | Purpose                                      | Context Files                            |
+| ------------ | -------------------------------------------- | ---------------------------------------- |
+| `default`    | General React Native development             | All                                      |
+| `typescript` | Type safety, strict mode                     | tsconfig.json, Embedder types, Workspace |
+| `embedding`  | Multilingual embeddings, GGUF, vector search | defaults.ts, Embedder/\*, VectorDB       |
+| `database`   | WatermelonDB schema, migrations              | models/\*, schema.ts, VectorDB           |
+| `ui`         | NativeWind, Paper, navigation                | screens/_, components/_, theme.ts        |
 
 ## Key Code Areas
 
 ### Embedding System (NEW)
+
 - **Models**: `src/utils/models/defaults.ts` - 4 multilingual + 1 English-only
 - **Providers**: `src/utils/Embedder/` - Factory, OnDevice, Multilingual
 - **Integration**: `useAttachments`, `baseOpenAILikeProvider.getContextTexts`
 - **Workspace Config**: `embeddingConfig` on Workspace model
 
 ### Database
+
 - **Models**: Workspace, WorkspaceThread, WorkspaceChat, Document
 - **VectorDB**: ObjectBox wrapper for semantic search
 - **Migrations**: Version tracking for model list
 
 ### UI
+
 - **Screens**: WorkspaceChat, WorkspaceSettings (with Embedding), Onboarding
 - **Components**: SafeView, TopBar, WorkspaceDrawer
 - **Styling**: NativeWind className, dark mode first
@@ -44,21 +47,25 @@ opencode --agent ui            # React Native UI
 ## Common Tasks
 
 ### Fix TypeScript Errors
+
 ```bash
 opencode --agent typescript "Fix all TS errors in src/utils/Embedder/"
 ```
 
 ### Add New Embedding Model
+
 ```bash
 opencode --agent embedding "Add bge-m3 model to defaults.ts and MultilingualEmbedderProvider"
 ```
 
 ### Database Migration
+
 ```bash
 opencode --agent database "Add embeddingConfig column migration for workspaces table"
 ```
 
 ### UI Feature
+
 ```bash
 opencode --agent ui "Add language badge to citation items in ChatHistory"
 ```

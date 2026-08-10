@@ -1,2 +1,2 @@
-export { XbergClient } from './XbergClient';
-export * from './types';
+export { XbergClient } from "./XbergClient";
+export * from "./types";

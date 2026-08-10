@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, TouchableOpacity, Text, Image } from 'react-native';
-import { DownloadSimple, Cube } from 'phosphor-react-native';
-import MODEL_CARDS from '@/utils/models/defaults';
-import truncate from 'truncate';
+import React from "react";
+import { View, TouchableOpacity, Text, Image } from "react-native";
+import { DownloadSimple, Cube } from "phosphor-react-native";
+import MODEL_CARDS from "@/utils/models/defaults";
+import truncate from "truncate";
 
 interface ModelCardProps {
   model: any;
@@ -28,7 +28,7 @@ export default function ModelCard({
       return (
         <Image
           source={{ uri: model.imageUrl }}
-          style={{ width: '100%', height: '100%', borderRadius: 10 }}
+          style={{ width: "100%", height: "100%", borderRadius: 10 }}
           resizeMode="cover"
         />
       );
@@ -50,8 +50,8 @@ export default function ModelCard({
       onPress={onSelect}
       style={{
         borderWidth: isSelected ? 2 : 0,
-        borderColor: isSelected ? '#7cd4fd' : 'transparent',
-        backgroundColor: isSelected ? '#2e404b' : '#2A2A2E',
+        borderColor: isSelected ? "#7cd4fd" : "transparent",
+        backgroundColor: isSelected ? "#2e404b" : "#2A2A2E",
       }}
       className="w-full p-4 rounded-xl flex-row items-center justify-between">
       <View className="flex-1">

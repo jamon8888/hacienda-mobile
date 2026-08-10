@@ -39,12 +39,8 @@
     "useDefineForClassFields": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "src/*"
-      ],
-      "@yz1311/react-native-intent-launcher": [
-        "src/types/intent-launcher.d.ts"
-      ]
+      "@/*": ["src/*"],
+      "@yz1311/react-native-intent-launcher": ["src/types/intent-launcher.d.ts"]
     }
   },
   "exclude": [

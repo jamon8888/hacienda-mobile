@@ -1,6 +1,11 @@
 // NativeTTS.ts - Text-to-Speech native module bridge
 
-import { NativeModules, Platform, NativeEventEmitter, EmitterSubscription } from 'react-native';
+import {
+  NativeModules,
+  Platform,
+  NativeEventEmitter,
+  EmitterSubscription,
+} from "react-native";
 
 const { TextToSpeechModule } = NativeModules;
 
@@ -24,27 +29,27 @@ class NativeTTS {
   private subscriptions: EmitterSubscription[] = [];
 
   constructor() {
-    if (Platform.OS === 'ios') {
+    if (Platform.OS === "ios") {
       this.eventEmitter = new NativeEventEmitter(TextToSpeechModule);
     }
   }
 
   async speak(text: string, options: TTSOptions = {}): Promise<void> {
     if (!TextToSpeechModule?.speak) {
-      console.warn('TextToSpeechModule not available');
+      console.warn("TextToSpeechModule not available");
       return;
     }
 
     try {
       await TextToSpeechModule.speak(text, {
-        language: options.language || 'en-US',
+        language: options.language || "en-US",
         rate: options.rate ?? 1.0,
         pitch: options.pitch ?? 1.0,
         volume: options.volume ?? 1.0,
         voice: options.voice,
       });
     } catch (error) {
-      console.error('TTS speak error:', error);
+      console.error("TTS speak error:", error);
       throw error;
     }
   }
@@ -54,7 +59,7 @@ class NativeTTS {
     try {
       await TextToSpeechModule.stop();
     } catch (error) {
-      console.error('TTS stop error:', error);
+      console.error("TTS stop error:", error);
     }
   }
 
@@ -63,7 +68,7 @@ class NativeTTS {
     try {
       await TextToSpeechModule.pause();
     } catch (error) {
-      console.error('TTS pause error:', error);
+      console.error("TTS pause error:", error);
     }
   }
 
@@ -72,7 +77,7 @@ class NativeTTS {
     try {
       return await TextToSpeechModule.getVoices();
     } catch (error) {
-      console.error('TTS getVoices error:', error);
+      console.error("TTS getVoices error:", error);
       return [];
     }
   }
@@ -82,14 +87,20 @@ class NativeTTS {
     try {
       await TextToSpeechModule.setVoice(voiceId);
     } catch (error) {
-      console.error('TTS setVoice error:', error);
+      console.error("TTS setVoice error:", error);
     }
   }
 
-  on(event: 'start' | 'finish' | 'cancel' | 'error', callback: (data?: any) => void): () => void {
+  on(
+    event: "start" | "finish" | "cancel" | "error",
+    callback: (data?: any) => void,
+  ): () => void {
     if (!this.eventEmitter) return () => {};
-    
-    const subscription = this.eventEmitter.addListener(`onTTS${event.charAt(0).toUpperCase() + event.slice(1)}`, callback);
+
+    const subscription = this.eventEmitter.addListener(
+      `onTTS${event.charAt(0).toUpperCase() + event.slice(1)}`,
+      callback,
+    );
     this.subscriptions.push(subscription);
     return () => subscription.remove();
   }

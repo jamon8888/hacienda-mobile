@@ -1,21 +1,21 @@
-import * as RNFS from '@dr.pogodin/react-native-fs';
-import { makeAutoObservable, observable } from 'mobx';
-import { NativeEventEmitter, NativeModules, Platform } from 'react-native';
+import * as RNFS from "@dr.pogodin/react-native-fs";
+import { makeAutoObservable, observable } from "mobx";
+import { NativeEventEmitter, NativeModules, Platform } from "react-native";
 
 import {
   DownloadEventCallbacks,
   DownloadJob,
   DownloadMap,
   DownloadProgress,
-} from './types';
+} from "./types";
 
-import { Model } from '@/utils/types';
-import { hasEnoughSpace } from '@/utils/device';
-import { formatBytes } from '@/utils/formatters';
-import uiStore from '@/store/UIStore';
+import { Model } from "@/utils/types";
+import { hasEnoughSpace } from "@/utils/device";
+import { formatBytes } from "@/utils/formatters";
+import uiStore from "@/store/UIStore";
 
 const { DownloadModule } = NativeModules;
-const TAG = 'DownloadManager';
+const TAG = "DownloadManager";
 
 export class DownloadManager {
   private downloadJobs: DownloadMap;
@@ -27,7 +27,7 @@ export class DownloadManager {
     this.downloadJobs = observable.map(new Map());
     makeAutoObservable(this);
 
-    if (Platform.OS === 'android') {
+    if (Platform.OS === "android") {
       this.setupAndroidEventListener();
     }
   }
@@ -37,7 +37,7 @@ export class DownloadManager {
       console.log(`${TAG}: Setting up Android event listeners`);
       this.eventEmitter = new NativeEventEmitter(DownloadModule);
 
-      this.eventEmitter.addListener('onDownloadProgress', event => {
+      this.eventEmitter.addListener("onDownloadProgress", event => {
         // console.log(
         //   `${TAG}: Progress event received for ID ${event.downloadId}:`,
         //   {
@@ -98,7 +98,7 @@ export class DownloadManager {
         this.callbacks.onProgress?.(job.model.id, progress);
       });
 
-      this.eventEmitter.addListener('onDownloadComplete', event => {
+      this.eventEmitter.addListener("onDownloadComplete", event => {
         console.log(`${TAG}: Download completed for ID: ${event.downloadId}`);
         // Find the job by download ID
         const job = Array.from(this.downloadJobs.values()).find(
@@ -112,8 +112,8 @@ export class DownloadManager {
             bytesDownloaded: job.state.progress?.bytesTotal || 0,
             bytesTotal: job.state.progress?.bytesTotal || 0,
             progress: 100,
-            speed: '0 B/s',
-            eta: '0 sec',
+            speed: "0 B/s",
+            eta: "0 sec",
             rawSpeed: 0,
             rawEta: 0,
           };
@@ -128,7 +128,7 @@ export class DownloadManager {
         }
       });
 
-      this.eventEmitter.addListener('onDownloadFailed', event => {
+      this.eventEmitter.addListener("onDownloadFailed", event => {
         console.error(
           `${TAG}: (js) Download failed for ID: ${event.downloadId}`,
           event.error,
@@ -161,7 +161,7 @@ export class DownloadManager {
     totalBytes: number,
     speedBps: number,
   ): string {
-    if (speedBps <= 0) return 'calculating...';
+    if (speedBps <= 0) return "calculating...";
 
     const remainingBytes = totalBytes - bytesDownloaded;
     const etaSeconds = remainingBytes / speedBps;
@@ -214,7 +214,7 @@ export class DownloadManager {
 
     if (!model.downloadUrl) {
       console.error(`${TAG}: Model has no download URL`);
-      throw new Error('Model has no download URL');
+      throw new Error("Model has no download URL");
     }
 
     const isEnoughSpace = await hasEnoughSpace(model);
@@ -223,12 +223,12 @@ export class DownloadManager {
         modelId: model.id,
         size: model.size,
       });
-      throw new Error('Not enough storage space to download the model');
+      throw new Error("Not enough storage space to download the model");
     }
 
     const dirPath = destinationPath.substring(
       0,
-      destinationPath.lastIndexOf('/'),
+      destinationPath.lastIndexOf("/"),
     );
     try {
       console.log(`${TAG}: Creating directory:`, dirPath);
@@ -238,7 +238,7 @@ export class DownloadManager {
       throw err;
     }
 
-    if (Platform.OS === 'ios') {
+    if (Platform.OS === "ios") {
       await this.startIOSDownload(model, destinationPath, authToken);
     } else {
       await this.startAndroidDownload(model, destinationPath, authToken);
@@ -289,8 +289,8 @@ export class DownloadManager {
             bytesDownloaded: 0,
             bytesTotal: res.contentLength,
             progress: 0,
-            speed: '0 B/s',
-            eta: 'calculating...',
+            speed: "0 B/s",
+            eta: "calculating...",
             rawSpeed: 0,
             rawEta: 0,
           };
@@ -403,7 +403,7 @@ export class DownloadManager {
       // Start the download first to get the download ID
       const response = await DownloadModule.startDownload(model.downloadUrl!, {
         destination: destinationPath,
-        networkType: 'ANY',
+        networkType: "ANY",
         priority: 1,
         progressInterval: 1000,
         ...(authToken ? { authToken } : {}),
@@ -442,14 +442,14 @@ export class DownloadManager {
     const job = this.downloadJobs.get(modelId);
     if (job) {
       try {
-        if (Platform.OS === 'ios') {
+        if (Platform.OS === "ios") {
           console.log(
             `${TAG}: Cancelling iOS download for ID: ${modelId}, jobId: ${job.jobId}`,
           );
           if (job.jobId) {
             RNFS.stopDownload(job.jobId); // job.jobId is now correctly typed as number
           }
-        } else if (Platform.OS === 'android' && DownloadModule) {
+        } else if (Platform.OS === "android" && DownloadModule) {
           console.log(`${TAG}: Cancelling Android download:`, modelId);
           await DownloadModule.cancelDownload(job.downloadId);
         }
@@ -471,7 +471,7 @@ export class DownloadManager {
               );
             }
           } catch (fileError) {
-            if ((fileError as any)?.code !== 'ENOENT') {
+            if ((fileError as any)?.code !== "ENOENT") {
               console.error(`${TAG}: Error deleting partial download file:`, {
                 path: destinationPath,
                 error:
@@ -500,11 +500,11 @@ export class DownloadManager {
 
   cleanup() {
     console.log(`${TAG}: Cleaning up download manager`);
-    if (Platform.OS === 'android' && this.eventEmitter) {
+    if (Platform.OS === "android" && this.eventEmitter) {
       console.log(`${TAG}: Removing Android event listeners`);
-      this.eventEmitter.removeAllListeners('onDownloadProgress');
-      this.eventEmitter.removeAllListeners('onDownloadComplete');
-      this.eventEmitter.removeAllListeners('onDownloadFailed');
+      this.eventEmitter.removeAllListeners("onDownloadProgress");
+      this.eventEmitter.removeAllListeners("onDownloadComplete");
+      this.eventEmitter.removeAllListeners("onDownloadFailed");
     }
     this.downloadJobs.clear();
     console.log(`${TAG}: Download jobs cleared`);
@@ -515,7 +515,7 @@ export class DownloadManager {
    * This should be called after the model store is initialized.
    */
   syncWithActiveDownloads = async (models: Model[]): Promise<void> => {
-    if (Platform.OS !== 'android' || !DownloadModule) {
+    if (Platform.OS !== "android" || !DownloadModule) {
       return;
     }
 
@@ -547,17 +547,17 @@ export class DownloadManager {
 
         // Parse numeric values safely
         const bytesWritten =
-          typeof download.bytesWritten === 'string'
+          typeof download.bytesWritten === "string"
             ? parseInt(download.bytesWritten, 10)
             : download.bytesWritten || 0;
 
         const totalBytes =
-          typeof download.totalBytes === 'string'
+          typeof download.totalBytes === "string"
             ? parseInt(download.totalBytes, 10)
             : download.totalBytes || 0;
 
         const progress =
-          typeof download.progress === 'string'
+          typeof download.progress === "string"
             ? parseFloat(download.progress)
             : download.progress || 0;
 
@@ -571,8 +571,8 @@ export class DownloadManager {
               bytesDownloaded: bytesWritten,
               bytesTotal: totalBytes,
               progress: progress,
-              speed: '0 B/s',
-              eta: 'calculating...',
+              speed: "0 B/s",
+              eta: "calculating...",
               rawSpeed: 0,
               rawEta: 0,
             },

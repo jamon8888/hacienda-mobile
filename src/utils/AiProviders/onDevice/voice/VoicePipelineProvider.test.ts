@@ -6,13 +6,11 @@ import { pcmBase64ToInt16Samples } from "./audioEncoding";
 const mockSttInstance = {
   download: jest.fn().mockResolvedValue(undefined),
   init: jest.fn().mockResolvedValue(undefined),
-  transcribe: jest
-    .fn()
-    .mockResolvedValue({
-      success: true,
-      response: "hello world",
-      confidence: 0.95,
-    }),
+  transcribe: jest.fn().mockResolvedValue({
+    success: true,
+    response: "hello world",
+    confidence: 0.95,
+  }),
   destroy: jest.fn().mockResolvedValue(undefined),
 };
 const mockLlmInstance = {

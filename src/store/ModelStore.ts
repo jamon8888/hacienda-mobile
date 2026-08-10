@@ -4,26 +4,26 @@ import {
   Platform,
   NativeModules,
   Alert,
-} from 'react-native';
-import uiStore from './UIStore';
-import { v4 as uuidv4 } from 'uuid';
-import 'react-native-get-random-values';
-import { makePersistable } from 'mobx-persist-store';
-import * as RNFS from '@dr.pogodin/react-native-fs';
-import { computed, makeAutoObservable, runInAction } from 'mobx';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CactusLM } from 'cactus-react-native';
-import { CompletionParams } from '@/utils/chat/completionTypes';
-import { fetchModelFilesDetails } from '@/utils/api/hf';
+} from "react-native";
+import uiStore from "./UIStore";
+import { v4 as uuidv4 } from "uuid";
+import "react-native-get-random-values";
+import { makePersistable } from "mobx-persist-store";
+import * as RNFS from "@dr.pogodin/react-native-fs";
+import { computed, makeAutoObservable, runInAction } from "mobx";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { CactusLM } from "cactus-react-native";
+import { CompletionParams } from "@/utils/chat/completionTypes";
+import { fetchModelFilesDetails } from "@/utils/api/hf";
 // import { chatSessionStore } from '@/store/ChatSessionStore';
-import { deepMerge, getSHA256Hash, hfAsModel } from '@/utils/device';
-import { defaultModels, MODEL_LIST_VERSION } from '@/utils/models';
-import { downloadManager } from '@/services/downloads';
+import { deepMerge, getSHA256Hash, hfAsModel } from "@/utils/device";
+import { defaultModels, MODEL_LIST_VERSION } from "@/utils/models";
+import { downloadManager } from "@/services/downloads";
 import {
   getHFDefaultSettings,
   getLocalModelDefaultSettings,
   stops,
-} from '@/utils/chat';
+} from "@/utils/chat";
 import {
   CacheType,
   ChatTemplateConfig,
@@ -32,8 +32,8 @@ import {
   ModelFile,
   ModelOrigin,
   NPUEnabledModel,
-} from '@/utils/types';
-import { ErrorState, createErrorState } from '@/utils/errors';
+} from "@/utils/types";
+import { ErrorState, createErrorState } from "@/utils/errors";
 
 class ModelStore {
   models: Model[] = [];
@@ -58,15 +58,15 @@ class ModelStore {
   // Track initialization settings for the active context
   activeContextSettings:
     | {
-      n_context: number;
-      n_batch: number;
-      n_ubatch: number;
-      n_threads: number;
-      flash_attn: boolean;
-      cache_type_k: CacheType;
-      cache_type_v: CacheType;
-      n_gpu_layers: number;
-    }
+        n_context: number;
+        n_batch: number;
+        n_ubatch: number;
+        n_threads: number;
+        flash_attn: boolean;
+        cache_type_k: CacheType;
+        cache_type_v: CacheType;
+        n_gpu_layers: number;
+      }
     | undefined = undefined;
 
   context: CactusLM | undefined = undefined;
@@ -85,20 +85,20 @@ class ModelStore {
     makeAutoObservable(this, { activeModel: computed });
     this.initializeThreadCount();
     makePersistable(this, {
-      name: 'ModelStore',
+      name: "ModelStore",
       properties: [
-        'models',
-        'version',
-        'useAutoRelease',
-        'n_gpu_layers',
-        'useMetal',
-        'n_context',
-        'n_threads',
-        'flash_attn',
-        'cache_type_k',
-        'cache_type_v',
-        'n_batch',
-        'n_ubatch',
+        "models",
+        "version",
+        "useAutoRelease",
+        "n_gpu_layers",
+        "useMetal",
+        "n_context",
+        "n_threads",
+        "flash_attn",
+        "cache_type_k",
+        "cache_type_v",
+        "n_batch",
+        "n_ubatch",
       ],
       storage: AsyncStorage,
     }).then(() => {
@@ -128,7 +128,7 @@ class ModelStore {
         }
       },
       onError: (modelId, error) => {
-        console.error('Download error for model', modelId, error);
+        console.error("Download error for model", modelId, error);
         const model = this.models.find(m => m.id === modelId);
         if (model) {
           runInAction(() => {
@@ -137,7 +137,7 @@ class ModelStore {
           });
         }
 
-        const errorState = createErrorState(error, 'download', 'huggingface', {
+        const errorState = createErrorState(error, "download", "huggingface", {
           modelId,
         });
 
@@ -166,7 +166,7 @@ class ModelStore {
         });
       }
     } catch (error) {
-      console.error('Failed to get CPU info:', error);
+      console.error("Failed to get CPU info:", error);
       // Fallback to 4 threads if we can't get the CPU info
       runInAction(() => {
         this.max_threads = 4;
@@ -359,19 +359,19 @@ class ModelStore {
   };
 
   setupAppStateListener = () => {
-    AppState.addEventListener('change', this.handleAppStateChange);
+    AppState.addEventListener("change", this.handleAppStateChange);
   };
 
   handleAppStateChange = async (nextAppState: AppStateStatus) => {
     if (
       this.appState.match(/inactive|background/) &&
-      nextAppState === 'active'
+      nextAppState === "active"
     ) {
       if (this.useAutoRelease) {
         await this.reinitializeContext();
       }
     } else if (
-      this.appState === 'active' &&
+      this.appState === "active" &&
       nextAppState.match(/inactive|background/)
     ) {
       if (this.useAutoRelease) {
@@ -420,18 +420,18 @@ class ModelStore {
     // For local models, use the fullPath
     if (model.isLocal || model.origin === ModelOrigin.LOCAL) {
       if (!model.fullPath) {
-        throw new Error('Full path is undefined for local model');
+        throw new Error("Full path is undefined for local model");
       }
       return model.fullPath;
     }
 
     if (!model.filename) {
-      throw new Error('Model filename is undefined');
+      throw new Error("Model filename is undefined");
     }
 
     // For preset models, check both old and new paths
     if (model.origin === ModelOrigin.PRESET) {
-      const author = model.author || 'unknown';
+      const author = model.author || "unknown";
       const oldPath = `${RNFS.DocumentDirectoryPath}/${model.filename}`; // old path is deprecated. We keep it for now for backwards compatibility.
       const newPath = `${RNFS.DocumentDirectoryPath}/models/preset/${author}/${model.filename}`;
 
@@ -441,7 +441,7 @@ class ModelStore {
           return oldPath;
         }
       } catch (err) {
-        console.log('Error checking old path:', err);
+        console.log("Error checking old path:", err);
       }
 
       // Otherwise use new path
@@ -450,12 +450,12 @@ class ModelStore {
 
     // For HF models, use author/model structure
     if (model.origin === ModelOrigin.HF) {
-      const author = model.author || 'unknown';
+      const author = model.author || "unknown";
       return `${RNFS.DocumentDirectoryPath}/models/hf/${author}/${model.filename}`;
     }
 
     // Fallback (shouldn't reach here)
-    console.error('should not reach here. model: ', model);
+    console.error("should not reach here. model: ", model);
     return `${RNFS.DocumentDirectoryPath}/${model.filename}`;
   };
 
@@ -467,7 +467,7 @@ class ModelStore {
     if (exists && !downloadManager.isDownloading(model.id)) {
       if (!model.isDownloaded) {
         console.log(
-          'checkFileExists: marking as downloaded - this should not happen:',
+          "checkFileExists: marking as downloaded - this should not happen:",
           model.id,
         );
         runInAction(() => {
@@ -521,8 +521,8 @@ class ModelStore {
       const destinationPath = await this.getModelFullPath(model);
       await downloadManager.startDownload(model, destinationPath);
     } catch (err) {
-      console.error('Failed to start download:', err);
-      uiStore.showError('Failed to start download: ' + (err as Error).message);
+      console.error("Failed to start download:", err);
+      uiStore.showError("Failed to start download: " + (err as Error).message);
     }
   };
 
@@ -590,11 +590,11 @@ class ModelStore {
       try {
         await RNFS.unlink(filePath);
       } catch (err) {
-        console.error('Failed to delete local model file:', err);
+        console.error("Failed to delete local model file:", err);
       }
     } else {
       // Non-local models are not removed from the list, when the file is deleted.
-      console.log('deleting: ', filePath);
+      console.log("deleting: ", filePath);
 
       try {
         if (filePath) {
@@ -612,7 +612,7 @@ class ModelStore {
         }
         this.refreshDownloadStatuses();
       } catch (err) {
-        console.error('Failed to delete:', err);
+        console.error("Failed to delete:", err);
       }
     }
   };
@@ -621,7 +621,7 @@ class ModelStore {
     await this.releaseContext();
     const filePath = await this.getModelFullPath(model);
     if (!filePath) {
-      throw new Error('Model path is undefined');
+      throw new Error("Model path is undefined");
     }
     runInAction(() => {
       this.isContextLoading = true;
@@ -669,15 +669,15 @@ class ModelStore {
   };
 
   releaseContext = async () => {
-    console.log('attempt to release');
-    if (!this.context) return Promise.resolve('No context to release');
+    console.log("attempt to release");
+    if (!this.context) return Promise.resolve("No context to release");
     await this.context.destroy();
-    console.log('released');
+    console.log("released");
     runInAction(() => {
       this.context = undefined;
       this.activeContextSettings = undefined;
     });
-    return 'Context released successfully';
+    return "Context released successfully";
   };
 
   manualReleaseContext = async () => {
@@ -708,9 +708,9 @@ class ModelStore {
       // The error handling is now done in the downloadManager callbacks
     } catch (error) {
       // Only handle errors related to the initial setup before the download starts
-      console.error('Failed to set up HF model download:', error);
+      console.error("Failed to set up HF model download:", error);
       Alert.alert(
-        'Download setup failed',
+        "Download setup failed",
         `Failed to set up HF model download: ${error}`,
       );
     }
@@ -737,23 +737,23 @@ class ModelStore {
   };
 
   addLocalModel = async (localFilePath: string) => {
-    const filename = localFilePath.split('/').pop(); // Extract filename from path
+    const filename = localFilePath.split("/").pop(); // Extract filename from path
     if (!filename) {
-      throw new Error('Invalid local file path');
+      throw new Error("Invalid local file path");
     }
 
     const defaultSettings = getLocalModelDefaultSettings();
 
     const model: Model = {
       id: uuidv4(), // Generate a unique ID
-      runtime: 'CPU',
-      author: '',
+      runtime: "CPU",
+      author: "",
       name: filename,
       size: 0, // Placeholder for UI to ignore
       params: 0, // Placeholder for UI to ignore
       isDownloaded: true,
-      downloadUrl: '',
-      hfUrl: '',
+      downloadUrl: "",
+      hfUrl: "",
       progress: 0,
       filename,
       fullPath: localFilePath,
@@ -787,7 +787,7 @@ class ModelStore {
 
   updateModelStopWords = (
     modelId: string,
-    newStopWords: CompletionParams['stop'],
+    newStopWords: CompletionParams["stop"],
   ) => {
     const model = this.models.find(m => m.id === modelId);
     if (model) {
@@ -857,7 +857,7 @@ class ModelStore {
 
   private initializeUseMetal() {
     const isIOS18OrHigher =
-      Platform.OS === 'ios' && parseInt(Platform.Version as string, 10) >= 18;
+      Platform.OS === "ios" && parseInt(Platform.Version as string, 10) >= 18;
     // If we're not on iOS 18+ or not on iOS at all, force useMetal to false
     if (!isIOS18OrHigher) {
       runInAction(() => {
@@ -896,18 +896,18 @@ class ModelStore {
       // Add relevant stop tokens from chat templates
       // Check model's custom chat template.
       const template = storeModel.chatTemplate?.chatTemplate;
-      console.log('template: ', template);
+      console.log("template: ", template);
       if (template) {
         const templateStops = stops.filter(stop => template.includes(stop));
         stopTokens.push(...templateStops);
       }
 
-      console.log('stopTokens: ', stopTokens);
+      console.log("stopTokens: ", stopTokens);
       // Only update if we found stop tokens
       if (stopTokens.length > 0) {
         runInAction(() => {
           // Helper function to check and update stop tokens
-          const updateStopTokens = (words: CompletionParams['stop']) => {
+          const updateStopTokens = (words: CompletionParams["stop"]) => {
             const uniqueStops = Array.from(
               new Set([...(words || []), ...stopTokens]),
             ).filter(Boolean); // Remove any null/undefined/empty values
@@ -922,7 +922,7 @@ class ModelStore {
         });
       }
     } catch (error) {
-      console.error('Error updating model stop tokens:', error);
+      console.error("Error updating model stop tokens:", error);
       // Continue execution - stop token update is not critical
     }
   }
@@ -970,7 +970,7 @@ class ModelStore {
         });
       }
     } catch (error) {
-      console.error('Failed to fetch model file details:', error);
+      console.error("Failed to fetch model file details:", error);
     }
   }
 

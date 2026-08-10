@@ -188,106 +188,112 @@ export default function useAttachments({
    * attempts from recent files will work. Weird, idk.
    * @param attachment - The attachment to process
    */
-  const processAttachment = useCallback(async (attachment: Attachment) => {
-    let temporaryFilePath: string | null = null;
-    if (!attachment.uri) return;
-    try {
-      uiStore.emitter.emit(CHAT_HANDLER_EVENTS.DISABLE_PROMPT_INPUT);
+  const processAttachment = useCallback(
+    async (attachment: Attachment) => {
+      let temporaryFilePath: string | null = null;
+      if (!attachment.uri) return;
+      try {
+        uiStore.emitter.emit(CHAT_HANDLER_EVENTS.DISABLE_PROMPT_INPUT);
 
-      /**
-       * On Android, if the API level is less than 29, we need to copy the file to the temporary directory
-       * because the file URI is not valid for the app to read - this mainly happens on newer devices that have no real file manager
-       * eg: QRD device for android 16 (API 36) at this time cannot be used to read the file. We can always copy the file and then
-       * read it directly since the file will then be app-owned so we can process it.
-       *
-       * The temporary file is removed after the attachment is processed. This workaround is not needed for Android 15 (API 35) and below.
-       */
-      if (deviceInfo.isAndroid) {
-        console.log(`Android device detected, using copy file workaround...`);
-        await RNFS.mkdir(RNFS.TemporaryDirectoryPath + "/uploads");
-        temporaryFilePath = `${RNFS.TemporaryDirectoryPath}/uploads/${attachment.uuid}-${attachment.name}`;
-        await RNFS.copyFile(attachment.uri, temporaryFilePath);
-        attachment.uri = temporaryFilePath;
-        console.log(`Temporary file created: ${temporaryFilePath}`);
-      }
+        /**
+         * On Android, if the API level is less than 29, we need to copy the file to the temporary directory
+         * because the file URI is not valid for the app to read - this mainly happens on newer devices that have no real file manager
+         * eg: QRD device for android 16 (API 36) at this time cannot be used to read the file. We can always copy the file and then
+         * read it directly since the file will then be app-owned so we can process it.
+         *
+         * The temporary file is removed after the attachment is processed. This workaround is not needed for Android 15 (API 35) and below.
+         */
+        if (deviceInfo.isAndroid) {
+          console.log(`Android device detected, using copy file workaround...`);
+          await RNFS.mkdir(RNFS.TemporaryDirectoryPath + "/uploads");
+          temporaryFilePath = `${RNFS.TemporaryDirectoryPath}/uploads/${attachment.uuid}-${attachment.name}`;
+          await RNFS.copyFile(attachment.uri, temporaryFilePath);
+          attachment.uri = temporaryFilePath;
+          console.log(`Temporary file created: ${temporaryFilePath}`);
+        }
 
-      const realPath = await Storage.getRealPathFromUri(attachment.uri).catch(
-        e => {
-          console.log("error", e);
-          throw new Error("Attachment could not be found");
-        },
-      );
+        const realPath = await Storage.getRealPathFromUri(attachment.uri).catch(
+          e => {
+            console.log("error", e);
+            throw new Error("Attachment could not be found");
+          },
+        );
 
-      const result = await extractTextContentFromFile(
-        realPath,
-        attachment.type,
-      );
-      if (!result)
-        throw new Error("Attachment content was empty or could not be read");
+        const result = await extractTextContentFromFile(
+          realPath,
+          attachment.type,
+        );
+        if (!result)
+          throw new Error("Attachment content was empty or could not be read");
 
-      // Store the attachment as a plain text file in the local folder with the same name
-      // but as text/plain so that it can be read as plain text later on but refer to it as
-      // the original filename.
-      await storeProcessedFileAsText(attachment.name, result);
+        // Store the attachment as a plain text file in the local folder with the same name
+        // but as text/plain so that it can be read as plain text later on but refer to it as
+        // the original filename.
+        await storeProcessedFileAsText(attachment.name, result);
 
-      // Embed the processed file
-      const chunkSize = embeddingConfig ? Math.min(400, 512 - 50) : 2048; // 512 token context for multilingual models
-      const document = await embedder
-        .splitAndEmbed(
-          result,
-          { chunkSize, chunkOverlap: 50 },
-          "embed_document",
-        )
-        .then(embedResults =>
-          embedResults.map(embedResult => {
-            const metadata = { ...embedResult.metadata, name: attachment.name };
-            return { embedding: embedResult.embedding, metadata };
-          }),
-        )
-        .then(
-          async embeddings =>
-            await VectorDB.bulkInsert(workspaceSlug, embeddings),
-        )
-        .then(async ({ ids }) => {
-          return await Document.create({
-            name: attachment.name,
-            workspaceSlug: workspaceSlug,
-            vectorBoxIds: ids,
+        // Embed the processed file
+        const chunkSize = embeddingConfig ? Math.min(400, 512 - 50) : 2048; // 512 token context for multilingual models
+        const document = await embedder
+          .splitAndEmbed(
+            result,
+            { chunkSize, chunkOverlap: 50 },
+            "embed_document",
+          )
+          .then(embedResults =>
+            embedResults.map(embedResult => {
+              const metadata = {
+                ...embedResult.metadata,
+                name: attachment.name,
+              };
+              return { embedding: embedResult.embedding, metadata };
+            }),
+          )
+          .then(
+            async embeddings =>
+              await VectorDB.bulkInsert(workspaceSlug, embeddings),
+          )
+          .then(async ({ ids }) => {
+            return await Document.create({
+              name: attachment.name,
+              workspaceSlug: workspaceSlug,
+              vectorBoxIds: ids,
+            });
           });
-        });
 
-      if (!document)
-        throw new Error("Failed to create document for attachment");
-      const newAttachment: Attachment = {
-        ...attachment,
-        content: result,
-        processing: false,
-        uuid: document.uuid, // update the attachment with the new uuid so we can manage the DB record associated with it
-      };
-      setAttachments(prev =>
-        prev.map(a => (a.uuid === attachment.uuid ? newAttachment : a)),
-      );
-      Telemetry.logEvent(Telemetry.CUSTOM_EVENTS.ACTIONS.DOCUMENT_IMPORTED, {
-        documentType: attachment.type,
-      });
-    } catch (e) {
-      showToast((e as Error).message);
-      removeAttachment(attachment);
-    } finally {
-      uiStore.emitter.emit(CHAT_HANDLER_EVENTS.ENABLE_PROMPT_INPUT);
-      if (temporaryFilePath && (await RNFS.exists(temporaryFilePath))) {
-        console.log("Removing temporary file:", temporaryFilePath);
-        await RNFS.unlink(temporaryFilePath);
+        if (!document)
+          throw new Error("Failed to create document for attachment");
+        const newAttachment: Attachment = {
+          ...attachment,
+          content: result,
+          processing: false,
+          uuid: document.uuid, // update the attachment with the new uuid so we can manage the DB record associated with it
+        };
+        setAttachments(prev =>
+          prev.map(a => (a.uuid === attachment.uuid ? newAttachment : a)),
+        );
+        Telemetry.logEvent(Telemetry.CUSTOM_EVENTS.ACTIONS.DOCUMENT_IMPORTED, {
+          documentType: attachment.type,
+        });
+      } catch (e) {
+        showToast((e as Error).message);
+        removeAttachment(attachment);
+      } finally {
+        uiStore.emitter.emit(CHAT_HANDLER_EVENTS.ENABLE_PROMPT_INPUT);
+        if (temporaryFilePath && (await RNFS.exists(temporaryFilePath))) {
+          console.log("Removing temporary file:", temporaryFilePath);
+          await RNFS.unlink(temporaryFilePath);
+        }
       }
-    }
-  }, [
-    workspaceSlug,
-    deviceInfo.isAndroid,
-    embedder,
-    embeddingConfig,
-    extractTextContentFromFile,
-    removeAttachment,
-  ]);
+    },
+    [
+      workspaceSlug,
+      deviceInfo.isAndroid,
+      embedder,
+      embeddingConfig,
+      extractTextContentFromFile,
+      removeAttachment,
+    ],
+  );
 
   const askForAttachment = useCallback(async () => {
     const result = await pick({

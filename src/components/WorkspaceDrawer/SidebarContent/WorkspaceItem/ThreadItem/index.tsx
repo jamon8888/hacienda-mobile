@@ -1,6 +1,6 @@
-import React, { useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import React, { useRef, useCallback } from "react";
+import { View, Text, TouchableOpacity } from "react-native";
+import { BottomSheetModal, BottomSheetBackdrop } from "@gorhom/bottom-sheet";
 
 export default function ThreadItem({
   isActive,
@@ -11,7 +11,7 @@ export default function ThreadItem({
 }) {
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const renderBackdrop = useCallback(
-    (props) => (
+    props => (
       <BottomSheetBackdrop
         {...props}
         disappearsOnIndex={-1}
@@ -19,7 +19,7 @@ export default function ThreadItem({
         opacity={0.7}
       />
     ),
-    []
+    [],
   );
 
   const handleLongPress = () => {
@@ -41,40 +41,43 @@ export default function ThreadItem({
       <TouchableOpacity
         onPress={onPress}
         onLongPress={handleLongPress}
-        className="w-full pl-2 py-1"
-      >
+        className="w-full pl-2 py-1">
         <Text
           numberOfLines={1}
           ellipsizeMode="tail"
-          className={`text-left text-lg w-[150px] ${isActive ? "font-medium text-[--primary-text]" : "text-[--secondary-text]"}`}
-        >
+          className={`text-left text-lg w-[150px] ${
+            isActive
+              ? "font-medium text-[--primary-text]"
+              : "text-[--secondary-text]"
+          }`}>
           {thread.name}
         </Text>
       </TouchableOpacity>
       <BottomSheetModal
         ref={bottomSheetRef}
         index={0}
-        snapPoints={['25%']}
+        snapPoints={["25%"]}
         enableDynamicSizing={false}
         backdropComponent={renderBackdrop}
-        backgroundStyle={{ backgroundColor: '#1B1B1E' }}
-        handleIndicatorStyle={{ backgroundColor: '#9F9FA0', width: 45, margin: 10 }}
-      >
+        backgroundStyle={{ backgroundColor: "#1B1B1E" }}
+        handleIndicatorStyle={{
+          backgroundColor: "#9F9FA0",
+          width: 45,
+          margin: 10,
+        }}>
         <View className="flex-1 p-4">
           <TouchableOpacity
             onPress={handleRename}
-            className="flex-row items-center py-3 px-2"
-          >
+            className="flex-row items-center py-3 px-2">
             <Text className="text-[--primary-text] text-lg">Rename</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleDelete}
-            className="flex-row items-center py-3 px-2"
-          >
+            className="flex-row items-center py-3 px-2">
             <Text className="text-red-500 text-lg">Delete</Text>
           </TouchableOpacity>
         </View>
-      </BottomSheetModal >
-    </View >
+      </BottomSheetModal>
+    </View>
   );
 }
