@@ -29,6 +29,7 @@
     "@langchain/textsplitters": "0.0.0",
     "@notifee/react-native": "^9.1.8",
     "@nozbe/watermelondb": "^0.28.0",
+    "@op-engineering/op-sqlite": "^17.1.5",
     "@react-native-async-storage/async-storage": "^2.1.0",
     "@react-native-clipboard/clipboard": "^1.15.0",
     "@react-native-community/blur": "^4.4.1",
@@ -48,7 +49,6 @@
     "axios": "^1.8.2",
     "base-64": "^1.0.0",
     "cactus-react-native": "1.13.1",
-    "react-native-nitro-modules": "^0.33.9",
     "chat-formatter": "^0.3.4",
     "date-fns": "^3.6.0",
     "dayjs": "^1.11.11",
@@ -80,6 +80,7 @@
     "react-native-markdown-display": "^7.0.2",
     "react-native-marked": "^6.0.4",
     "react-native-modal": "^13.0.1",
+    "react-native-nitro-modules": "^0.33.9",
     "react-native-paper": "^5.12.5",
     "react-native-parsed-text": "^0.0.22",
     "react-native-picker-select": "^9.1.3",
@@ -139,6 +140,10 @@
     "react-native-svg-transformer": "^1.5.0",
     "react-test-renderer": "18.3.1",
     "typescript": "5.0.4"
+  },
+  "op-sqlite": {
+    "sqliteVec": true,
+    "fts5": true
   },
   "engines": {
     "node": ">=18"
