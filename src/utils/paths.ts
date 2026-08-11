@@ -10,6 +10,7 @@ export const PATHS = {
   voice_chat: "VoiceChat",
   workspace_settings: "WorkspaceSettings",
   user_settings: "UserSettings",
+  subscription: "subscription",
   developer: {
     home: "DevToolsMenu",
   },

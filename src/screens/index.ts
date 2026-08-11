@@ -12,6 +12,7 @@ import WorkspaceSettings from "./WorkspaceSettings";
 import ConnectToInstance from "./ConnectToInstance";
 
 import DevToolsMenu from "./Dev";
+import SubscriptionScreen from "./Subscription/SubscriptionScreen";
 
 export default {
   OnboardingWelcome,
@@ -29,4 +30,6 @@ export default {
 
   // Connect and Sync
   ConnectToInstance,
+
+  SubscriptionScreen,
 };
