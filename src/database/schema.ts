@@ -66,5 +66,16 @@ export default appSchema({
         { name: "updated_at", type: "number" },
       ],
     }),
+    tableSchema({
+      name: "subscriptions",
+      columns: [
+        { name: "user_id", type: "string", isIndexed: true },
+        { name: "tier", type: "string" },
+        { name: "status", type: "string" },
+        { name: "trial_ends_at", type: "number", isOptional: true },
+        { name: "created_at", type: "number" },
+        { name: "updated_at", type: "number" },
+      ],
+    }),
   ],
 });
