@@ -275,5 +275,24 @@ describe("useVoiceTranscription", () => {
       expect(mockSttInstance.download).toHaveBeenCalledTimes(1);
       expect(mockSttInstance.init).toHaveBeenCalledTimes(1);
     });
+
+    it("does not create second stream if already recording", async () => {
+      const { result } = renderHook(() => useVoiceTranscription());
+
+      await act(async () => {
+        await result.current.startRecording();
+      });
+
+      expect(result.current.isRecording).toBe(true);
+      const firstStartCallCount = mockAudioStreamInstance.start.mock.calls.length;
+
+      await act(async () => {
+        await result.current.startRecording();
+      });
+
+      // Second call should be a no-op
+      expect(mockAudioStreamInstance.start).toHaveBeenCalledTimes(firstStartCallCount);
+      expect(result.current.isRecording).toBe(true);
+    });
   });
 });
