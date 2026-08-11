@@ -75,9 +75,12 @@ export function useAudioMemos(): UseAudioMemosReturn {
   }, []);
 
   const updateMemo = useCallback(async (uuid: string, updates: Partial<AudioMemoType>) => {
-    setMemos((prev) =>
-      prev.map((m) => (m.uuid === uuid ? { ...m, ...updates } : m))
-    );
+    const updated = await AudioMemo.update(uuid, updates);
+    if (updated) {
+      setMemos((prev) =>
+        prev.map((m) => (m.uuid === uuid ? updated : m))
+      );
+    }
   }, []);
 
   // Playback functions would use expo-av or react-native-audio-player
