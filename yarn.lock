@@ -2951,6 +2951,14 @@
     "@react-navigation/elements" "^2.4.2"
     color "^4.2.3"
 
+"@sctg/sentencepiece-js@^1.3.3":
+  version "1.3.3"
+  resolved "https://registry.npmjs.org/@sctg/sentencepiece-js/-/sentencepiece-js-1.3.3.tgz"
+  integrity sha512-iPnzR2HGjdQQG2SpTyPH3wnnpgQ2aS14B3I2jHjomkoaMprM3Sn+WOQblHwByetnvn3n14y3IwjwogVUHA2cVA==
+  dependencies:
+    app-root-path "^3.1.0"
+    buffer "^6.0.3"
+
 "@sideway/address@^4.1.5":
   version "4.1.5"
   resolved "https://registry.npmjs.org/@sideway/address/-/address-4.1.5.tgz"
@@ -3525,6 +3533,11 @@ anymatch@^3.0.3, anymatch@~3.1.2:
   dependencies:
     normalize-path "^3.0.0"
     picomatch "^2.0.4"
+
+app-root-path@^3.1.0:
+  version "3.1.0"
+  resolved "https://registry.npmjs.org/app-root-path/-/app-root-path-3.1.0.tgz"
+  integrity sha512-biN3PwB2gUtjaYy/isrU3aNWI5w+fAfvHkSvCKeQGxhmYpwKFUxudR3Yya+KqVRHBmEDYh+/lTozYCFbmzX4nA==
 
 appdirsjs@^1.2.4:
   version "1.2.7"
