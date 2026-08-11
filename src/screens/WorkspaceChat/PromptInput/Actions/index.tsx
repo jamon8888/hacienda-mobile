@@ -10,12 +10,14 @@ export const ACTION_MENU_HEIGHT = 40;
 export default function ActionMenu({
   isFullScreen,
   chatHandler,
-  ...props
+  attachmentHandler,
+  workspaceSlug,
 }: {
   isFullScreen: boolean;
   sheetIndex?: number;
   attachmentHandler: AttachmentInterface;
   chatHandler: ChatHandlerInterface;
+  workspaceSlug: string;
 }) {
   return (
     <View
@@ -27,7 +29,8 @@ export default function ActionMenu({
         <View className="flex flex-row items-center gap-x-4">
           <AttachmentsButton
             chatHandler={chatHandler}
-            attachmentHandler={props.attachmentHandler}
+            attachmentHandler={attachmentHandler}
+            workspaceSlug={workspaceSlug}
           />
           <SettingsActionIcon />
         </View>

@@ -17,6 +17,7 @@ export const BOTTOM_SHEET_NAMES = {
   WORKSPACE_FILES: "workspace-files",
   CITATIONS: "citations",
   TRANSCRIPTION_OPTIONS: "transcription-options",
+  ATTACHMENT_ACTIONS: "attachment-actions",
 } as const;
 export type BottomSheetType =
   | (typeof BOTTOM_SHEET_NAMES)[keyof typeof BOTTOM_SHEET_NAMES]

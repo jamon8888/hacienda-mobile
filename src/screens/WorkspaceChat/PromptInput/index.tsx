@@ -38,9 +38,10 @@ export const snapPointsDefault = ["22%", "60%", "100%"];
 
 interface PromptInputProps {
   attachmentHandler: AttachmentInterface;
+  workspaceSlug: string;
 }
 
-export default function PromptInput({ attachmentHandler }: PromptInputProps) {
+export default function PromptInput({ attachmentHandler, workspaceSlug }: PromptInputProps) {
   const chatHandler = useChatHandlerContext();
   const { llmPreferences } = useLlmPreference();
   const insets = useSafeAreaInsets();
@@ -280,6 +281,7 @@ export default function PromptInput({ attachmentHandler }: PromptInputProps) {
             sheetIndex={sheetIndex}
             attachmentHandler={attachmentHandler}
             chatHandler={chatHandler}
+            workspaceSlug={workspaceSlug}
           />
         </Animated.View>
       </BottomSheetModal>
