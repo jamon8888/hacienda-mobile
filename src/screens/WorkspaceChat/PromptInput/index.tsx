@@ -59,6 +59,15 @@ export default function PromptInput({ attachmentHandler, workspaceSlug }: Prompt
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [selection, setSelection] = useState({ start: 0, end: 0 });
 
+  const handleTranscriptReady = useCallback(
+    (text: string) => {
+      const currentPrompt = chatHandler.prompt;
+      const newPrompt = currentPrompt ? `${currentPrompt} ${text}` : text;
+      chatHandler.setPrompt(newPrompt);
+    },
+    [chatHandler],
+  );
+
   const hasModelSelected = useMemo(() => {
     return !!llmPreferences?.config?.model;
   }, [llmPreferences]);
@@ -282,6 +291,7 @@ export default function PromptInput({ attachmentHandler, workspaceSlug }: Prompt
             attachmentHandler={attachmentHandler}
             chatHandler={chatHandler}
             workspaceSlug={workspaceSlug}
+            onTranscriptReady={handleTranscriptReady}
           />
         </Animated.View>
       </BottomSheetModal>
