@@ -7,21 +7,23 @@ import { DynamicChatMessage } from "@/screens/WorkspaceChat/ChatHistory";
 export function formatChatHistory(
   chatHistory: DynamicChatMessage[] = [],
   formatterFunction: any,
-  mode: "asProperty" | "spread" = "asProperty"
+  mode: "asProperty" | "spread" = "asProperty",
 ) {
-  return chatHistory.flatMap((historicalMessage) => {
+  return chatHistory.flatMap(historicalMessage => {
     if (
       !historicalMessage?.response?.attachments || // If there are no attachments, we can skip this
       !historicalMessage.response.attachments.length // If there is an array but it is empty, we can skip this
     ) {
-      return [{
-        role: "user",
-        content: historicalMessage.prompt,
-      },
-      {
-        role: "assistant",
-        content: historicalMessage.response?.textResponse || "",
-      }];
+      return [
+        {
+          role: "user",
+          content: historicalMessage.prompt,
+        },
+        {
+          role: "assistant",
+          content: historicalMessage.response?.textResponse || "",
+        },
+      ];
     }
 
     // Some providers, like Ollama, expect the content to be embedded in the message object.

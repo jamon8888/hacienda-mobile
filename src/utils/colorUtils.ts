@@ -3,7 +3,7 @@
  */
 export const hexToRGBA = (hex: string, alpha: number = 1): string => {
   // Remove the hash if it exists
-  hex = hex.replace('#', '');
+  hex = hex.replace("#", "");
 
   // Parse the hex values
   const r = parseInt(hex.substring(0, 2), 16);
@@ -18,7 +18,7 @@ export const hexToRGBA = (hex: string, alpha: number = 1): string => {
  * Applies opacity to a color (works with both hex and rgba)
  */
 export const withOpacity = (color: string, opacity: number): string => {
-  if (color.startsWith('rgba')) {
+  if (color.startsWith("rgba")) {
     // If it's already rgba, just modify the opacity
     return color.replace(/[\d.]+\)$/g, `${opacity})`);
   }
@@ -31,12 +31,12 @@ export const withOpacity = (color: string, opacity: number): string => {
 export const isLightColor = (color: string): boolean => {
   let r: number, g: number, b: number;
 
-  if (color.startsWith('#')) {
-    const hex = color.replace('#', '');
+  if (color.startsWith("#")) {
+    const hex = color.replace("#", "");
     r = parseInt(hex.substring(0, 2), 16);
     g = parseInt(hex.substring(2, 4), 16);
     b = parseInt(hex.substring(4, 6), 16);
-  } else if (color.startsWith('rgba')) {
+  } else if (color.startsWith("rgba")) {
     const matches = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
     if (!matches) {
       return true;
@@ -55,7 +55,7 @@ export const isLightColor = (color: string): boolean => {
  * Gets a contrasting color (black or white) based on background
  */
 export const getContrastColor = (backgroundColor: string): string => {
-  return isLightColor(backgroundColor) ? '#000000' : '#FFFFFF';
+  return isLightColor(backgroundColor) ? "#000000" : "#FFFFFF";
 };
 
 /**

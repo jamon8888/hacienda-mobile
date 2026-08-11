@@ -8,7 +8,7 @@ export interface OpenAICompatibleConfig {
     apiKey?: string;
     model?: string;
     isOTypeModel?: boolean;
-  }
+  };
 }
 
 export interface OpenAICompatibleModel {
@@ -18,7 +18,7 @@ export interface OpenAICompatibleModel {
 }
 
 class OpenAICompatible extends BaseOpenAILikeProvider {
-  private baseURL: string = 'https://api.openai.com/v1';
+  private baseURL: string = "https://api.openai.com/v1";
   private apiKey: string | null = null;
 
   public model: string;
@@ -27,7 +27,10 @@ class OpenAICompatible extends BaseOpenAILikeProvider {
   protected temperature: number = 0.7;
   protected isOTypeModel: boolean = false;
 
-  constructor({ provider = 'OpenAICompatible', config = {} }: OpenAICompatibleConfig) {
+  constructor({
+    provider = "OpenAICompatible",
+    config = {},
+  }: OpenAICompatibleConfig) {
     super({ provider, config });
 
     // Random other properties we may or may not need
@@ -39,7 +42,7 @@ class OpenAICompatible extends BaseOpenAILikeProvider {
 
     if (config.baseURL) this.baseURL = config.baseURL;
     if (config.apiKey) this.apiKey = config.apiKey;
-    this.model = config.model || 'Unknown Model';
+    this.model = config.model || "Unknown Model";
     this.connectionProvider = provider;
 
     this.client = new OpenAILite({
@@ -51,12 +54,13 @@ class OpenAICompatible extends BaseOpenAILikeProvider {
 
   protected log = (text: string, ...args: any[]) => {
     console.log(`\x1b[36m[${this.constructor.name}]\x1b[0m ${text}`, ...args);
-  }
+  };
 
   override async availableModels(): Promise<OpenAICompatibleModel[]> {
-    return await this.client.models.list()
-      .then((models) => models.data.map((model: OpenAICompatibleModel) => model))
-      .catch((error) => {
+    return await this.client.models
+      .list()
+      .then(models => models.data.map((model: OpenAICompatibleModel) => model))
+      .catch(error => {
         this.log(`Error fetching models: ${error}`);
         return [];
       });

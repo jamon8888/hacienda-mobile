@@ -1,28 +1,29 @@
-import { Appearance } from 'react-native';
-import { makePersistable } from 'mobx-persist-store';
-import { makeAutoObservable, runInAction } from 'mobx';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { NativeEventEmitter } from 'react-native';
+import { Appearance } from "react-native";
+import { makePersistable } from "mobx-persist-store";
+import { makeAutoObservable, runInAction } from "mobx";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { NativeEventEmitter } from "react-native";
 
 type StorageKeys =
-  'onboarding_welcome_completed' |
-  'onboarding_model_selection_completed' |
-  'onboarding_survey_completed' |
-  'onboarding_data_handling_completed' |
-  'llmPreference' |
-  'tools' |
-  'current_anythingllm_external_connection' |
-  'anythingllm_external_connections';
+  | "onboarding_welcome_completed"
+  | "onboarding_model_selection_completed"
+  | "onboarding_survey_completed"
+  | "onboarding_data_handling_completed"
+  | "llmPreference"
+  | "tools"
+  | "current_anythingllm_external_connection"
+  | "anythingllm_external_connections"
+  | "voiceSettings";
 
 export const GLOBAL_EVENTS = {
-  REDIRECT: 'REDIRECT',
-  CITATIONS_FOCUSED: 'CITATIONS_FOCUSED',
-  SUBMIT_PROMPT: 'SUBMIT_PROMPT',
-  REFRESH_WORKSPACES: 'REFRESH_WORKSPACES',
-  CHAT_HISTORY_REFRESHED: 'CHAT_HISTORY_REFRESHED',
-  MODEL_DOWNLOAD_STARTED: 'MODEL_DOWNLOAD_STARTED',
-  MODEL_DOWNLOAD_COMPLETE: 'MODEL_DOWNLOAD_COMPLETE',
-  ONBOARDING_COMPLETED: 'ONBOARDING_COMPLETED',
+  REDIRECT: "REDIRECT",
+  CITATIONS_FOCUSED: "CITATIONS_FOCUSED",
+  SUBMIT_PROMPT: "SUBMIT_PROMPT",
+  REFRESH_WORKSPACES: "REFRESH_WORKSPACES",
+  CHAT_HISTORY_REFRESHED: "CHAT_HISTORY_REFRESHED",
+  MODEL_DOWNLOAD_STARTED: "MODEL_DOWNLOAD_STARTED",
+  MODEL_DOWNLOAD_COMPLETE: "MODEL_DOWNLOAD_COMPLETE",
+  ONBOARDING_COMPLETED: "ONBOARDING_COMPLETED",
 } as const;
 
 export class UIStore {
@@ -30,19 +31,20 @@ export class UIStore {
   globalEvents = GLOBAL_EVENTS;
 
   static readonly GROUP_KEYS = {
-    READY_TO_USE: 'ready_to_use',
-    AVAILABLE_TO_DOWNLOAD: 'available_to_download',
+    READY_TO_USE: "ready_to_use",
+    AVAILABLE_TO_DOWNLOAD: "available_to_download",
   } as const;
   static readonly STORAGE_KEYS: StorageKeys[] = [
-    'onboarding_welcome_completed',
-    'onboarding_model_selection_completed',
-    'onboarding_survey_completed',
-    'onboarding_data_handling_completed',
-    'llmPreference',
-    'tools',
-    'current_anythingllm_external_connection',
-    'anythingllm_external_connections',
-  ] as const;
+    "onboarding_welcome_completed",
+    "onboarding_model_selection_completed",
+    "onboarding_survey_completed",
+    "onboarding_data_handling_completed",
+    "llmPreference",
+    "tools",
+    "current_anythingllm_external_connection",
+    "anythingllm_external_connections",
+    "voiceSettings",
+  ];
 
   pageStates = {
     modelsScreen: {
@@ -56,8 +58,10 @@ export class UIStore {
   // This is a flag to auto-navigate to the chat page after loading a model
   autoNavigatetoChat = true;
 
+  iOSBackgroundDownloading = false;
+
   //colorScheme = useColorScheme();
-  colorScheme: 'light' | 'dark' = Appearance.getColorScheme() ?? 'light';
+  colorScheme: "light" | "dark" = Appearance.getColorScheme() ?? "light";
 
   displayMemUsage = false;
 
@@ -77,13 +81,13 @@ export class UIStore {
   constructor() {
     makeAutoObservable(this);
     makePersistable(this, {
-      name: 'UIStore',
+      name: "UIStore",
       properties: [
-        'pageStates',
-        'colorScheme',
-        'autoNavigatetoChat',
-        'displayMemUsage',
-        'benchmarkShareDialog',
+        "pageStates",
+        "colorScheme",
+        "autoNavigatetoChat",
+        "displayMemUsage",
+        "benchmarkShareDialog",
       ],
       storage: AsyncStorage,
     });
@@ -96,7 +100,7 @@ export class UIStore {
   }
 
   async getFromStorage<T>(key: StorageKeys, defaultValue: T): Promise<T> {
-    return this.storage.getItem(key).then((value) => {
+    return this.storage.getItem(key).then(value => {
       if (value) return JSON.parse(value) as T;
       else return defaultValue as T;
     });
@@ -109,14 +113,13 @@ export class UIStore {
   }
 
   async getAllFromStorage(): Promise<{ [key: string]: any }> {
-    return this.storage.multiGet(UIStore.STORAGE_KEYS)
-      .then((result) => {
-        return result.map(([key, value]) => {
-          return {
-            [key]: value,
-          };
-        });
+    return this.storage.multiGet(UIStore.STORAGE_KEYS).then(result => {
+      return result.map(([key, value]) => {
+        return {
+          [key]: value,
+        };
       });
+    });
   }
 
   setValue<T extends keyof typeof this.pageStates>(
@@ -133,7 +136,7 @@ export class UIStore {
     });
   }
 
-  setColorScheme(colorScheme: 'light' | 'dark') {
+  setColorScheme(colorScheme: "light" | "dark") {
     runInAction(() => {
       this.colorScheme = colorScheme;
     });
@@ -157,7 +160,10 @@ export class UIStore {
     });
   }
 
-  emitGlobalEvent(event: typeof GLOBAL_EVENTS[keyof typeof GLOBAL_EVENTS], details?: { path: string, params?: object }) {
+  emitGlobalEvent(
+    event: (typeof GLOBAL_EVENTS)[keyof typeof GLOBAL_EVENTS],
+    details?: { path: string; params?: object },
+  ) {
     this.emitter.emit(event, { ...details });
   }
 
@@ -165,12 +171,19 @@ export class UIStore {
     return await this.storage.multiRemove(UIStore.STORAGE_KEYS);
   }
 
-  setSessionKey(key: string, value: any, eventToEmit?: typeof GLOBAL_EVENTS[keyof typeof GLOBAL_EVENTS]) {
+  setSessionKey(
+    key: string,
+    value: any,
+    eventToEmit?: (typeof GLOBAL_EVENTS)[keyof typeof GLOBAL_EVENTS],
+  ) {
     this.session.set(key, value);
     if (eventToEmit) this.emitter.emit(eventToEmit, { details: value });
   }
 
-  deleteSessionKey(key: string, eventToEmit?: typeof GLOBAL_EVENTS[keyof typeof GLOBAL_EVENTS]) {
+  deleteSessionKey(
+    key: string,
+    eventToEmit?: (typeof GLOBAL_EVENTS)[keyof typeof GLOBAL_EVENTS],
+  ) {
     this.session.delete(key);
     if (eventToEmit) this.emitter.emit(eventToEmit);
   }

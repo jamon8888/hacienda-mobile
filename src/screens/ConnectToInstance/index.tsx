@@ -18,21 +18,37 @@ export type IWorkspacePageKey = keyof typeof PAGES;
 export interface IExternalConnection {
   token: string;
   connectionUrl: string;
-  platform: 'server' | 'desktop';
+  platform: "server" | "desktop";
 }
 
 export default function ConnectToInstance() {
   useRedirect();
   const route = useRoute();
-  const [page, setPage] = useState<{ key: IWorkspacePageKey, params: object }>({ key: 'start', params: {} });
+  const [page, setPage] = useState<{ key: IWorkspacePageKey; params: object }>({
+    key: "start",
+    params: {},
+  });
 
   useEffect(() => {
     async function getPage() {
-      const externalConnection = await uiStore.getFromStorage('current_anythingllm_external_connection', null) as IExternalConnection | null;
+      const externalConnection = (await uiStore.getFromStorage(
+        "current_anythingllm_external_connection",
+        null,
+      )) as IExternalConnection | null;
       if (externalConnection) {
-        setPage({ key: 'import', params: { ...route?.params ?? {}, connectionUrl: externalConnection.connectionUrl, deviceToken: externalConnection.token } });
+        setPage({
+          key: "import",
+          params: {
+            ...(route?.params ?? {}),
+            connectionUrl: externalConnection.connectionUrl,
+            deviceToken: externalConnection.token,
+          },
+        });
       } else {
-        setPage({ key: (route?.params as any)?.page ?? 'start', params: route?.params ?? {} });
+        setPage({
+          key: (route?.params as any)?.page ?? "start",
+          params: route?.params ?? {},
+        });
       }
     }
     getPage();
@@ -47,11 +63,24 @@ export default function ConnectToInstance() {
  * - Removes the connection from the local storage + the current connection
  * - Sends a command to the AnythingLLM instance to unregister the device (blindly)
  */
-export async function unregisterConnection(connection: IExternalConnection): Promise<IExternalConnection[]> {
-  const connections = await uiStore.getFromStorage('anythingllm_external_connections', []) as IExternalConnection[];
-  const newConnections = connections.filter((c) => c.token !== connection.token);
-  await uiStore.removeFromStorage('current_anythingllm_external_connection');
-  await uiStore.setToStorage('anythingllm_external_connections', newConnections);
-  try { await (new AnythingLLMExternal(connection.connectionUrl, connection.token)).sendCommand('unregister-device'); } catch { }
+export async function unregisterConnection(
+  connection: IExternalConnection,
+): Promise<IExternalConnection[]> {
+  const connections = (await uiStore.getFromStorage(
+    "anythingllm_external_connections",
+    [],
+  )) as IExternalConnection[];
+  const newConnections = connections.filter(c => c.token !== connection.token);
+  await uiStore.removeFromStorage("current_anythingllm_external_connection");
+  await uiStore.setToStorage(
+    "anythingllm_external_connections",
+    newConnections,
+  );
+  try {
+    await new AnythingLLMExternal(
+      connection.connectionUrl,
+      connection.token,
+    ).sendCommand("unregister-device");
+  } catch {}
   return newConnections;
 }

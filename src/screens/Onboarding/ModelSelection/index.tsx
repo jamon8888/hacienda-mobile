@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const SELECTION_MODES = {
   simple: SimpleModelSelection,
-}
+};
 
 export interface ISelection {
   provider: string;
@@ -15,7 +15,7 @@ export interface ISelection {
 }
 
 export default function OnboardingModelSelection() {
-  const [mode, _setMode] = useState<keyof typeof SELECTION_MODES>('simple');
+  const [mode, _setMode] = useState<keyof typeof SELECTION_MODES>("simple");
   const SelectionMode = SELECTION_MODES[mode];
   const insets = useSafeAreaInsets();
 
@@ -23,14 +23,25 @@ export default function OnboardingModelSelection() {
     <React.Fragment>
       <ImageBackground
         source={require("@/assets/onboarding/bg-blobs.png")}
-        style={{ backgroundColor: "#131314", position: "absolute", top: 0, left: 0, width: "100%", height: "100%", zIndex: 0 }}
+        style={{
+          backgroundColor: "#131314",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          zIndex: 0,
+        }}
       />
-      <SafeView scrollable={false} safeAreaClassNames="bg-transparent" containerStyle={{ zIndex: 1, paddingTop: insets.top + 20 }}>
+      <SafeView
+        scrollable={false}
+        safeAreaClassNames="bg-transparent"
+        containerStyle={{ zIndex: 1, paddingTop: insets.top + 20 }}>
         <View className="flex flex-col gap-y-[66px]">
           <ProgressBars numberOfBars={3} activeBar={1} />
           <SelectionMode />
         </View>
       </SafeView>
-    </React.Fragment >
+    </React.Fragment>
   );
-};
+}

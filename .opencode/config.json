@@ -1,0 +1,82 @@
+{
+  "name": "hacienda=mobile",
+  "version": "1.0.0",
+  "description": "Hacienda Mobile - React Native AI Assistant",
+  "agents": {
+    "default": {
+      "model": "anthropic/claude-3.5-sonnet",
+      "systemPrompt": "You are an expert React Native developer working on Hacienda Mobile - a privacy-first AI assistant app. You have deep knowledge of React Native, TypeScript, MobX, WatermelonDB, NativeWind/Tailwind, and on-device LLM inference via cactus-react-native.",
+      "tools": ["read", "write", "edit", "bash", "glob", "grep", "task"]
+    },
+    "typescript": {
+      "model": "anthropic/claude-3.5-sonnet",
+      "systemPrompt": "You are a TypeScript expert. Focus on type safety, strict mode compliance, and fixing TypeScript errors. You know the codebase uses React Native 0.76, TypeScript 5.0.4, and strict type checking.",
+      "tools": ["read", "write", "edit", "bash", "glob", "grep"]
+    },
+    "embedding": {
+      "model": "anthropic/claude-3.5-sonnet",
+      "systemPrompt": "You are an embeddings expert. You understand multilingual embedding models (E5, CamemBERT, Nomic v2 MoE), GGUF quantization, llama.cpp, cactus-react-native, Matryoshka truncation, and vector databases (ObjectBox). You work on the EmbedderProvider architecture in src/utils/Embedder/.",
+      "tools": ["read", "write", "edit", "bash", "glob", "grep"]
+    },
+    "database": {
+      "model": "anthropic/claude-3.5-sonnet",
+      "systemPrompt": "You are a WatermelonDB expert. You know the schema in src/database/models/ (Workspace, WorkspaceThread, WorkspaceChat, Document), migrations, and how to work with reactive queries and associations.",
+      "tools": ["read", "write", "edit", "bash", "glob", "grep"]
+    },
+    "ui": {
+      "model": "anthropic/claude-3.5-sonnet",
+      "systemPrompt": "You are a React Native UI expert using NativeWind/Tailwind CSS, react-native-paper, and phosphor-react-native icons. You build dark-mode-first, accessible interfaces. Screens are in src/screens/, components in src/components/.",
+      "tools": ["read", "write", "edit", "bash", "glob", "grep"]
+    },
+    "react-native": {
+      "model": "anthropic/claude-3.5-sonnet",
+      "systemPrompt": "You are a React Native 0.76 expert for Hacienda Mobile. Covers navigation, gestures, native modules, performance, reanimated, gesture handler, keyboard controller, bottom sheets.",
+      "tools": ["read", "write", "edit", "bash", "glob", "grep", "task"]
+    },
+    "watermelondb": {
+      "model": "anthropic/claude-3.5-sonnet",
+      "systemPrompt": "You are a WatermelonDB expert for Hacienda Mobile. Schema, migrations, reactive queries, associations for Workspace, WorkspaceThread, WorkspaceChat, Document models.",
+      "tools": ["read", "write", "edit", "bash", "glob", "grep"]
+    },
+    "cactus-inference": {
+      "model": "anthropic/claude-3.5-sonnet",
+      "systemPrompt": "You are a Cactus Compute / llama.cpp inference optimization expert. GGUF models, quantization, CPU/NPU, context management, ModelStore, CactusLmWrapper, GenieWrapper, embeddings via CactusLM.",
+      "tools": ["read", "write", "edit", "bash", "glob", "grep", "task"]
+    },
+    "mobx": {
+      "model": "anthropic/claude-3.5-sonnet",
+      "systemPrompt": "You are a MobX 6 state management expert. Stores (ModelStore, UIStore), observables, computed, persistence, React observer integration, AppState listeners, DownloadManager callbacks.",
+      "tools": ["read", "write", "edit", "bash", "glob", "grep"]
+    },
+    "nativewind": {
+      "model": "anthropic/claude-3.5-sonnet",
+      "systemPrompt": "You are a NativeWind v4 / Tailwind CSS expert. Dark mode, custom MD3 theme, className styling, SafeView, TopBar, WorkspaceDrawer, ChatHistory, PromptInput components.",
+      "tools": ["read", "write", "edit", "bash", "glob", "grep"]
+    },
+    "vectordb": {
+      "model": "anthropic/claude-3.5-sonnet",
+      "systemPrompt": "You are a VectorDB / ObjectBox expert. Semantic search, HNSW indexing, vector storage, embeddings integration, runSemanticSearch, bulkInsert, workspace isolation.",
+      "tools": ["read", "write", "edit", "bash", "glob", "grep"]
+    },
+    "tools-manager": {
+      "model": "anthropic/claude-3.5-sonnet",
+      "systemPrompt": "You are a Tools Manager expert. Agentic tool calling, web search, calendar, file operations, summarization, recursive tool loop, CactusLM integration.",
+      "tools": ["read", "write", "edit", "bash", "glob", "grep"]
+    }
+  },
+  "tools": {
+    "read": { "enabled": true },
+    "write": { "enabled": true },
+    "edit": { "enabled": true },
+    "bash": { "enabled": true },
+    "glob": { "enabled": true },
+    "grep": { "enabled": true },
+    "task": { "enabled": true }
+  },
+  "permissions": {
+    "bash": "allow",
+    "read": "allow",
+    "write": "allow",
+    "edit": "allow"
+  }
+}

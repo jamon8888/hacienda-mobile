@@ -17,6 +17,9 @@ import com.anythingllm.storage.StoragePackage
 import com.anythingllm.vector.VectorBoxPackage
 import com.anythingllm.webscraper.WebScraperPackage
 import com.anythingllm.pdfparser.PdfParserPackage
+import com.anythingllm.voice.VoiceAudioPackage
+import com.anythingllm.xberg.XbergPackage
+import com.anythingllm.embedding.EmbeddingGemmaPackage
 
 class MainApplication : Application(), ReactApplication {
 
@@ -32,6 +35,9 @@ class MainApplication : Application(), ReactApplication {
               add(VectorBoxPackage())
               add(WebScraperPackage())
               add(PdfParserPackage())
+              add(XbergPackage())
+              add(VoiceAudioPackage())
+              add(EmbeddingGemmaPackage())
             }
 
         override fun getJSMainModuleName(): String = "index"

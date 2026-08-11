@@ -8,6 +8,9 @@ import Workspace from "@/database/models/Workspace";
 import { LoadingView, ErrorView, MainView } from "./Main";
 import { NumericInputView } from "./NumericInput";
 import { TextInputView } from "./TextInput";
+import { EmbeddingSettingsView } from "./EmbeddingSettings";
+import { DocumentsSettingsView } from "./DocumentsSettings";
+import { VoiceSettingsView } from "./VoiceSettings";
 
 const PAGES = {
   main: (props: any) => <MainView {...props} />,
@@ -52,6 +55,9 @@ const PAGES = {
       suggestions={[512, 1024, 2048, 4096, 8192]}
     />
   ),
+  embedding: (props: any) => <EmbeddingSettingsView {...props} />,
+  documents: (props: any) => <DocumentsSettingsView {...props} />,
+  voice: (props: any) => <VoiceSettingsView {...props} />,
 };
 export type IWorkspacePageKey = keyof typeof PAGES;
 
@@ -60,24 +66,35 @@ const eventEmitter = new NativeEventEmitter();
 export default function WorkspaceSettings() {
   useRedirect();
   const { wsSlug, threadSlug } = useChatInfoEmit();
-  const { loadingWorkspace, workspace, error: errorWorkspace } = useWorkspace(wsSlug);
-  const [page, setPage] = useState<keyof typeof PAGES>('main');
+  const {
+    loadingWorkspace,
+    workspace,
+    error: errorWorkspace,
+  } = useWorkspace(wsSlug);
+  const [page, setPage] = useState<keyof typeof PAGES>("main");
 
   function navigateToPage(page: keyof typeof PAGES) {
-    eventEmitter.emit('setWorkspaceSettingsPage', { page });
+    eventEmitter.emit("setWorkspaceSettingsPage", { page });
   }
 
   useEffect(() => {
-    eventEmitter.addListener('setWorkspaceSettingsPage', (event) => {
-      if (!(event.page in PAGES)) throw new Error(`Invalid page: ${event.page}`);
+    eventEmitter.addListener("setWorkspaceSettingsPage", event => {
+      if (!(event.page in PAGES))
+        throw new Error(`Invalid page: ${event.page}`);
       setPage(event.page as keyof typeof PAGES);
     });
-    return () => eventEmitter.removeAllListeners('setWorkspaceSettingsPage');
+    return () => eventEmitter.removeAllListeners("setWorkspaceSettingsPage");
   }, []);
 
   if (loadingWorkspace) return <LoadingView />;
-  if (!!errorWorkspace) return <ErrorView title="Error loading workspace" error={errorWorkspace} />;
+  if (!!errorWorkspace)
+    return <ErrorView title="Error loading workspace" error={errorWorkspace} />;
   const Page = PAGES[page as keyof typeof PAGES];
-  return <Page goToPage={navigateToPage} workspace={workspace} initialThreadSlug={threadSlug} />;
+  return (
+    <Page
+      goToPage={navigateToPage}
+      workspace={workspace}
+      initialThreadSlug={threadSlug}
+    />
+  );
 }
-

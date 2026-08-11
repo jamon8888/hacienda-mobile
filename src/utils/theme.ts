@@ -2,32 +2,37 @@ import {
   MD3DarkTheme,
   DefaultTheme as PaperLightTheme,
   configureFonts,
-} from 'react-native-paper';
-import { MD3BaseColors, SemanticColors, Theme, AnythingLLMColorways } from './types';
-import { withOpacity, stateLayerOpacity } from './colorUtils';
-import { StyleSheet } from 'react-native';
+} from "react-native-paper";
+import {
+  MD3BaseColors,
+  SemanticColors,
+  Theme,
+  AnythingLLMColorways,
+} from "./types";
+import { withOpacity, stateLayerOpacity } from "./colorUtils";
+import { StyleSheet } from "react-native";
 
 // MD3 key colors (seed colors)
 const md3BaseColors: Partial<MD3BaseColors> = {
-  primary: '#333333',
-  secondary: '#1E4DF6',
-  tertiary: '#7880FF',
-  error: '#FF653F',
+  primary: "#333333",
+  secondary: "#1E4DF6",
+  tertiary: "#7880FF",
+  error: "#FF653F",
 };
 
 const AnythingLLMColors = (isDark: boolean = false) => {
   // TODO: add light theme colors
   const darkThemeColors = {
     text: {
-      primary: '#FFFFFF',
-      secondary: '#E2E2E2',
+      primary: "#FFFFFF",
+      secondary: "#E2E2E2",
     },
     background: {
-      primary: '#000000',
-      secondary: '#111111',
-      ctaBlue: '#84CAFF',
-      ctaBlueProgressBar: '#7cd4fd',
-      ctaLightBlue: '#36bffa',
+      primary: "#000000",
+      secondary: "#111111",
+      ctaBlue: "#84CAFF",
+      ctaBlueProgressBar: "#7cd4fd",
+      ctaLightBlue: "#36bffa",
     },
   };
 
@@ -42,40 +47,40 @@ const createBaseColors = (isDark: boolean): ApplicationColors => {
     return {
       ...baseTheme.colors,
       anythingllm: AnythingLLMColors(isDark),
-      primary: '#DADDE6',
-      onPrimary: '#44464C',
-      primaryContainer: '#5B5E66',
-      onPrimaryContainer: '#DEE0E6',
-      secondary: '#95ABE6',
-      onSecondary: '#11214C',
-      secondaryContainer: '#424242',
-      onSecondaryContainer: '#E0E0E0',
-      tertiary: '#80E6E4',
-      onTertiary: '#014C4C',
-      tertiaryContainer: '#016665',
-      onTertiaryContainer: '#9EE6E5',
+      primary: "#DADDE6",
+      onPrimary: "#44464C",
+      primaryContainer: "#5B5E66",
+      onPrimaryContainer: "#DEE0E6",
+      secondary: "#95ABE6",
+      onSecondary: "#11214C",
+      secondaryContainer: "#424242",
+      onSecondaryContainer: "#E0E0E0",
+      tertiary: "#80E6E4",
+      onTertiary: "#014C4C",
+      tertiaryContainer: "#016665",
+      onTertiaryContainer: "#9EE6E5",
       error: md3BaseColors.error!,
-      onError: '#4C100D',
-      errorContainer: '#661511',
-      onErrorContainer: '#E6ACA9',
-      background: '#000000',
-      onBackground: '#ffffff',
-      surface: '#1E1E1E',
-      onSurface: '#E2E2E2',
-      surfaceVariant: '#646466',
-      onSurfaceVariant: '#e3e4e6',
-      outline: '#444444',
-      outlineVariant: '#a1a1a1',
+      onError: "#4C100D",
+      errorContainer: "#661511",
+      onErrorContainer: "#E6ACA9",
+      background: "#000000",
+      onBackground: "#ffffff",
+      surface: "#1E1E1E",
+      onSurface: "#E2E2E2",
+      surfaceVariant: "#646466",
+      onSurfaceVariant: "#e3e4e6",
+      outline: "#444444",
+      outlineVariant: "#a1a1a1",
       // Additional required MD3 colors
-      surfaceDisabled: withOpacity('#333333', 0.12),
-      onSurfaceDisabled: withOpacity('#e5e5e6', 0.38),
-      inverseSurface: '#e5e5e6',
-      inverseOnSurface: '#333333',
-      inversePrimary: '#5B5E66',
+      surfaceDisabled: withOpacity("#333333", 0.12),
+      onSurfaceDisabled: withOpacity("#e5e5e6", 0.38),
+      inverseSurface: "#e5e5e6",
+      inverseOnSurface: "#333333",
+      inversePrimary: "#5B5E66",
       inverseSecondary: md3BaseColors.secondary!,
-      shadow: '#ffffff',
-      scrim: 'rgba(0, 0, 0, 0.25)',
-      backdrop: 'rgba(38, 37, 37, 0.8)',
+      shadow: "#ffffff",
+      scrim: "rgba(0, 0, 0, 0.25)",
+      backdrop: "rgba(38, 37, 37, 0.8)",
     };
   }
 
@@ -83,39 +88,39 @@ const createBaseColors = (isDark: boolean): ApplicationColors => {
     ...baseTheme.colors,
     anythingllm: AnythingLLMColors(isDark),
     primary: md3BaseColors.primary!,
-    onPrimary: '#FFFFFF',
-    primaryContainer: '#DEE0E6',
-    onPrimaryContainer: '#2D2F33',
+    onPrimary: "#FFFFFF",
+    primaryContainer: "#DEE0E6",
+    onPrimaryContainer: "#2D2F33",
     secondary: md3BaseColors.secondary!,
-    onSecondary: '#FFFFFF',
-    secondaryContainer: '#E0E0E0',
-    onSecondaryContainer: '#424242',
+    onSecondary: "#FFFFFF",
+    secondaryContainer: "#E0E0E0",
+    onSecondaryContainer: "#424242",
     tertiary: md3BaseColors.tertiary!,
-    onTertiary: '#FFFFFF',
-    tertiaryContainer: '#F1F3FF',
-    onTertiaryContainer: '#013332',
+    onTertiary: "#FFFFFF",
+    tertiaryContainer: "#F1F3FF",
+    onTertiaryContainer: "#013332",
     error: md3BaseColors.error!,
-    onError: '#FFFFFF',
-    errorContainer: '#E6ACA9',
-    onErrorContainer: '#330B09',
-    background: '#ffffff',
-    onBackground: '#111111',
-    surface: '#F9FAFB',
-    onSurface: '#333333',
-    surfaceVariant: '#e4e4e6',
-    onSurfaceVariant: '#646466',
+    onError: "#FFFFFF",
+    errorContainer: "#E6ACA9",
+    onErrorContainer: "#330B09",
+    background: "#ffffff",
+    onBackground: "#111111",
+    surface: "#F9FAFB",
+    onSurface: "#333333",
+    surfaceVariant: "#e4e4e6",
+    onSurfaceVariant: "#646466",
     outline: withOpacity(md3BaseColors.primary!, 0.05),
-    outlineVariant: '#a1a1a1',
+    outlineVariant: "#a1a1a1",
     // Additional required MD3 colors
-    surfaceDisabled: withOpacity('#fcfcfc', 0.12),
-    onSurfaceDisabled: withOpacity('#333333', 0.38),
-    inverseSurface: '#858585',
-    inverseOnSurface: '#fcfcfc',
-    inversePrimary: '#DEE0E6',
-    inverseSecondary: '#95ABE6',
-    shadow: '#000000',
-    scrim: 'rgba(0, 0, 0, 0.25)',
-    backdrop: 'rgba(51, 51, 51, 0.6)',
+    surfaceDisabled: withOpacity("#fcfcfc", 0.12),
+    onSurfaceDisabled: withOpacity("#333333", 0.38),
+    inverseSurface: "#858585",
+    inverseOnSurface: "#fcfcfc",
+    inversePrimary: "#DEE0E6",
+    inverseSecondary: "#95ABE6",
+    shadow: "#000000",
+    scrim: "rgba(0, 0, 0, 0.25)",
+    backdrop: "rgba(51, 51, 51, 0.6)",
   };
 };
 
@@ -161,21 +166,21 @@ const createSemanticColors = (
   focusStateOpacity: stateLayerOpacity.focus,
 
   // Menu specific
-  menuBackground: isDark ? '#2a2a2a' : baseColors.surface,
+  menuBackground: isDark ? "#2a2a2a" : baseColors.surface,
   menuBackgroundDimmed: withOpacity(baseColors.surface, 0.9),
   menuBackgroundActive: withOpacity(baseColors.primary, 0.08),
   menuSeparator: withOpacity(baseColors.primary, 0.5),
   menuGroupSeparator: isDark
-    ? withOpacity('#FFFFFF', 0.08)
-    : withOpacity('#000000', 0.08),
+    ? withOpacity("#FFFFFF", 0.08)
+    : withOpacity("#000000", 0.08),
   menuText: baseColors.onSurface,
   menuDangerText: baseColors.error,
 
   // Message specific
-  authorBubbleBackground: isDark ? '#212121' : '#f2f2f2',
+  authorBubbleBackground: isDark ? "#212121" : "#f2f2f2",
   receivedMessageDocumentIcon: baseColors.primary,
   sentMessageDocumentIcon: baseColors.onSurface,
-  userAvatarImageBackground: 'transparent',
+  userAvatarImageBackground: "transparent",
   userAvatarNameColors: [
     baseColors.primary,
     baseColors.secondary,
@@ -183,32 +188,32 @@ const createSemanticColors = (
     baseColors.error,
   ],
   searchBarBackground: isDark
-    ? 'rgba(28, 28, 30, 0.92)'
-    : 'rgba(118, 118, 128, 0.12)',
+    ? "rgba(28, 28, 30, 0.92)"
+    : "rgba(118, 118, 128, 0.12)",
 
   // Thinking bubble specific
-  thinkingBubbleBackground: isDark ? '#142e4d' : '#f0f5fa',
-  thinkingBubbleText: isDark ? '#6abaff' : '#0a5999',
+  thinkingBubbleBackground: isDark ? "#142e4d" : "#f0f5fa",
+  thinkingBubbleText: isDark ? "#6abaff" : "#0a5999",
   thinkingBubbleBorder: isDark
-    ? 'rgba(74, 140, 199, 0.6)'
-    : 'rgba(10, 89, 153, 0.4)',
-  thinkingBubbleShadow: isDark ? '#4a9fff' : '#0a5999',
+    ? "rgba(74, 140, 199, 0.6)"
+    : "rgba(10, 89, 153, 0.4)",
+  thinkingBubbleShadow: isDark ? "#4a9fff" : "#0a5999",
   thinkingBubbleChevronBackground: isDark
-    ? 'rgba(74, 140, 199, 0.15)'
-    : 'rgba(10, 89, 153, 0.1)',
+    ? "rgba(74, 140, 199, 0.15)"
+    : "rgba(10, 89, 153, 0.1)",
   thinkingBubbleChevronBorder: isDark
-    ? 'rgba(74, 140, 199, 0.3)'
-    : 'rgba(10, 89, 153, 0.2)',
+    ? "rgba(74, 140, 199, 0.3)"
+    : "rgba(10, 89, 153, 0.2)",
 });
 
 export const fontStyles = {
-  regular: { fontFamily: 'Inter-Regular' },
-  medium: { fontFamily: 'Inter-Medium' },
-  bold: { fontFamily: 'Inter-Bold' },
-  thin: { fontFamily: 'Inter-Thin' },
-  light: { fontFamily: 'Inter-Light' },
-  semibold: { fontFamily: 'Inter-SemiBold' },
-  extraBold: { fontFamily: 'Inter-ExtraBold' },
+  regular: { fontFamily: "Inter-Regular" },
+  medium: { fontFamily: "Inter-Medium" },
+  bold: { fontFamily: "Inter-Bold" },
+  thin: { fontFamily: "Inter-Thin" },
+  light: { fontFamily: "Inter-Light" },
+  semibold: { fontFamily: "Inter-SemiBold" },
+  extraBold: { fontFamily: "Inter-ExtraBold" },
 };
 
 const baseFontVariants = configureFonts({
@@ -254,7 +259,9 @@ const configuredFonts = configureFonts({
   },
 });
 
-const createTheme = (isDark: boolean): Theme & { colors: ApplicationColors } => {
+const createTheme = (
+  isDark: boolean,
+): Theme & { colors: ApplicationColors } => {
   const baseTheme = isDark ? MD3DarkTheme : PaperLightTheme;
   const baseColors = createBaseColors(isDark);
   const semanticColors = createSemanticColors(baseColors, isDark);

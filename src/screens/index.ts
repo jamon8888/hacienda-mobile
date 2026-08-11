@@ -7,6 +7,7 @@ import Home from "./Home";
 import UserSettings from "./UserSettings";
 
 import WorkspaceChat from "./WorkspaceChat";
+import VoiceChat from "./WorkspaceChat/VoiceChat";
 import WorkspaceSettings from "./WorkspaceSettings";
 import ConnectToInstance from "./ConnectToInstance";
 
@@ -20,6 +21,7 @@ export default {
   Home,
 
   WorkspaceChat,
+  VoiceChat,
   WorkspaceSettings,
 
   UserSettings,

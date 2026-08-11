@@ -1,22 +1,22 @@
-import * as React from 'react';
-import { ColorValue } from 'react-native';
+import * as React from "react";
+import { ColorValue } from "react-native";
 
-import _ from 'lodash';
-import dayjs from 'dayjs';
-import { MD3Theme } from 'react-native-paper';
-import DeviceInfo from 'react-native-device-info';
-import Blob from 'react-native/Libraries/Blob/Blob';
-import * as RNFS from '@dr.pogodin/react-native-fs';
+import _ from "lodash";
+import dayjs from "dayjs";
+import { MD3Theme } from "react-native-paper";
+import DeviceInfo from "react-native-device-info";
+import Blob from "react-native/Libraries/Blob/Blob";
+import * as RNFS from "@dr.pogodin/react-native-fs";
 
-import { formatBytes, formatNumber } from '@/utils/formatters';
-import { getHFDefaultSettings } from '@/utils/chat';
+import { formatBytes, formatNumber } from "@/utils/formatters";
+import { getHFDefaultSettings } from "@/utils/chat";
 import {
   HuggingFaceModel,
   Model,
   ModelFile,
   ModelOrigin,
   User,
-} from '@/utils/types';
+} from "@/utils/types";
 
 export const UserContext = React.createContext<User | undefined>(undefined);
 
@@ -35,16 +35,16 @@ export const getUserAvatarNameColor = (user: User, colors: ColorValue[]) =>
 
 /** Returns user initials (can have only first letter of firstName/lastName or both) */
 export const getUserInitials = ({ firstName, lastName }: User) =>
-  `${firstName?.charAt(0) ?? ''}${lastName?.charAt(0) ?? ''}`
+  `${firstName?.charAt(0) ?? ""}${lastName?.charAt(0) ?? ""}`
     .toUpperCase()
     .trim();
 
 /** Returns user name as joined firstName and lastName */
 export const getUserName = ({ firstName, lastName }: User) =>
-  `${firstName ?? ''} ${lastName ?? ''}`.trim();
+  `${firstName ?? ""} ${lastName ?? ""}`.trim();
 
 /** Returns hash code of the provided text */
-export const hashCode = (text = '') => {
+export const hashCode = (text = "") => {
   let i,
     chr,
     hash = 0;
@@ -64,7 +64,7 @@ export const hashCode = (text = '') => {
 /** Inits dayjs locale */
 export const initLocale = (locale?: any) => {
   const locales: { [key: string]: unknown } = {
-    en: require('dayjs/locale/en'),
+    en: require("dayjs/locale/en"),
     // es: require('dayjs/locale/es'),
     // ko: require('dayjs/locale/ko'),
     // pl: require('dayjs/locale/pl'),
@@ -107,15 +107,15 @@ export const getModelDescription = (
   const { size, params } =
     isActiveModel && modelStore.context?.model
       ? {
-        size: modelStore.context.model.size,
-        params: modelStore.context.model.nParams,
-      }
+          size: modelStore.context.model.size,
+          params: modelStore.context.model.nParams,
+        }
       : {
-        size: model.size,
-        params: model.params,
-      };
+          size: model.size,
+          params: model.params,
+        };
 
-  const notAvailable = "N/A"
+  const notAvailable = "N/A";
   const sizeString = size > 0 ? formatBytes(size) : notAvailable;
   const paramsString =
     params > 0 ? formatNumber(params, 2, true, false) : notAvailable;
@@ -127,16 +127,16 @@ export async function hasEnoughSpace(model: Model): Promise<boolean> {
     const requiredSpaceBytes = model.size;
 
     if (isNaN(requiredSpaceBytes) || requiredSpaceBytes <= 0) {
-      console.error('Invalid model size:', model.size);
+      console.error("Invalid model size:", model.size);
       return false;
     }
 
-    const freeDiskBytes = await DeviceInfo.getFreeDiskStorage('important');
-    console.log('Free disk space:', freeDiskBytes);
+    const freeDiskBytes = await DeviceInfo.getFreeDiskStorage("important");
+    console.log("Free disk space:", freeDiskBytes);
 
     return requiredSpaceBytes <= freeDiskBytes;
   } catch (error) {
-    console.error('Error fetching free disk space:', error);
+    console.error("Error fetching free disk space:", error);
     return false;
   }
 }
@@ -152,11 +152,11 @@ export async function hasEnoughSpace(model: Model): Promise<boolean> {
 export const deepMerge = (target: any, source: any): any => {
   for (const key in source) {
     if (source.hasOwnProperty(key)) {
-      if (typeof source[key] === 'object' && source[key] !== null) {
+      if (typeof source[key] === "object" && source[key] !== null) {
         // If the property is an object, recursively merge.
         // If target[key] is not an object, it means the property type is different so we will replace it.
         target[key] =
-          target[key] && typeof target[key] === 'object' ? target[key] : {};
+          target[key] && typeof target[key] === "object" ? target[key] : {};
         deepMerge(target[key], source[key]);
       } else {
         // Set the property in the target only if it doesn't exist or if the types differ
@@ -171,21 +171,21 @@ export const deepMerge = (target: any, source: any): any => {
 
 export function extractHFModelType(modelId: string): string {
   const match = modelId.match(/\/([^-]+)/);
-  return match ? match[1] : 'Unknown';
+  return match ? match[1] : "Unknown";
 }
 
 export function extractHFModelTitle(modelId: string): string {
   // Remove "GGUF", "-GGUF", or "_GGUF" at the end regardless of case
-  const sanitizedModelId = modelId.replace(/[-_]?[Gg][Gg][Uu][Ff]$/, '');
+  const sanitizedModelId = modelId.replace(/[-_]?[Gg][Gg][Uu][Ff]$/, "");
 
   // If there is no "/" in the modelId, ie owner is not included, return sanitizedModelId
-  if (!sanitizedModelId.includes('/')) {
+  if (!sanitizedModelId.includes("/")) {
     return sanitizedModelId;
   }
 
   // Remove owner from the modelId
   const match = sanitizedModelId.match(/^([^/]+)\/(.+)$/);
-  return match ? match[2] : 'Unknown';
+  return match ? match[2] : "Unknown";
 }
 
 export function hfAsModel(
@@ -195,18 +195,18 @@ export function hfAsModel(
   const defaultSettings = getHFDefaultSettings(hfModel);
 
   const _model: Model = {
-    id: hfModel.id + '/' + modelFile.rfilename,
+    id: hfModel.id + "/" + modelFile.rfilename,
     type: extractHFModelType(hfModel.id),
     author: hfModel.author,
     name: extractHFModelTitle(modelFile.rfilename),
     size: modelFile.size ?? 0,
     params: hfModel.specs?.gguf?.total ?? 0,
     isDownloaded: false,
-    downloadUrl: modelFile.url ?? '',
-    hfUrl: hfModel.url ?? '',
+    downloadUrl: modelFile.url ?? "",
+    hfUrl: hfModel.url ?? "",
     progress: 0,
     filename: modelFile.rfilename,
-    //fullPath: '',
+    runtime: "CPU",
     isLocal: false,
     origin: ModelOrigin.HF,
     defaultChatTemplate: defaultSettings.chatTemplate,
@@ -226,10 +226,10 @@ export const randId = () => Math.random().toString(36).substring(2, 11);
 // There is a an issue with RNFS.hash: https://github.com/birdofpreyru/react-native-fs/issues/99
 export const getSHA256Hash = async (filePath: string): Promise<string> => {
   try {
-    const hash = await RNFS.hash(filePath, 'sha256');
+    const hash = await RNFS.hash(filePath, "sha256");
     return hash;
   } catch (error) {
-    console.error('Error generating SHA256 hash:', error);
+    console.error("Error generating SHA256 hash:", error);
     throw error;
   }
 };
@@ -304,10 +304,10 @@ export const checkModelFileIntegrity = async (
       errorMessage: null,
     };
   } catch (error) {
-    console.error('Error checking file integrity:', error);
+    console.error("Error checking file integrity:", error);
     return {
       isValid: false,
-      errorMessage: 'Error checking file integrity. Please try again.',
+      errorMessage: "Error checking file integrity. Please try again.",
     };
   }
 };
@@ -322,11 +322,11 @@ export const safeParseJSON = (json: string) => {
       let cleanJson = json.trim();
 
       // Find the first { and last } to extract the main JSON object
-      const startIdx = cleanJson.indexOf('{');
-      let endIdx = cleanJson.lastIndexOf('}');
+      const startIdx = cleanJson.indexOf("{");
+      let endIdx = cleanJson.lastIndexOf("}");
 
       if (startIdx === -1) {
-        throw new Error('No JSON object found');
+        throw new Error("No JSON object found");
       }
 
       // Check for prompt key with flexible spacing
@@ -345,8 +345,158 @@ export const safeParseJSON = (json: string) => {
       return JSON.parse(cleanJson);
     }
   } catch (error) {
-    console.log('Original json: ', json);
-    console.error('Error parsing JSON:', error);
-    return { prompt: '', error: error };
+    console.log("Original json: ", json);
+    console.error("Error parsing JSON:", error);
+    return { prompt: "", error: error };
   }
 };
+
+// ============================================
+// DEVICE CAPABILITIES DETECTION (NEW)
+// ============================================
+
+import { NativeModules, Platform } from "react-native";
+
+export interface AndroidDeviceCapabilities {
+  cpuInfo: {
+    cores: number;
+    features: string[];
+    hasFp16: boolean;
+    hasDotProd: boolean;
+    hasSve: boolean;
+    hasI8mm: boolean;
+  };
+  ramInfo: {
+    totalRAM: number;
+    availableRAM: number;
+    threshold: number;
+    lowMemory: boolean;
+  };
+  npuBackend:
+    | "QNN"
+    | "MEDIATEK_APU"
+    | "EXYNOS_NPU"
+    | "TENSOR_TPU"
+    | "KIRIN_NPU"
+    | "NNAPI"
+    | "CPU";
+  hasNNAPI: boolean;
+  gpuVendor:
+    | "qualcomm"
+    | "mediatek"
+    | "samsung"
+    | "google"
+    | "huawei"
+    | "apple"
+    | "unknown";
+
+  // Derived
+  ramTier: "low" | "medium" | "high";
+  computeTier: "cpu" | "npu";
+  recommendedASRQuant: "CQ2" | "CQ3" | "CQ4";
+  recommendedLLMQuant: "CQ2" | "CQ2.54" | "CQ4";
+}
+
+export async function getAndroidDeviceCapabilities(): Promise<AndroidDeviceCapabilities> {
+  const { DeviceInfoModule } = NativeModules;
+
+  if (!DeviceInfoModule?.getDeviceCapabilities) {
+    throw new Error("DeviceInfoModule.getDeviceCapabilities not available");
+  }
+
+  const raw = await DeviceInfoModule.getDeviceCapabilities();
+  return computeAndroidCapabilities(raw);
+}
+
+function computeAndroidCapabilities(raw: any): AndroidDeviceCapabilities {
+  const availableRAMGB = parseInt(raw.ramInfo.availableRAM) / 1024 ** 3;
+
+  // RAM tier based on AVAILABLE RAM
+  let ramTier: "low" | "medium" | "high";
+  if (availableRAMGB < 3) ramTier = "low";
+  else if (availableRAMGB < 6) ramTier = "medium";
+  else ramTier = "high";
+
+  // NPU backend
+  const npuBackend = raw.npuBackend as AndroidDeviceCapabilities["npuBackend"];
+  const hasNPU = npuBackend !== "CPU" && npuBackend !== "NNAPI";
+
+  // Compute tier
+  const computeTier = hasNPU ? "npu" : "cpu";
+
+  // GPU vendor mapping
+  const gpuVendorMap: Record<string, AndroidDeviceCapabilities["gpuVendor"]> = {
+    QNN: "qualcomm",
+    MEDIATEK_APU: "mediatek",
+    EXYNOS_NPU: "samsung",
+    TENSOR_TPU: "google",
+    KIRIN_NPU: "huawei",
+  };
+  const gpuVendor = gpuVendorMap[raw.npuBackend] || "unknown";
+
+  // Quantization recommendations
+  let recommendedASRQuant: "CQ2" | "CQ3" | "CQ4";
+  let recommendedLLMQuant: "CQ2" | "CQ2.54" | "CQ4";
+
+  if (availableRAMGB < 3) {
+    recommendedASRQuant = "CQ2";
+    recommendedLLMQuant = "CQ2.54";
+  } else if (availableRAMGB < 5) {
+    recommendedASRQuant = "CQ3";
+    recommendedLLMQuant = "CQ2.54";
+  } else {
+    recommendedASRQuant = "CQ4";
+    recommendedLLMQuant = "CQ4";
+  }
+
+  return {
+    cpuInfo: raw.cpuInfo,
+    ramInfo: {
+      totalRAM: parseInt(raw.ramInfo.totalRAM),
+      availableRAM: parseInt(raw.ramInfo.availableRAM),
+      threshold: parseInt(raw.ramInfo.threshold),
+      lowMemory: raw.ramInfo.lowMemory,
+    },
+    npuBackend,
+    hasNNAPI: raw.hasNNAPI,
+    gpuVendor,
+    ramTier,
+    computeTier,
+    recommendedASRQuant,
+    recommendedLLMQuant,
+  };
+}
+
+// iOS stub - returns mock data for cross-platform compatibility
+export async function getIOSDeviceCapabilities(): Promise<AndroidDeviceCapabilities> {
+  return {
+    cpuInfo: {
+      cores: 6,
+      features: [],
+      hasFp16: true,
+      hasDotProd: true,
+      hasSve: false,
+      hasI8mm: false,
+    },
+    ramInfo: {
+      totalRAM: 6442450944,
+      availableRAM: 4294967296,
+      threshold: 1073741824,
+      lowMemory: false,
+    },
+    npuBackend: "CPU",
+    hasNNAPI: false,
+    gpuVendor: "apple",
+    ramTier: "high",
+    computeTier: "cpu",
+    recommendedASRQuant: "CQ4",
+    recommendedLLMQuant: "CQ4",
+  };
+}
+
+export async function getDeviceCapabilities(): Promise<AndroidDeviceCapabilities> {
+  if (Platform.OS === "android") {
+    return getAndroidDeviceCapabilities();
+  }
+  return getIOSDeviceCapabilities();
+}

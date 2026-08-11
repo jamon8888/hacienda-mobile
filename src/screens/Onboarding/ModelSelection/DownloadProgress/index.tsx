@@ -1,6 +1,6 @@
 import { Text, View, Alert } from "react-native";
 import React, { useEffect, useState } from "react";
-import * as RNFS from '@dr.pogodin/react-native-fs';
+import * as RNFS from "@dr.pogodin/react-native-fs";
 import { resolveDestinationPathFromGGUFUrl } from "@/utils/models/defaults";
 
 /**
@@ -8,68 +8,93 @@ import { resolveDestinationPathFromGGUFUrl } from "@/utils/models/defaults";
  * @returns An object with the progress, downloading, completed, and startDownload functions
  */
 function useDownloadModelFromUrl() {
-    const [progress, setProgress] = useState(0);
-    const [downloading, setDownloading] = useState(false);
-    const [completed, setCompleted] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [downloading, setDownloading] = useState(false);
+  const [completed, setCompleted] = useState(false);
 
-    async function startDownload(url: string) {
-        setDownloading(true);
-        setProgress(0);
+  async function startDownload(url: string) {
+    setDownloading(true);
+    setProgress(0);
 
-        // Validate the url is a valid url
-        // Validate the url ends with .gguf (for now)
-        try {
-            new URL(url);
-            if (!url.toLowerCase().endsWith('.gguf')) throw new Error('The url must end with .gguf');
-        } catch (error) {
-            Alert.alert('An error occurred', `Error downloading model ${error instanceof Error ? error.message : 'Unknown error'}`);
-            setDownloading(false);
-            setProgress(0);
-            return;
-        }
-
-        try {
-            const localStorageDestination = resolveDestinationPathFromGGUFUrl(url);
-            const fileExists = await RNFS.exists(localStorageDestination);
-
-            if (fileExists) {
-                console.log('Model already exists', localStorageDestination);
-                setDownloading(false);
-                setProgress(0);
-                setCompleted(true);
-                return;
-            } else {
-                const directory = localStorageDestination.split('/').slice(0, -1).join('/');
-                console.log('Creating directory', directory);
-                await RNFS.mkdir(directory);
-            }
-
-            console.log('Downloading model', {
-                url,
-                localStorageDestination,
-            });
-
-            RNFS.downloadFile({
-                fromUrl: url,
-                toFile: localStorageDestination,
-                progress: (res) => {
-                    const progress = (res.bytesWritten / res.contentLength) * 100;
-                    setProgress(Math.round(progress));
-                }
-            }).promise.then(() => {
-                setProgress(100);
-                setCompleted(true);
-            }).finally(() => {
-                setDownloading(false);
-                setProgress(0);
-            })
-        } catch (error) {
-            Alert.alert('An error occurred', `Error downloading model ${error instanceof Error ? error.message : 'Unknown error'}`);
-            setCompleted(false);
-            return;
-        }
+    // Validate the url is a valid url
+    // Validate the url ends with .gguf (for now)
+    try {
+      new URL(url);
+      if (!url.toLowerCase().endsWith(".gguf"))
+        throw new Error("The url must end with .gguf");
+    } catch (error) {
+      Alert.alert(
+        "An error occurred",
+        `Error downloading model ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      );
+      setDownloading(false);
+      setProgress(0);
+      return;
     }
-    return { progress, downloading, startDownload, completed };
+
+    try {
+      const localStorageDestination = resolveDestinationPathFromGGUFUrl(url);
+      // Unreachable given the .gguf-suffix check above (which guarantees a URL
+      // resolveDestinationPathFromGGUFUrl can parse), but the return type is now
+      // `string | null` for models with no legacy GGUF tag at all -- narrow explicitly
+      // rather than assert. Thrown into the catch block below, which resets downloading/
+      // progress the same as any other failure so the UI doesn't get stuck mid-download.
+      if (!localStorageDestination)
+        throw new Error(`Could not resolve a local path for ${url}`);
+      const fileExists = await RNFS.exists(localStorageDestination);
+
+      if (fileExists) {
+        console.log("Model already exists", localStorageDestination);
+        setDownloading(false);
+        setProgress(0);
+        setCompleted(true);
+        return;
+      } else {
+        const directory = localStorageDestination
+          .split("/")
+          .slice(0, -1)
+          .join("/");
+        console.log("Creating directory", directory);
+        await RNFS.mkdir(directory);
+      }
+
+      console.log("Downloading model", {
+        url,
+        localStorageDestination,
+      });
+
+      RNFS.downloadFile({
+        fromUrl: url,
+        toFile: localStorageDestination,
+        progress: res => {
+          const progress = (res.bytesWritten / res.contentLength) * 100;
+          setProgress(Math.round(progress));
+        },
+      })
+        .promise.then(() => {
+          setProgress(100);
+          setCompleted(true);
+        })
+        .finally(() => {
+          setDownloading(false);
+          setProgress(0);
+        });
+    } catch (error) {
+      Alert.alert(
+        "An error occurred",
+        `Error downloading model ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      );
+      setDownloading(false);
+      setProgress(0);
+      setCompleted(false);
+      return;
+    }
+  }
+  return { progress, downloading, startDownload, completed };
 }
 
 /**
@@ -78,30 +103,38 @@ function useDownloadModelFromUrl() {
  * @param onComplete - A callback function to call when the download is complete
  * @returns A component that displays the progress of a download
  */
-export default function DownloadProgress({ downloadUrl, onComplete }: { downloadUrl: string, onComplete: () => void }) {
-    const { progress, downloading, startDownload, completed } = useDownloadModelFromUrl();
+export default function DownloadProgress({
+  downloadUrl,
+  onComplete,
+}: {
+  downloadUrl: string;
+  onComplete: () => void;
+}) {
+  const { progress, downloading, startDownload, completed } =
+    useDownloadModelFromUrl();
 
-    useEffect(() => {
-        if (!!downloadUrl) startDownload(downloadUrl);
-    }, [downloadUrl]);
+  useEffect(() => {
+    if (!!downloadUrl) startDownload(downloadUrl);
+  }, [downloadUrl]);
 
-    useEffect(() => {
-        if (completed) Alert.alert(
-            'Model downloaded',
-            'The model has been downloaded successfully',
-            [
-                {
-                    text: 'Continue',
-                    onPress: () => onComplete(),
-                }
-            ]
-        );
-    }, [completed]);
+  useEffect(() => {
+    if (completed)
+      Alert.alert(
+        "Model downloaded",
+        "The model has been downloaded successfully",
+        [
+          {
+            text: "Continue",
+            onPress: () => onComplete(),
+          },
+        ],
+      );
+  }, [completed]);
 
-    if (!downloading) return null;
-    return (
-        <View className="flex flex-row gap-x-2">
-            <Text className="text-white text-sm">{progress}%</Text>
-        </View>
-    )
+  if (!downloading) return null;
+  return (
+    <View className="flex flex-row gap-x-2">
+      <Text className="text-white text-sm">{progress}%</Text>
+    </View>
+  );
 }

@@ -1,3 +1,3 @@
-export * from './useComponentSize';
-export * from './useKeyboardDimensions';
-export * from './usePanResponder';
+export * from "./useComponentSize";
+export * from "./useKeyboardDimensions";
+export * from "./usePanResponder";

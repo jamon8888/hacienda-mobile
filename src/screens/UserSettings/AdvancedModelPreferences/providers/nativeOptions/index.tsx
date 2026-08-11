@@ -1,10 +1,8 @@
-import useModelManager from '@/hooks/useModelManager';
-import { Text, TouchableOpacity } from 'react-native';
-import ModelCard from '@/components/ModelCard';
-import { useState, useEffect, Fragment } from 'react';
-import OnDeviceProvider from '@/utils/AiProviders/onDevice';
-import { resolveDestinationPathFromGGUFUrl } from '@/utils/models/defaults';
-import * as RNFS from '@dr.pogodin/react-native-fs';
+import useModelManager from "@/hooks/useModelManager";
+import { Text, TouchableOpacity } from "react-native";
+import ModelCard from "@/components/ModelCard";
+import { useState, useEffect, Fragment } from "react";
+import OnDeviceProvider from "@/utils/AiProviders/onDevice";
 
 interface NativeOptionsProps {
   llmPreferences: any;
@@ -25,17 +23,21 @@ export default function NativeOptions({
     selectedModel,
     downloadModel,
     uninstallModel,
+    isModelDownloaded,
   } = useModelManager({ llmPreferences, fetchLLMPreference, LLMProvider });
 
   useEffect(() => {
     async function fetchModels() {
       if (LLMProvider) {
-        const models = await (LLMProvider as OnDeviceProvider).availableModels();
+        const models = await (
+          LLMProvider as OnDeviceProvider
+        ).availableModels();
         for (const model of models) {
+          // Checks the real Cactus registry bundle for models CactusLmWrapper downloads
+          // lazily (see isModelDownloaded), falling back to the legacy GGUF path check for
+          // the rest -- a missing legacy path alone doesn't mean the bundle is on disk.
           // @ts-ignore
-          const path = resolveDestinationPathFromGGUFUrl(model.downloadUrl);
-          // @ts-ignore
-          model.isDownloaded = await RNFS.exists(path);
+          model.isDownloaded = await isModelDownloaded(model);
         }
         setAvailableModels(models);
       } else setAvailableModels([]);
@@ -66,7 +68,7 @@ export default function NativeOptions({
           onPress={() => setShowAllModels(!showAllModels)}
           className="flex flex-row items-center justify-center py-2">
           <Text className="text-[#9F9FA0] text-sm">
-            {showAllModels ? 'Show Less' : 'View More'}
+            {showAllModels ? "Show Less" : "View More"}
           </Text>
         </TouchableOpacity>
       )}
