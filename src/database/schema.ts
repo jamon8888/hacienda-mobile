@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from "@nozbe/watermelondb";
 
 export default appSchema({
-  version: 2,
+  version: 3,
   tables: [
     tableSchema({
       name: "workspaces",
@@ -51,6 +51,19 @@ export default appSchema({
         { name: "prompt", type: "string" },
         { name: "response", type: "string" },
         { name: "created_at", type: "number" },
+      ],
+    }),
+    tableSchema({
+      name: "audio_memos",
+      columns: [
+        { name: "uuid", type: "string", isIndexed: true },
+        { name: "workspace_slug", type: "string", isIndexed: true, isOptional: true },
+        { name: "audio_uri", type: "string" },
+        { name: "transcript", type: "string", isOptional: true },
+        { name: "duration_ms", type: "number" },
+        { name: "waveform_peaks", type: "string" },
+        { name: "created_at", type: "number" },
+        { name: "updated_at", type: "number" },
       ],
     }),
   ],
