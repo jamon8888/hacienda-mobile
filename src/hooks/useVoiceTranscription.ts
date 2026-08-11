@@ -70,6 +70,8 @@ export function useVoiceTranscription(): UseVoiceTranscriptionReturn {
   }, []);
 
   const startRecording = useCallback(async () => {
+    if (isRecording) return; // no-op if already recording
+
     try {
       setError(null);
       setCurrentTranscript("");
@@ -103,7 +105,7 @@ export function useVoiceTranscription(): UseVoiceTranscriptionReturn {
     } catch (err) {
       setError(err as Error);
     }
-  }, [initializeASR]);
+  }, [isRecording, initializeASR]);
 
   const stopRecording = useCallback(async () => {
     if (audioStreamRef.current) {
