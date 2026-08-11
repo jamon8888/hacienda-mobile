@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build an on-device episodic memory system with EmbeddingGemma-300M embeddings, op-sqlite + sqlite-vec hybrid search, and optional cross-encoder reranking for AnythingLLM Mobile.
+**Goal:** Build an on-device episodic memory system with EmbeddingGemma-300M embeddings, op-sqlite + sqlite-vec hybrid search, and optional cross-encoder reranking for Hacienda Mobile.
 
 **Architecture:** Three-layer system — (1) op-sqlite database with sqlite-vec for vectors and FTS5 for BM25, (2) native Kotlin/Swift modules wrapping LiteRT for EmbeddingGemma-300M inference, (3) TypeScript memory pipeline orchestrating ingest, retrieval, reranking, and lifecycle.
 
@@ -525,9 +525,9 @@ git commit -m "feat: add hybrid memory search with vector + BM25 scoring"
 ### Task 2.1: Create Android EmbeddingGemma Module
 
 **Files:**
-- Create: `android/app/src/main/java/com/anythingllm/embedding/EmbeddingGemmaModule.kt`
-- Create: `android/app/src/main/java/com/anythingllm/embedding/EmbeddingGemmaPackage.kt`
-- Modify: `android/app/src/main/java/com/anythingllm/MainApplication.kt`
+- Create: `android/app/src/main/java/com/hacienda/embedding/EmbeddingGemmaModule.kt`
+- Create: `android/app/src/main/java/com/hacienda/embedding/EmbeddingGemmaPackage.kt`
+- Modify: `android/app/src/main/java/com/hacienda/MainApplication.kt`
 
 **Interfaces:**
 - Consumes: LiteRT runtime (org.tensorflow.lite)
@@ -546,8 +546,8 @@ Note: The old `org.tensorflow:tensorflow-lite` is deprecated. Use the new `com.g
 - [ ] **Step 2: Create EmbeddingGemmaModule.kt**
 
 ```kotlin
-// android/app/src/main/java/com/anythingllm/embedding/EmbeddingGemmaModule.kt
-package com.anythingllm.embedding
+// android/app/src/main/java/com/hacienda/embedding/EmbeddingGemmaModule.kt
+package com.hacienda.embedding
 
 import com.facebook.react.bridge.*
 import com.google.ai.edge.litert.Interpreter
@@ -650,8 +650,8 @@ class EmbeddingGemmaModule(reactContext: ReactApplicationContext) :
 - [ ] **Step 3: Create EmbeddingGemmaPackage.kt**
 
 ```kotlin
-// android/app/src/main/java/com/anythingllm/embedding/EmbeddingGemmaPackage.kt
-package com.anythingllm.embedding
+// android/app/src/main/java/com/hacienda/embedding/EmbeddingGemmaPackage.kt
+package com.hacienda.embedding
 
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule
@@ -690,7 +690,7 @@ cd android && ./gradlew assembleDebug
 - [ ] **Step 7: Commit**
 
 ```bash
-git add android/app/src/main/java/com/anythingllm/embedding/
+git add android/app/src/main/java/com/hacienda/embedding/
 git commit -m "feat: add Android EmbeddingGemma native module with LiteRT"
 ```
 
@@ -699,9 +699,9 @@ git commit -m "feat: add Android EmbeddingGemma native module with LiteRT"
 ### Task 2.2: Create iOS EmbeddingGemma Module
 
 **Files:**
-- Create: `ios/AnythingLLM/EmbeddingGemmaModule.h`
-- Create: `ios/AnythingLLM/EmbeddingGemmaModule.m`
-- Create: `ios/AnythingLLM/EmbeddingGemmaModule.swift`
+- Create: `ios/Hacienda/EmbeddingGemmaModule.h`
+- Create: `ios/Hacienda/EmbeddingGemmaModule.m`
+- Create: `ios/Hacienda/EmbeddingGemmaModule.swift`
 
 **Interfaces:**
 - Consumes: LiteRT framework (TensorFlowLite)
@@ -719,14 +719,14 @@ Note: The old `TensorFlowLiteSwift` pod is deprecated. Use `LiteRT` instead.
 - [ ] **Step 2: Create bridging header entry**
 
 ```objc
-// ios/AnythingLLM/AnythingLLM-Bridging-Header.h - add
+// ios/Hacienda/Hacienda-Bridging-Header.h - add
 #import "EmbeddingGemmaModule.h"
 ```
 
 - [ ] **Step 3: Create EmbeddingGemmaModule.h**
 
 ```objc
-// ios/AnythingLLM/EmbeddingGemmaModule.h
+// ios/Hacienda/EmbeddingGemmaModule.h
 #import <React/RCTBridgeModule.h>
 
 @interface EmbeddingGemmaModule : NSObject <RCTBridgeModule>
@@ -736,7 +736,7 @@ Note: The old `TensorFlowLiteSwift` pod is deprecated. Use `LiteRT` instead.
 - [ ] **Step 4: Create EmbeddingGemmaModule.m**
 
 ```objc
-// ios/AnythingLLM/EmbeddingGemmaModule.m
+// ios/Hacienda/EmbeddingGemmaModule.m
 #import "EmbeddingGemmaModule.h"
 #import <React/RCTLog.h>
 
@@ -778,7 +778,7 @@ RCT_EXPORT_METHOD(embedBatch:(NSArray *)texts
 - [ ] **Step 5: Create EmbeddingGemmaModule.swift**
 
 ```swift
-// ios/AnythingLLM/EmbeddingGemmaModule.swift
+// ios/Hacienda/EmbeddingGemmaModule.swift
 import Foundation
 import LiteRT
 
@@ -866,7 +866,7 @@ npx react-native run-ios
 - [ ] **Step 7: Commit**
 
 ```bash
-git add ios/AnythingLLM/EmbeddingGemmaModule.*
+git add ios/Hacienda/EmbeddingGemmaModule.*
 git commit -m "feat: add iOS EmbeddingGemma native module with LiteRT"
 ```
 

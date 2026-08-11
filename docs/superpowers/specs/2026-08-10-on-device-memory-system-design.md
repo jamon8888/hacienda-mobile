@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-Design an on-device episodic memory system for AnythingLLM Mobile that enables voice and document chat with full context recall. The system runs 100% offline with HIPAA/legal compliance, using EmbeddingGemma-300M for embeddings, an optional cross-encoder reranker, and op-sqlite with sqlite-vec for hybrid vector + BM25 search.
+Design an on-device episodic memory system for Hacienda Mobile that enables voice and document chat with full context recall. The system runs 100% offline with HIPAA/legal compliance, using EmbeddingGemma-300M for embeddings, an optional cross-encoder reranker, and op-sqlite with sqlite-vec for hybrid vector + BM25 search.
 
 ### Key Constraints
 - **RAM budget:** ~5GB for Gemma 4 E2B + ~179MB EmbeddingGemma + ~87MB reranker + OS = ~6.3-7.3GB total

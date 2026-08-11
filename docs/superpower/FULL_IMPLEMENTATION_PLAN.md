@@ -1,4 +1,4 @@
-# Full Implementation Plan — AnythingLLM Mobile Xberg + Embedding + UI
+# Full Implementation Plan — Hacienda Mobile Xberg + Embedding + UI
 
 > **Status**: Ready to Implement
 > **Version**: 2.0.0
@@ -99,10 +99,10 @@ dependencies {
 
 ### Step 1.2: Create XbergModule.kt
 
-**File**: `android/app/src/main/java/com/anythingllm/xberg/XbergModule.kt`
+**File**: `android/app/src/main/java/com/hacienda/xberg/XbergModule.kt`
 
 ```kotlin
-package com.anythingllm.xberg
+package com.hacienda.xberg
 
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -192,10 +192,10 @@ class XbergModule(reactContext: ReactApplicationContext) :
 
 ### Step 1.3: Create XbergPackage.kt
 
-**File**: `android/app/src/main/java/com/anythingllm/xberg/XbergPackage.kt`
+**File**: `android/app/src/main/java/com/hacienda/xberg/XbergPackage.kt`
 
 ```kotlin
-package com.anythingllm.xberg
+package com.hacienda.xberg
 
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule
@@ -214,10 +214,10 @@ class XbergPackage : ReactPackage {
 
 ### Step 1.4: Register in MainApplication.kt
 
-**File**: `android/app/src/main/java/com/anythingllm/MainApplication.kt`
+**File**: `android/app/src/main/java/com/hacienda/MainApplication.kt`
 
 ```kotlin
-import com.anythingllm.xberg.XbergPackage
+import com.hacienda.xberg.XbergPackage
 
 // In getPackages():
 PackageList(this).packages.apply {
@@ -242,7 +242,7 @@ cd android && ./gradlew assembleDebug
 **File**: `ios/Podfile`
 
 ```ruby
-target 'AnythingLLM' do
+target 'Hacienda' do
   pod 'ObjectBox'
 end
 ```
@@ -253,7 +253,7 @@ Xcode → File → Add Package Dependencies → `https://github.com/xberg-io/xbe
 
 ### Step 2.3: Create VectorEntity.swift
 
-**File**: `ios/AnythingLLM/VectorEntity.swift`
+**File**: `ios/Hacienda/VectorEntity.swift`
 
 ```swift
 import ObjectBox
@@ -271,7 +271,7 @@ class VectorEntity {
 
 ### Step 2.4: Create VectorBox.swift
 
-**File**: `ios/AnythingLLM/VectorBox.swift`
+**File**: `ios/Hacienda/VectorBox.swift`
 
 ```swift
 import Foundation
@@ -373,7 +373,7 @@ class VectorBox: NSObject {
 
 ### Step 2.5: Create VectorBox.m + XbergModule.swift + XbergModule.m
 
-**File**: `ios/AnythingLLM/VectorBox.m`
+**File**: `ios/Hacienda/VectorBox.m`
 
 ```objc
 #import <React/RCTBridgeModule.h>
@@ -386,7 +386,7 @@ RCT_EXTERN_METHOD(deleteByWorkspace:(NSString *)workspaceSlug resolver:(RCTPromi
 @end
 ```
 
-**File**: `ios/AnythingLLM/XbergModule.swift`
+**File**: `ios/Hacienda/XbergModule.swift`
 
 ```swift
 import Foundation
@@ -443,7 +443,7 @@ class XbergModule: NSObject {
 }
 ```
 
-**File**: `ios/AnythingLLM/XbergModule.m`
+**File**: `ios/Hacienda/XbergModule.m`
 
 ```objc
 #import <React/RCTBridgeModule.h>
@@ -1315,11 +1315,11 @@ yarn test
 | --- | ----------------------------------------------------- | --------------------- |
 | 1   | `android/.../xberg/XbergModule.kt`                    | Android native module |
 | 2   | `android/.../xberg/XbergPackage.kt`                   | Android package       |
-| 3   | `ios/AnythingLLM/XbergModule.swift`                   | iOS native module     |
-| 4   | `ios/AnythingLLM/XbergModule.m`                       | iOS ObjC bridge       |
-| 5   | `ios/AnythingLLM/VectorBox.swift`                     | iOS ObjectBox wrapper |
-| 6   | `ios/AnythingLLM/VectorBox.m`                         | iOS ObjC bridge       |
-| 7   | `ios/AnythingLLM/VectorEntity.swift`                  | iOS entity            |
+| 3   | `ios/Hacienda/XbergModule.swift`                   | iOS native module     |
+| 4   | `ios/Hacienda/XbergModule.m`                       | iOS ObjC bridge       |
+| 5   | `ios/Hacienda/VectorBox.swift`                     | iOS ObjectBox wrapper |
+| 6   | `ios/Hacienda/VectorBox.m`                         | iOS ObjC bridge       |
+| 7   | `ios/Hacienda/VectorEntity.swift`                  | iOS entity            |
 | 8   | `src/utils/Xberg/types.ts`                            | Types                 |
 | 9   | `src/utils/Xberg/XbergClient.ts`                      | Client                |
 | 10  | `src/utils/Xberg/index.ts`                            | Exports               |

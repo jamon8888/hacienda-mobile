@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-Integrate Xberg (document intelligence engine) into AnythingLLM Mobile for on-device document processing, extraction, OCR, and RAG-ready output. Native bridge approach (Kotlin/Swift) for full performance and feature access.
+Integrate Xberg (document intelligence engine) into Hacienda Mobile for on-device document processing, extraction, OCR, and RAG-ready output. Native bridge approach (Kotlin/Swift) for full performance and feature access.
 
 ---
 
@@ -31,7 +31,7 @@ Integrate Xberg (document intelligence engine) into AnythingLLM Mobile for on-de
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     AnythingLLM Mobile                         │
+│                     Hacienda Mobile                         │
 ├─────────────────────────────────────────────────────────────────┤
 │  React Native (TypeScript)                                     │
 │  ├── XbergClient.ts           ← TypeScript wrapper             │
@@ -91,7 +91,7 @@ dependencies {
 **Native Module** (`XbergModule.kt`):
 
 ```kotlin
-package com.anythingllm.xberg
+package com.hacienda.xberg
 
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -108,7 +108,7 @@ class XbergModule(reactContext: ReactApplicationContext) :
 
     override fun getName(): String = "XbergModule"
 
-    // Implemented bridge (android/app/src/main/java/com/anythingllm/xberg/XbergModule.kt) --
+    // Implemented bridge (android/app/src/main/java/com/hacienda/xberg/XbergModule.kt) --
     // consolidated from the extractFile/extractFolder/extractWithOCR/batchExtract/detectFormat
     // surface originally sketched here, once the real xberg-android API (typed Kotlin objects,
     // not JSON strings) was known. OCR and folder-recursion are config passed into extract/
@@ -130,7 +130,7 @@ class XbergModule(reactContext: ReactApplicationContext) :
 **Package Registration** (`XbergPackage.kt`):
 
 ```kotlin
-package com.anythingllm.xberg
+package com.hacienda.xberg
 
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule
@@ -238,7 +238,7 @@ class XbergModule: NSObject {
 }
 ```
 
-**Bridge Header** (`AnythingLLM-Bridging-Header.h`):
+**Bridge Header** (`Hacienda-Bridging-Header.h`):
 
 ```objc
 #import <React/RCTBridgeModule.h>
@@ -738,7 +738,7 @@ const handleDocumentPick = async (file: DocumentPickerFile) => {
 ## File Structure
 
 ```
-android/app/src/main/java/com/anythingllm/
+android/app/src/main/java/com/hacienda/
 ├── vectordb/                    # Existing
 │   ├── VectorBox.kt
 │   └── VectorBoxPackage.kt
@@ -746,7 +746,7 @@ android/app/src/main/java/com/anythingllm/
     ├── XbergModule.kt
     └── XbergPackage.kt
 
-ios/AnythingLLM/
+ios/Hacienda/
 ├── XbergModule.swift            # NEW
 ├── XbergModule.m                # NEW (ObjC bridge)
 ├── VectorBox.swift              # NEW

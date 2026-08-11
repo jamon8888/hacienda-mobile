@@ -118,7 +118,7 @@ Sequence (details in `NEEDLE_IMPLEMENTATION_PLAN.md`):
 | P2  | `src/database/models/Document.ts`, `migrations.ts`                                    | `contentHash` column                                 |
 | P3  | `src/utils/Embedder/onDevice/multilingual.ts`                                         | batched embedding                                    |
 | P5  | `src/store/IndexingStore.ts` (+ hook)                                                 | ingest queue w/ progress                             |
-| P6  | `com/anythingllm/needle`, `src/utils/Needle`, `NeedleStore`, `baseOpenAILikeProvider` | router + gate                                        |
+| P6  | `com/hacienda/needle`, `src/utils/Needle`, `NeedleStore`, `baseOpenAILikeProvider` | router + gate                                        |
 
 ## Rollback
 

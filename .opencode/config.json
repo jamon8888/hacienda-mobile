@@ -1,11 +1,11 @@
 {
-  "name": "anythingllm-mobile",
+  "name": "hacienda=mobile",
   "version": "1.0.0",
-  "description": "AnythingLLM Mobile - React Native AI Assistant",
+  "description": "Hacienda Mobile - React Native AI Assistant",
   "agents": {
     "default": {
       "model": "anthropic/claude-3.5-sonnet",
-      "systemPrompt": "You are an expert React Native developer working on AnythingLLM Mobile - a privacy-first AI assistant app. You have deep knowledge of React Native, TypeScript, MobX, WatermelonDB, NativeWind/Tailwind, and on-device LLM inference via cactus-react-native.",
+      "systemPrompt": "You are an expert React Native developer working on Hacienda Mobile - a privacy-first AI assistant app. You have deep knowledge of React Native, TypeScript, MobX, WatermelonDB, NativeWind/Tailwind, and on-device LLM inference via cactus-react-native.",
       "tools": ["read", "write", "edit", "bash", "glob", "grep", "task"]
     },
     "typescript": {
@@ -30,12 +30,12 @@
     },
     "react-native": {
       "model": "anthropic/claude-3.5-sonnet",
-      "systemPrompt": "You are a React Native 0.76 expert for AnythingLLM Mobile. Covers navigation, gestures, native modules, performance, reanimated, gesture handler, keyboard controller, bottom sheets.",
+      "systemPrompt": "You are a React Native 0.76 expert for Hacienda Mobile. Covers navigation, gestures, native modules, performance, reanimated, gesture handler, keyboard controller, bottom sheets.",
       "tools": ["read", "write", "edit", "bash", "glob", "grep", "task"]
     },
     "watermelondb": {
       "model": "anthropic/claude-3.5-sonnet",
-      "systemPrompt": "You are a WatermelonDB expert for AnythingLLM Mobile. Schema, migrations, reactive queries, associations for Workspace, WorkspaceThread, WorkspaceChat, Document models.",
+      "systemPrompt": "You are a WatermelonDB expert for Hacienda Mobile. Schema, migrations, reactive queries, associations for Workspace, WorkspaceThread, WorkspaceChat, Document models.",
       "tools": ["read", "write", "edit", "bash", "glob", "grep"]
     },
     "cactus-inference": {

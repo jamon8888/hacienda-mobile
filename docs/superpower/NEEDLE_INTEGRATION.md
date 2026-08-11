@@ -228,8 +228,8 @@ switch (route.type) {
 
 ## 8. Files touched (all NEW — no churn on existing)
 
-- `android/app/src/main/java/com/anythingllm/needle/{NeedleModule.kt, NeedlePackage.kt}`
-- `ios/AnythingLLM/{NeedleModule.swift, NeedleModule.m}`
+- `android/app/src/main/java/com/hacienda/needle/{NeedleModule.kt, NeedlePackage.kt}`
+- `ios/Hacienda/{NeedleModule.swift, NeedleModule.m}`
 - `src/utils/Needle/{types.ts, NeedleClient.ts, index.ts}`
 - `src/store/NeedleStore.ts`, `src/hooks/useNeedle.ts`
 - `android/app/build.gradle` (CMake link + ABI), `ios/Podfile` (staticlib)
