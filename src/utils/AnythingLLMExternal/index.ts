@@ -64,7 +64,7 @@ export type CommandBodies = {
 };
 
 class AnythingLLMExternal {
-  static HEADER_AUTH_TOKEN = "x-anythingllm-mobile-device-token";
+  static HEADER_AUTH_TOKEN = "x-hacienda-mobile-device-token";
   /** The connection URL for the AnythingLLM instance */
   readonly connectionUrl: string;
   /** The device token for the AnythingLLM instance for this mobile device */

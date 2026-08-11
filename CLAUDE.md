@@ -1,4 +1,4 @@
-# CLAUDE.md — AnythingLLM Mobile
+# CLAUDE.md — Hacienda Mobile
 
 > **Rule**: Use `basemind` for code intelligence BEFORE grep/read/git. It's the default, not a preference.
 

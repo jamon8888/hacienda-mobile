@@ -464,4 +464,4 @@ export async function reEmbedWorkspace(
 
 ---
 
-_Spec Version: 1.0 | Author: AnythingLLM Mobile Team | Date: 2026_
+_Spec Version: 1.0 | Author: Hacienda Mobile Team | Date: 2026_

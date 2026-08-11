@@ -36,7 +36,7 @@ Verifies needle-rs is actually usable on ARM before any RN plumbing.
 
 ## P1 — Android native module
 
-Mirror `com.anythingllm.xberg` exactly. New dir `android/app/src/main/java/com/anythingllm/needle/`.
+Mirror `com.hacienda.xberg` exactly. New dir `android/app/src/main/java/com/hacienda/needle/`.
 
 1. **build files** — add NDK `externalNativeBuild`/CMake block to `android/app/build.gradle` (or a `module.cmake`) that:
    - statically links the Rust-produced `libneedle.a` (ABI per each `abiFilters` — `arm64-v8a`, plus `x86_64`/`armeabi-v7a` if kept);
@@ -57,11 +57,11 @@ Mirror `com.anythingllm.xberg` exactly. New dir `android/app/src/main/java/com/a
 
 ## P2 — iOS native module
 
-Mirror `ios/AnythingLLM/XbergModule.swift` + `.m`.
+Mirror `ios/Hacienda/XbergModule.swift` + `.m`.
 
 - `NeedleModule.swift` — `@objc` exposed methods `init(weights:vocab:resolver:rejecter:)`, `route(_:toolsJson:resolver:rejecter:)`, plus `NeedleModule.m` macro registration (mirror `XbergModule.{swift,m}`, `RCT_EXTERN_MODULE`).
 - Link the Rust staticlib (universal arm64-sim + device) and the `needle.h` C header into the Xcode target via the Podfile/Podspec dependency.
-- `Podfile`: add a local pod that pulls the staticlib (or vendor under `ios/anythingllm/` and reference in `.xcconfig`).
+- `Podfile`: add a local pod that pulls the staticlib (or vendor under `ios/hacienda/` and reference in `.xcconfig`).
 - Keep `cactus.xcframework` path untouched.
 
 **Verify**: `cd ios && pod install`; open Xcode build. (iOS can be validated later — Android is the primary target this session.)
@@ -141,9 +141,9 @@ const results = await VectorDB.runSemanticSearch(
 
 | Path                                                                     | Action                               |
 | ------------------------------------------------------------------------ | ------------------------------------ |
-| `android/.../com/anythingllm/needle/{NeedleModule.kt, NeedlePackage.kt}` | create                               |
+| `android/.../com/hacienda/needle/{NeedleModule.kt, NeedlePackage.kt}` | create                               |
 | `android/app/build.gradle` (+ prefab or CMake)                           | add `.so` link (edit)                |
-| `ios/AnythingLLM/{NeedleModule.swift, NeedleModule.m, needle.h}`         | create                               |
+| `ios/Hacienda/{NeedleModule.swift, NeedleModule.m, needle.h}`         | create                               |
 | `ios/Podfile` / Podspec                                                  | add staticlib pod (edit)             |
 | `src/utils/Needle/{types.ts, NeedleClient.ts, index.ts}`                 | create                               |
 | `src/store/NeedleStore.ts`, `src/hooks/useNeedle.ts`                     | create                               |

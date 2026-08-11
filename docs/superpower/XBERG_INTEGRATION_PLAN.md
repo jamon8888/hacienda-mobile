@@ -1,4 +1,4 @@
-# Xberg Integration Plan — AnythingLLM Mobile
+# Xberg Integration Plan — Hacienda Mobile
 
 > **Status**: Ready to Implement
 > **Version**: 1.0.0
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-Integrate Xberg (document intelligence engine) into AnythingLLM Mobile for on-device document processing, extraction, OCR, and RAG-ready output. Native bridge approach (Kotlin Android, Swift iOS) for full performance and feature access.
+Integrate Xberg (document intelligence engine) into Hacienda Mobile for on-device document processing, extraction, OCR, and RAG-ready output. Native bridge approach (Kotlin Android, Swift iOS) for full performance and feature access.
 
 ---
 
@@ -31,7 +31,7 @@ Integrate Xberg (document intelligence engine) into AnythingLLM Mobile for on-de
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     AnythingLLM Mobile                         │
+│                     Hacienda Mobile                         │
 ├─────────────────────────────────────────────────────────────────┤
 │  React Native (TypeScript)                                     │
 │  ├── XbergClient.ts           ← TypeScript wrapper             │
@@ -82,19 +82,19 @@ Integrate Xberg (document intelligence engine) into AnythingLLM Mobile for on-de
 | File                                                              | Action | Purpose                                       |
 | ----------------------------------------------------------------- | ------ | --------------------------------------------- |
 | `android/app/build.gradle`                                        | Modify | Add `io.xberg:xberg-android:1.0.8` dependency |
-| `android/app/src/main/java/com/anythingllm/xberg/XbergModule.kt`  | Create | React Native native module wrapping Xberg     |
-| `android/app/src/main/java/com/anythingllm/xberg/XbergPackage.kt` | Create | Package registration                          |
-| `android/app/src/main/java/com/anythingllm/MainApplication.kt`    | Modify | Register `XbergPackage()`                     |
+| `android/app/src/main/java/com/hacienda/xberg/XbergModule.kt`  | Create | React Native native module wrapping Xberg     |
+| `android/app/src/main/java/com/hacienda/xberg/XbergPackage.kt` | Create | Package registration                          |
+| `android/app/src/main/java/com/hacienda/MainApplication.kt`    | Modify | Register `XbergPackage()`                     |
 
 ### iOS (5 files)
 
 | File                                 | Action | Purpose                                   |
 | ------------------------------------ | ------ | ----------------------------------------- |
 | `ios/Podfile`                        | Modify | Add `ObjectBox` pod                       |
-| `ios/AnythingLLM/XbergModule.swift`  | Create | React Native native module wrapping Xberg |
-| `ios/AnythingLLM/XbergModule.m`      | Create | ObjC bridge for React Native              |
-| `ios/AnythingLLM/VectorBox.swift`    | Create | ObjectBox wrapper for vector search       |
-| `ios/AnythingLLM/VectorEntity.swift` | Create | ObjectBox entity definition               |
+| `ios/Hacienda/XbergModule.swift`  | Create | React Native native module wrapping Xberg |
+| `ios/Hacienda/XbergModule.m`      | Create | ObjC bridge for React Native              |
+| `ios/Hacienda/VectorBox.swift`    | Create | ObjectBox wrapper for vector search       |
+| `ios/Hacienda/VectorEntity.swift` | Create | ObjectBox entity definition               |
 
 ### TypeScript (5 files)
 
@@ -120,7 +120,7 @@ Integrate Xberg (document intelligence engine) into AnythingLLM Mobile for on-de
 ### Android (XbergModule.kt)
 
 ```kotlin
-package com.anythingllm.xberg
+package com.hacienda.xberg
 
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -198,7 +198,7 @@ class XbergModule(reactContext: ReactApplicationContext) :
 ### Android (XbergPackage.kt)
 
 ```kotlin
-package com.anythingllm.xberg
+package com.hacienda.xberg
 
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule
@@ -674,7 +674,7 @@ dependencies {
 ### iOS (Podfile)
 
 ```ruby
-target 'AnythingLLM' do
+target 'Hacienda' do
   # Existing...
 
   # ObjectBox vector database
