@@ -1,7 +1,16 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
 import SafeView from "@/components/SafeView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
+import { DrawerNavigationProp } from "@react-navigation/drawer";
 import { ArrowLeft, Plus } from "phosphor-react-native";
 import { useAudioMemos } from "@/hooks/useAudioMemos";
 import MemoRow from "./MemoRow";
@@ -9,22 +18,46 @@ import { PATHS } from "@/utils/paths";
 
 type TabType = "workspace" | "global";
 
-export default function AudioMemosScreen({ navigation }: any) {
+export default function AudioMemosScreen() {
+  const navigation = useNavigation<DrawerNavigationProp<any>>();
   const insets = useSafeAreaInsets();
-  const { memos, loading, playingId, fetchMemos, deleteMemo, playMemo, pauseMemo } = useAudioMemos();
+  const {
+    memos,
+    loading,
+    playingId,
+    fetchMemos,
+    deleteMemo,
+    playMemo,
+    pauseMemo,
+  } = useAudioMemos();
   const [activeTab, setActiveTab] = useState<TabType>("workspace");
 
   useEffect(() => {
     fetchMemos(activeTab === "workspace" ? "current" : null);
   }, [activeTab, fetchMemos]);
 
-  const handleDelete = useCallback(async (uuid: string) => {
-    await deleteMemo(uuid);
-  }, [deleteMemo]);
+  const handleDelete = useCallback(
+    (uuid: string) => {
+      Alert.alert("Delete Memo", "Are you sure you want to delete this memo?", [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            await deleteMemo(uuid);
+          },
+        },
+      ]);
+    },
+    [deleteMemo],
+  );
 
-  const handlePlay = useCallback((uuid: string, audioUri: string) => {
-    playMemo(uuid, audioUri);
-  }, [playMemo]);
+  const handlePlay = useCallback(
+    (uuid: string, audioUri: string) => {
+      playMemo(uuid, audioUri);
+    },
+    [playMemo],
+  );
 
   const tabs: { key: TabType; label: string }[] = [
     { key: "workspace", label: "Workspace" },
@@ -37,21 +70,27 @@ export default function AudioMemosScreen({ navigation }: any) {
       containerStyle={{ flex: 1, backgroundColor: "#1B1B1E" }}>
       {/* Header */}
       <View
-        style={{ paddingTop: insets.top, paddingHorizontal: 20, paddingBottom: 16 }}
+        style={{
+          paddingTop: insets.top,
+          paddingHorizontal: 20,
+          paddingBottom: 16,
+        }}
         className="flex-row items-center justify-between">
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft size={24} color="#FFF" weight="bold" />
         </TouchableOpacity>
         <Text className="text-white text-lg font-medium">Audio Memos</Text>
         <TouchableOpacity
-          onPress={() => navigation.navigate(PATHS.audio_memo_player, { mode: "record" })}>
+          onPress={() =>
+            navigation.navigate(PATHS.audio_memo_player, { mode: "record" })
+          }>
           <Plus size={24} color="#FFF" weight="bold" />
         </TouchableOpacity>
       </View>
 
       {/* Segmented Control */}
       <View className="flex-row mx-4 mb-4 bg-[#27282A] rounded-lg p-1">
-        {tabs.map((tab) => (
+        {tabs.map(tab => (
           <TouchableOpacity
             key={tab.key}
             onPress={() => setActiveTab(tab.key)}
@@ -82,7 +121,7 @@ export default function AudioMemosScreen({ navigation }: any) {
       ) : (
         <FlatList
           data={memos}
-          keyExtractor={(item) => item.uuid}
+          keyExtractor={item => item.uuid}
           renderItem={({ item }) => (
             <MemoRow
               memo={item}

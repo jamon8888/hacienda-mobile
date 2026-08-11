@@ -1,6 +1,6 @@
 import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
-import { Play, Pause, Trash2 } from "phosphor-react-native";
+import { View, Text, TouchableOpacity, Pressable } from "react-native";
+import { Play, Pause, Trash } from "phosphor-react-native";
 import { AudioMemoType } from "@/database/models/AudioMemo";
 
 interface MemoRowProps {
@@ -40,7 +40,8 @@ export default function MemoRow({
   onPress,
 }: MemoRowProps) {
   const title = memo.transcript
-    ? memo.transcript.substring(0, 30) + (memo.transcript.length > 30 ? "..." : "")
+    ? memo.transcript.substring(0, 30) +
+      (memo.transcript.length > 30 ? "..." : "")
     : "Untitled Memo";
 
   return (
@@ -48,7 +49,7 @@ export default function MemoRow({
       onPress={onPress}
       className="flex-row items-center p-4 bg-[#27282A] rounded-lg mb-2 border border-[#3A3B3D]">
       {/* Play/Pause Button */}
-      <TouchableOpacity
+      <Pressable
         onPress={isPlaying ? onPause : onPlay}
         className="w-10 h-10 rounded-full bg-[#3B82F6] items-center justify-center mr-3">
         {isPlaying ? (
@@ -56,7 +57,7 @@ export default function MemoRow({
         ) : (
           <Play size={18} color="#FFF" weight="fill" />
         )}
-      </TouchableOpacity>
+      </Pressable>
 
       {/* Content */}
       <View className="flex-1">
@@ -75,9 +76,9 @@ export default function MemoRow({
       </View>
 
       {/* Delete Button */}
-      <TouchableOpacity onPress={onDelete} className="p-2">
-        <Trash2 size={18} color="#9F9FA0" />
-      </TouchableOpacity>
+      <Pressable onPress={onDelete} className="p-2">
+        <Trash size={18} color="#9F9FA0" />
+      </Pressable>
     </TouchableOpacity>
   );
 }

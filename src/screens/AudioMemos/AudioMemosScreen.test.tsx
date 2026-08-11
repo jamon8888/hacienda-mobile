@@ -1,8 +1,21 @@
 import React from "react";
-import renderer, { act } from "react-test-renderer";
+import renderer from "react-test-renderer";
 import AudioMemosScreen from "./AudioMemosScreen";
 import { useAudioMemos } from "@/hooks/useAudioMemos";
 import { AudioMemoType } from "@/database/models/AudioMemo";
+
+const mockNavigation = {
+  goBack: jest.fn(),
+  navigate: jest.fn(),
+};
+
+jest.mock("@react-navigation/native", () => ({
+  useNavigation: () => mockNavigation,
+}));
+
+jest.mock("@react-navigation/drawer", () => ({
+  DrawerNavigationProp: jest.fn(),
+}));
 
 jest.mock("@/hooks/useAudioMemos", () => ({
   useAudioMemos: jest.fn(),
@@ -16,6 +29,12 @@ jest.mock("@/components/SafeView", () => {
 jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
+
+jest.mock("react-native", () => {
+  const RN = jest.requireActual("react-native");
+  RN.Alert.alert = jest.fn();
+  return RN;
+});
 
 const mockMemos: AudioMemoType[] = [
   {
@@ -41,11 +60,6 @@ const mockMemos: AudioMemoType[] = [
 ];
 
 describe("AudioMemosScreen", () => {
-  const mockNavigation = {
-    goBack: jest.fn(),
-    navigate: jest.fn(),
-  };
-
   const mockUseAudioMemos = {
     memos: mockMemos,
     loading: false,
@@ -68,9 +82,7 @@ describe("AudioMemosScreen", () => {
       memos: [],
     });
 
-    const tree = renderer.create(
-      <AudioMemosScreen navigation={mockNavigation} />
-    );
+    const tree = renderer.create(<AudioMemosScreen />);
     const root = tree.root;
     const activityIndicator = root.findByProps({ size: "large" });
     expect(activityIndicator).toBeTruthy();
@@ -82,32 +94,28 @@ describe("AudioMemosScreen", () => {
       memos: [],
     });
 
-    const tree = renderer.create(
-      <AudioMemosScreen navigation={mockNavigation} />
-    );
+    const tree = renderer.create(<AudioMemosScreen />);
     const root = tree.root;
-    const emptyText = root.findByProps({ children: "No memos yet.\nTap + to record your first memo." });
+    const emptyText = root.findByProps({
+      children: "No memos yet.\nTap + to record your first memo.",
+    });
     expect(emptyText).toBeTruthy();
   });
 
   it("renders memo list when memos exist", () => {
-    const tree = renderer.create(
-      <AudioMemosScreen navigation={mockNavigation} />
-    );
+    const tree = renderer.create(<AudioMemosScreen />);
     const root = tree.root;
     const flatList = root.findByProps({ keyExtractor: expect.any(Function) });
     expect(flatList).toBeTruthy();
   });
 
   it("calls fetchMemos on mount with workspace filter", () => {
-    renderer.create(<AudioMemosScreen navigation={mockNavigation} />);
+    renderer.create(<AudioMemosScreen />);
     expect(mockUseAudioMemos.fetchMemos).toHaveBeenCalledWith("current");
   });
 
   it("calls goBack when back button is pressed", () => {
-    const tree = renderer.create(
-      <AudioMemosScreen navigation={mockNavigation} />
-    );
+    const tree = renderer.create(<AudioMemosScreen />);
     const root = tree.root;
     const backButton = root.findAllByProps({ weight: "bold" })[0];
     backButton?.props.onPress();
@@ -115,9 +123,7 @@ describe("AudioMemosScreen", () => {
   });
 
   it("navigates to record mode when plus button is pressed", () => {
-    const tree = renderer.create(
-      <AudioMemosScreen navigation={mockNavigation} />
-    );
+    const tree = renderer.create(<AudioMemosScreen />);
     const root = tree.root;
     const plusButton = root.findAllByProps({ weight: "bold" })[1];
     plusButton?.props.onPress();
