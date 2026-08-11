@@ -15,6 +15,8 @@ export const PATHS = {
   },
 
   connect_to_instance: "ConnectToInstance",
+  audio_memos: "audio_memos",
+  audio_memo_player: "audio_memo_player",
 
   remote_version_url: "https://cdn.anythingllm.com/mobile/latest/version.txt",
   google_play_store:
