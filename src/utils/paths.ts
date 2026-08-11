@@ -9,6 +9,7 @@ export const PATHS = {
   workspace_chat: 'WorkspaceChat',
   workspace_settings: 'WorkspaceSettings',
   user_settings: 'UserSettings',
+  subscription: 'subscription',
   developer: {
     home: 'DevToolsMenu',
   },

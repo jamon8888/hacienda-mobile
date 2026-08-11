@@ -167,6 +167,14 @@ const App = observer(() => {
                           )}
                           options={{ headerShown: false }}
                         />
+
+                        <Drawer.Screen
+                          name={PATHS.subscription}
+                          component={gestureHandlerRootHOC(
+                            Screens.SubscriptionScreen,
+                          )}
+                          options={{ headerShown: false }}
+                        />
                       </WorkspaceDrawer>
                     </NavigationContainer>
                   </BottomSheetModalProvider>
