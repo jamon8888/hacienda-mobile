@@ -1315,11 +1315,11 @@ yarn test
 | --- | ----------------------------------------------------- | --------------------- |
 | 1   | `android/.../xberg/XbergModule.kt`                    | Android native module |
 | 2   | `android/.../xberg/XbergPackage.kt`                   | Android package       |
-| 3   | `ios/Hacienda/XbergModule.swift`                   | iOS native module     |
-| 4   | `ios/Hacienda/XbergModule.m`                       | iOS ObjC bridge       |
-| 5   | `ios/Hacienda/VectorBox.swift`                     | iOS ObjectBox wrapper |
-| 6   | `ios/Hacienda/VectorBox.m`                         | iOS ObjC bridge       |
-| 7   | `ios/Hacienda/VectorEntity.swift`                  | iOS entity            |
+| 3   | `ios/Hacienda/XbergModule.swift`                      | iOS native module     |
+| 4   | `ios/Hacienda/XbergModule.m`                          | iOS ObjC bridge       |
+| 5   | `ios/Hacienda/VectorBox.swift`                        | iOS ObjectBox wrapper |
+| 6   | `ios/Hacienda/VectorBox.m`                            | iOS ObjC bridge       |
+| 7   | `ios/Hacienda/VectorEntity.swift`                     | iOS entity            |
 | 8   | `src/utils/Xberg/types.ts`                            | Types                 |
 | 9   | `src/utils/Xberg/XbergClient.ts`                      | Client                |
 | 10  | `src/utils/Xberg/index.ts`                            | Exports               |

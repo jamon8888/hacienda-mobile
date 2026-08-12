@@ -217,7 +217,9 @@ describe("AudioMemo.update", () => {
       }),
     };
 
-    const mockQuery = jest.fn().mockReturnValue({ fetch: jest.fn().mockResolvedValue([existingMemo]) });
+    const mockQuery = jest
+      .fn()
+      .mockReturnValue({ fetch: jest.fn().mockResolvedValue([existingMemo]) });
     const mockGet = jest.fn().mockReturnValue({ query: mockQuery });
     const mockWrite = jest.fn().mockImplementation(fn => fn());
 
@@ -238,14 +240,18 @@ describe("AudioMemo.update", () => {
   });
 
   it("should return null when memo not found", async () => {
-    const mockQuery = jest.fn().mockReturnValue({ fetch: jest.fn().mockResolvedValue([]) });
+    const mockQuery = jest
+      .fn()
+      .mockReturnValue({ fetch: jest.fn().mockResolvedValue([]) });
     const mockGet = jest.fn().mockReturnValue({ query: mockQuery });
     const mockWrite = jest.fn().mockImplementation(fn => fn());
 
     require("@/database").database.write = mockWrite;
     require("@/database").database.get = mockGet;
 
-    const result = await AudioMemo.update("nonexistent-uuid", { transcript: "new" });
+    const result = await AudioMemo.update("nonexistent-uuid", {
+      transcript: "new",
+    });
 
     expect(result).toBeNull();
   });
@@ -259,7 +265,9 @@ describe("AudioMemo.update", () => {
       }),
     };
 
-    const mockQuery = jest.fn().mockReturnValue({ fetch: jest.fn().mockResolvedValue([existingMemo]) });
+    const mockQuery = jest
+      .fn()
+      .mockReturnValue({ fetch: jest.fn().mockResolvedValue([existingMemo]) });
     const mockGet = jest.fn().mockReturnValue({ query: mockQuery });
     const mockWrite = jest.fn().mockImplementation(fn => fn());
 

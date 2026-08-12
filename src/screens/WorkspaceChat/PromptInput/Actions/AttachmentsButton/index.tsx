@@ -22,4 +22,4 @@ export default function AttachmentsButton({
   );
 }
 
-export { default as MicButton } from "./MicButton";
+export { MicButton } from "./MicButton";

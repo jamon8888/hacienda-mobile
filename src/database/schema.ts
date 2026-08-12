@@ -57,7 +57,12 @@ export default appSchema({
       name: "audio_memos",
       columns: [
         { name: "uuid", type: "string", isIndexed: true },
-        { name: "workspace_slug", type: "string", isIndexed: true, isOptional: true },
+        {
+          name: "workspace_slug",
+          type: "string",
+          isIndexed: true,
+          isOptional: true,
+        },
         { name: "audio_uri", type: "string" },
         { name: "transcript", type: "string", isOptional: true },
         { name: "duration_ms", type: "number" },

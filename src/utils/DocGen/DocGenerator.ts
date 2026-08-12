@@ -114,12 +114,15 @@ export async function generatePptx(config: PptxConfig): Promise<string> {
 }
 
 function getMimeType(uri: string): string {
-  if (uri.endsWith(".docx"))
+  if (uri.endsWith(".docx")) {
     return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-  if (uri.endsWith(".xlsx"))
+  }
+  if (uri.endsWith(".xlsx")) {
     return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-  if (uri.endsWith(".pptx"))
+  }
+  if (uri.endsWith(".pptx")) {
     return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+  }
   return "application/octet-stream";
 }
 

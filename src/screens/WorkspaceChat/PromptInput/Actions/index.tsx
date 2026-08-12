@@ -3,7 +3,7 @@ import { TouchableOpacity, View } from "react-native";
 import { PaperPlaneRight } from "phosphor-react-native";
 import { AttachmentInterface } from "@/hooks/useAttachments";
 import AttachmentsButton from "./AttachmentsButton";
-import MicButton from "./AttachmentsButton/MicButton";
+import { MicButton } from "./AttachmentsButton/MicButton";
 import { SettingsActionIcon } from "./Settings";
 import { type ChatHandlerInterface } from "@/hooks/useChatHandler/index";
 

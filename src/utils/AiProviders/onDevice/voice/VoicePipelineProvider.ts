@@ -11,7 +11,10 @@ import {
   DEFAULT_CACTUS_ASR_MODEL,
   DEFAULT_CACTUS_LLM_MODEL,
 } from "@/utils/models/defaults";
-import { retrieveContext, buildContextString } from "@/utils/MemoryDB/RetrievalPipeline";
+import {
+  retrieveContext,
+  buildContextString,
+} from "@/utils/MemoryDB/RetrievalPipeline";
 
 export interface VoicePipelineConfig {
   asrModelId?: CactusVoiceModelId;

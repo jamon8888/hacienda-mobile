@@ -34,9 +34,10 @@ export function useAudioMemos(): UseAudioMemosReturn {
   const fetchMemos = useCallback(async (workspaceSlug?: string | null) => {
     setLoading(true);
     try {
-      const where = workspaceSlug !== undefined
-        ? [{ field: "workspace_slug", value: workspaceSlug }]
-        : [];
+      const where =
+        workspaceSlug !== undefined
+          ? [{ field: "workspace_slug", value: workspaceSlug }]
+          : [];
       const fetched = await AudioMemo.find(where, [
         { field: "created_at", direction: "desc" },
       ]);
@@ -48,40 +49,44 @@ export function useAudioMemos(): UseAudioMemosReturn {
     }
   }, []);
 
-  const createMemo = useCallback(async (data: {
-    audioUri: string;
-    transcript?: string;
-    durationMs: number;
-    waveformPeaks: number[];
-    workspaceSlug?: string | null;
-  }) => {
-    const memo = await AudioMemo.create({
-      audioUri: data.audioUri,
-      transcript: data.transcript ?? null,
-      durationMs: data.durationMs,
-      waveformPeaks: data.waveformPeaks,
-      workspaceSlug: data.workspaceSlug ?? null,
-    });
-    setMemos((prev) => [memo, ...prev]);
-    return memo;
-  }, []);
+  const createMemo = useCallback(
+    async (data: {
+      audioUri: string;
+      transcript?: string;
+      durationMs: number;
+      waveformPeaks: number[];
+      workspaceSlug?: string | null;
+    }) => {
+      const memo = await AudioMemo.create({
+        audioUri: data.audioUri,
+        transcript: data.transcript ?? null,
+        durationMs: data.durationMs,
+        waveformPeaks: data.waveformPeaks,
+        workspaceSlug: data.workspaceSlug ?? null,
+      });
+      setMemos(prev => [memo, ...prev]);
+      return memo;
+    },
+    [],
+  );
 
   const deleteMemo = useCallback(async (uuid: string) => {
     const success = await AudioMemo.delete([{ field: "uuid", value: uuid }]);
     if (success) {
-      setMemos((prev) => prev.filter((m) => m.uuid !== uuid));
+      setMemos(prev => prev.filter(m => m.uuid !== uuid));
     }
     return success;
   }, []);
 
-  const updateMemo = useCallback(async (uuid: string, updates: Partial<AudioMemoType>) => {
-    const updated = await AudioMemo.update(uuid, updates);
-    if (updated) {
-      setMemos((prev) =>
-        prev.map((m) => (m.uuid === uuid ? updated : m))
-      );
-    }
-  }, []);
+  const updateMemo = useCallback(
+    async (uuid: string, updates: Partial<AudioMemoType>) => {
+      const updated = await AudioMemo.update(uuid, updates);
+      if (updated) {
+        setMemos(prev => prev.map(m => (m.uuid === uuid ? updated : m)));
+      }
+    },
+    [],
+  );
 
   // Playback functions would use expo-av or react-native-audio-player
   const playMemo = useCallback(async (uuid: string, audioUri: string) => {

@@ -110,14 +110,14 @@ Sequence (details in `NEEDLE_IMPLEMENTATION_PLAN.md`):
 
 ## Files touched (mapped to today's code)
 
-| #   | File                                                                                  | Change                                               |
-| --- | ------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| P1  | `.../PromptInput/Actions/Settings/Files/index.tsx`                                    | implement `handleImportFolder`, batch path           |
-| P1  | `src/utils/Xberg/{types.ts,XbergClient.ts}`                                           | batch errors+config (`use_cache`,`max_concurrent`)   |
-| P1  | `android/.../xberg/XbergModule.kt`, `ios/.../XbergModule.{swift,m}`                   | return per-file errors instead of whole-batch reject |
-| P2  | `src/database/models/Document.ts`, `migrations.ts`                                    | `contentHash` column                                 |
-| P3  | `src/utils/Embedder/onDevice/multilingual.ts`                                         | batched embedding                                    |
-| P5  | `src/store/IndexingStore.ts` (+ hook)                                                 | ingest queue w/ progress                             |
+| #   | File                                                                               | Change                                               |
+| --- | ---------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| P1  | `.../PromptInput/Actions/Settings/Files/index.tsx`                                 | implement `handleImportFolder`, batch path           |
+| P1  | `src/utils/Xberg/{types.ts,XbergClient.ts}`                                        | batch errors+config (`use_cache`,`max_concurrent`)   |
+| P1  | `android/.../xberg/XbergModule.kt`, `ios/.../XbergModule.{swift,m}`                | return per-file errors instead of whole-batch reject |
+| P2  | `src/database/models/Document.ts`, `migrations.ts`                                 | `contentHash` column                                 |
+| P3  | `src/utils/Embedder/onDevice/multilingual.ts`                                      | batched embedding                                    |
+| P5  | `src/store/IndexingStore.ts` (+ hook)                                              | ingest queue w/ progress                             |
 | P6  | `com/hacienda/needle`, `src/utils/Needle`, `NeedleStore`, `baseOpenAILikeProvider` | router + gate                                        |
 
 ## Rollback

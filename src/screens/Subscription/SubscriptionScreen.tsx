@@ -7,14 +7,14 @@ import { useSubscription } from "@/hooks/useSubscription";
 
 export default function SubscriptionScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const { tier, isPaid } = useSubscription();
+  const { isPaid } = useSubscription();
 
   return (
     <SafeView safeAreaClassNames="bg-[#1B1B1E]">
       {/* Header */}
       <View
-        style={{ paddingTop: insets.top, paddingHorizontal: 20, paddingBottom: 16 }}
-        className="flex-row items-center gap-4">
+        className="flex-row items-center gap-4 px-4 pt-[var(--inset-top, 0)] pb-4"
+        style={{ paddingTop: insets.top }}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft size={24} color="#FFF" weight="bold" />
         </TouchableOpacity>
@@ -25,7 +25,11 @@ export default function SubscriptionScreen({ navigation }: any) {
         {/* Current Plan */}
         <View className="bg-[#27282A] rounded-lg p-4 mb-4">
           <View className="flex-row items-center gap-2 mb-2">
-            <Crown size={20} color={isPaid ? "#3B82F6" : "#9F9FA0"} weight="fill" />
+            <Crown
+              size={20}
+              color={isPaid ? "#3B82F6" : "#9F9FA0"}
+              weight="fill"
+            />
             <Text className="text-white font-medium">
               {isPaid ? "Pro Plan" : "Free Plan"}
             </Text>
@@ -66,7 +70,15 @@ export default function SubscriptionScreen({ navigation }: any) {
   );
 }
 
-function FeatureRow({ label, included, comingSoon }: { label: string; included: boolean; comingSoon?: boolean }) {
+function FeatureRow({
+  label,
+  included,
+  comingSoon,
+}: {
+  label: string;
+  included: boolean;
+  comingSoon?: boolean;
+}) {
   return (
     <View className="flex-row items-center gap-2">
       <Check size={16} color={included ? "#22C55E" : "#9F9FA0"} weight="bold" />

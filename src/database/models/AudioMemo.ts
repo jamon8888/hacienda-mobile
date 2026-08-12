@@ -111,12 +111,18 @@ export default class AudioMemo extends Model {
         const memo = memos[0];
         await memo.update((m: Model) => {
           const audioMemo = m as AudioMemo;
-          if (updates.audioUri !== undefined) audioMemo.audioUri = updates.audioUri;
-          if (updates.transcript !== undefined) audioMemo.transcript = updates.transcript;
-          if (updates.durationMs !== undefined) audioMemo.durationMs = updates.durationMs;
+          if (updates.audioUri !== undefined)
+            audioMemo.audioUri = updates.audioUri;
+          if (updates.transcript !== undefined)
+            audioMemo.transcript = updates.transcript;
+          if (updates.durationMs !== undefined)
+            audioMemo.durationMs = updates.durationMs;
           if (updates.waveformPeaks !== undefined)
-            audioMemo.waveformPeaks = JSON.stringify(updates.waveformPeaks) as unknown as number[];
-          if (updates.workspaceSlug !== undefined) audioMemo.workspaceSlug = updates.workspaceSlug;
+            audioMemo.waveformPeaks = JSON.stringify(
+              updates.waveformPeaks,
+            ) as unknown as number[];
+          if (updates.workspaceSlug !== undefined)
+            audioMemo.workspaceSlug = updates.workspaceSlug;
           audioMemo.updatedAt = Date.now();
         });
         return this.toAudioMemoObject(memo as AudioMemo);

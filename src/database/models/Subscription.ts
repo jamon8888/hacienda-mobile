@@ -36,7 +36,9 @@ export default class Subscription extends Model {
       .get(Subscription.table)
       .query(Q.where("user_id", userId))
       .fetch();
-    if (results.length === 0) return null;
+    if (results.length === 0) {
+      return null;
+    }
     return this.toSubscriptionObject(results[0] as Subscription);
   }
 
@@ -75,13 +77,20 @@ export default class Subscription extends Model {
       const record = (await database
         .get(Subscription.table)
         .find(id)) as Subscription;
-      updatedSubscription = (await record.update((subscription: Subscription) => {
-        if (updates.tier !== undefined) subscription.tier = updates.tier;
-        if (updates.status !== undefined) subscription.status = updates.status;
-        if (updates.trialEndsAt !== undefined)
-          subscription.trialEndsAt = updates.trialEndsAt;
-        subscription.updatedAt = Date.now();
-      })) as Subscription;
+      updatedSubscription = (await record.update(
+        (subscription: Subscription) => {
+          if (updates.tier !== undefined) {
+            subscription.tier = updates.tier;
+          }
+          if (updates.status !== undefined) {
+            subscription.status = updates.status;
+          }
+          if (updates.trialEndsAt !== undefined) {
+            subscription.trialEndsAt = updates.trialEndsAt;
+          }
+          subscription.updatedAt = Date.now();
+        },
+      )) as Subscription;
     });
 
     if (!updatedSubscription) {

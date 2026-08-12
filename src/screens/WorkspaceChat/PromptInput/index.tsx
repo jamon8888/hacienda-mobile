@@ -41,7 +41,10 @@ interface PromptInputProps {
   workspaceSlug: string;
 }
 
-export default function PromptInput({ attachmentHandler, workspaceSlug }: PromptInputProps) {
+export default function PromptInput({
+  attachmentHandler,
+  workspaceSlug,
+}: PromptInputProps) {
   const chatHandler = useChatHandlerContext();
   const { llmPreferences } = useLlmPreference();
   const insets = useSafeAreaInsets();

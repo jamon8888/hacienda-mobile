@@ -188,6 +188,13 @@ const App = observer(() => {
                           )}
                           options={{ headerShown: false }}
                         />
+                        <Drawer.Screen
+                          name={PATHS.audio_memo_player}
+                          component={gestureHandlerRootHOC(
+                            Screens.MemoPlayerScreen,
+                          )}
+                          options={{ headerShown: false }}
+                        />
                       </WorkspaceDrawer>
                     </NavigationContainer>
                   </BottomSheetModalProvider>

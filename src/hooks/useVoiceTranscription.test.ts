@@ -124,7 +124,9 @@ describe("useVoiceTranscription", () => {
       });
 
       expect(result.current.error).toBeInstanceOf(Error);
-      expect(result.current.error?.message).toBe("Microphone permission denied");
+      expect(result.current.error?.message).toBe(
+        "Microphone permission denied",
+      );
     });
   });
 
@@ -284,14 +286,17 @@ describe("useVoiceTranscription", () => {
       });
 
       expect(result.current.isRecording).toBe(true);
-      const firstStartCallCount = mockAudioStreamInstance.start.mock.calls.length;
+      const firstStartCallCount =
+        mockAudioStreamInstance.start.mock.calls.length;
 
       await act(async () => {
         await result.current.startRecording();
       });
 
       // Second call should be a no-op
-      expect(mockAudioStreamInstance.start).toHaveBeenCalledTimes(firstStartCallCount);
+      expect(mockAudioStreamInstance.start).toHaveBeenCalledTimes(
+        firstStartCallCount,
+      );
       expect(result.current.isRecording).toBe(true);
     });
   });

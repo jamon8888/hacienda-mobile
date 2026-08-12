@@ -11,6 +11,7 @@
 Design an on-device episodic memory system for Hacienda Mobile that enables voice and document chat with full context recall. The system runs 100% offline with HIPAA/legal compliance, using EmbeddingGemma-300M for embeddings, an optional cross-encoder reranker, and op-sqlite with sqlite-vec for hybrid vector + BM25 search.
 
 ### Key Constraints
+
 - **RAM budget:** ~5GB for Gemma 4 E2B + ~179MB EmbeddingGemma + ~87MB reranker + OS = ~6.3-7.3GB total
 - **Platform:** Bare React Native 0.76.3 (no Expo)
 - **Privacy:** 100% offline, no cloud fallback, client-level data isolation
@@ -56,14 +57,14 @@ Design an on-device episodic memory system for Hacienda Mobile that enables voic
 
 ### Design Decisions
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Stay bare React Native | Yes | No Expo dependency, follow existing patterns |
-| Vector database | op-sqlite + sqlite-vec | Hybrid search (vector + BM25) significantly more accurate than vector-only |
-| Embedding model | EmbeddingGemma-300M Q4_0 | Best mobile performance, 128-dim MRL, ~179MB |
-| Reranker | MiniLM-L-6-v2 (optional) | 86.9MB cross-encoder, falls back to math scoring on low-RAM devices |
-| Native module architecture | Unified cactus-sys | Single Rust crate owns all AI inference, UniFFI bindings |
-| Memory pipeline | TypeScript | Iteration speed, no native rebuilds for scoring/decay logic |
+| Decision                   | Choice                   | Rationale                                                                  |
+| -------------------------- | ------------------------ | -------------------------------------------------------------------------- |
+| Stay bare React Native     | Yes                      | No Expo dependency, follow existing patterns                               |
+| Vector database            | op-sqlite + sqlite-vec   | Hybrid search (vector + BM25) significantly more accurate than vector-only |
+| Embedding model            | EmbeddingGemma-300M Q4_0 | Best mobile performance, 128-dim MRL, ~179MB                               |
+| Reranker                   | MiniLM-L-6-v2 (optional) | 86.9MB cross-encoder, falls back to math scoring on low-RAM devices        |
+| Native module architecture | Unified cactus-sys       | Single Rust crate owns all AI inference, UniFFI bindings                   |
+| Memory pipeline            | TypeScript               | Iteration speed, no native rebuilds for scoring/decay logic                |
 
 ---
 
@@ -101,6 +102,7 @@ impl EmbeddingEngine {
 **MRL truncation** happens in Rust — `embed_truncated` calls `embed` then slices to `dims`. The 128-dim truncation is a zero-cost array slice.
 
 **Platform-specific execution:**
+
 - Android: LiteRT with Hexagon DSP or GPU delegate
 - iOS: `.tflite` converted to CoreML at build time, runs on ANE
 
@@ -126,11 +128,11 @@ pub struct ScoredDocument {
 
 ### 3.4 Model Files
 
-| Model | Format | Size | Location |
-|-------|--------|------|----------|
-| EmbeddingGemma-300M Q4_0 | `.tflite` | ~179MB | APK assets (Android), compiled CoreML (iOS) |
-| MiniLM-L-6-v2 reranker | `.tflite` | ~86.9MB | APK assets (Android), compiled CoreML (iOS) |
-| Gemma 4 E2B | GGUF | ~2.6GB | Downloaded at runtime |
+| Model                    | Format    | Size    | Location                                    |
+| ------------------------ | --------- | ------- | ------------------------------------------- |
+| EmbeddingGemma-300M Q4_0 | `.tflite` | ~179MB  | APK assets (Android), compiled CoreML (iOS) |
+| MiniLM-L-6-v2 reranker   | `.tflite` | ~86.9MB | APK assets (Android), compiled CoreML (iOS) |
+| Gemma 4 E2B              | GGUF      | ~2.6GB  | Downloaded at runtime                       |
 
 ---
 
@@ -286,10 +288,10 @@ When the cross-encoder reranker is unavailable:
 
 ```typescript
 const finalScore =
-  (vectorScore * 0.5) +                    // cosine similarity
-  (freshnessBonus * 0.25) +                // e^(-age_days * 0.1)
-  (structuralPriority * 0.15) +            // kind=='document' ? 0.15 : 0
-  (importanceBonus * 0.1);                 // memories.importance
+  vectorScore * 0.5 + // cosine similarity
+  freshnessBonus * 0.25 + // e^(-age_days * 0.1)
+  structuralPriority * 0.15 + // kind=='document' ? 0.15 : 0
+  importanceBonus * 0.1; // memories.importance
 ```
 
 ### 5.4 Lifecycle Management
@@ -320,7 +322,7 @@ async function processVoiceInput(transcript: string) {
   const context = await memorySearch({
     query: transcript,
     workspaceId: currentWorkspace.id,
-    topK: 5
+    topK: 5,
   });
 
   const prompt = buildPromptWithContext(transcript, context);
@@ -339,7 +341,7 @@ await memoryStore.bulkInsert({
   chunks,
   embeddings,
   sourceUri: filePath,
-  sourceType: extractionResult.fileType
+  sourceType: extractionResult.fileType,
 });
 ```
 
@@ -351,14 +353,14 @@ Memory store lives in op-sqlite, separate from WatermelonDB's workspace/thread m
 
 ## 7. Error Handling
 
-| Failure | Fallback |
-|---------|----------|
-| EmbeddingGemma init fails | Fall back to multilingual-e5-small (existing) |
-| Reranker unavailable (low RAM) | Use mathematical scoring only |
-| op-sqlite write fails | Queue retry, log warning |
-| Vector index corrupted | Rebuild from memories table |
-| Batch embed timeout | Process in smaller batches |
-| LiteRT delegate unavailable | Fall back to CPU execution |
+| Failure                        | Fallback                                      |
+| ------------------------------ | --------------------------------------------- |
+| EmbeddingGemma init fails      | Fall back to multilingual-e5-small (existing) |
+| Reranker unavailable (low RAM) | Use mathematical scoring only                 |
+| op-sqlite write fails          | Queue retry, log warning                      |
+| Vector index corrupted         | Rebuild from memories table                   |
+| Batch embed timeout            | Process in smaller batches                    |
+| LiteRT delegate unavailable    | Fall back to CPU execution                    |
 
 ---
 
@@ -374,12 +376,12 @@ Memory store lives in op-sqlite, separate from WatermelonDB's workspace/thread m
 
 ## 9. Open Questions
 
-| Question | Options | Status |
-|----------|---------|--------|
-| Tokenizer for EmbeddingGemma | SentencePiece (bundled) vs external | TBD |
-| Cross-encoder model version | MiniLM-L-6-v2 vs L-12-v2 | L-6-v2 chosen (smaller) |
-| Workspace isolation | DB-level WHERE vs app-level filter | DB-level chosen |
-| Max memories per workspace | 10K vs 50K vs unlimited | TBD — needs profiling |
+| Question                     | Options                             | Status                  |
+| ---------------------------- | ----------------------------------- | ----------------------- |
+| Tokenizer for EmbeddingGemma | SentencePiece (bundled) vs external | TBD                     |
+| Cross-encoder model version  | MiniLM-L-6-v2 vs L-12-v2            | L-6-v2 chosen (smaller) |
+| Workspace isolation          | DB-level WHERE vs app-level filter  | DB-level chosen         |
+| Max memories per workspace   | 10K vs 50K vs unlimited             | TBD — needs profiling   |
 
 ---
 
@@ -392,4 +394,4 @@ Memory store lives in op-sqlite, separate from WatermelonDB's workspace/thread m
 
 ---
 
-*Spec written and ready for implementation planning.*
+_Spec written and ready for implementation planning._

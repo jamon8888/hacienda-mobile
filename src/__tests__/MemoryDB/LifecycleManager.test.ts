@@ -1,5 +1,5 @@
-describe('LifecycleManager', () => {
-  it('should apply exponential decay to importance', () => {
+describe("LifecycleManager", () => {
+  it("should apply exponential decay to importance", () => {
     const importance = 0.5;
     const daysSinceAccess = 30;
     const decayRate = 0.05;
@@ -8,7 +8,7 @@ describe('LifecycleManager', () => {
     expect(expected).toBeGreaterThan(0);
   });
 
-  it('should not decay recent memories significantly', () => {
+  it("should not decay recent memories significantly", () => {
     const importance = 0.5;
     const daysSinceAccess = 1;
     const decayRate = 0.05;
@@ -18,7 +18,7 @@ describe('LifecycleManager', () => {
     expect(expected).toBeLessThan(importance);
   });
 
-  it('should prune memories below threshold', () => {
+  it("should prune memories below threshold", () => {
     const threshold = 0.05;
     const importance = 0.03;
     expect(importance).toBeLessThan(threshold);

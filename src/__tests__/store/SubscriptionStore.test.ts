@@ -1,7 +1,5 @@
 import Subscription from "@/database/models/Subscription";
-import subscriptionStore, {
-  SubscriptionStore,
-} from "@/store/SubscriptionStore";
+import subscriptionStore from "@/store/SubscriptionStore";
 
 jest.mock("@/database/models/Subscription", () => ({
   __esModule: true,
@@ -174,9 +172,7 @@ describe("SubscriptionStore", () => {
     });
 
     it("should handle database errors gracefully", async () => {
-      const consoleSpy = jest
-        .spyOn(console, "error")
-        .mockImplementation();
+      const consoleSpy = jest.spyOn(console, "error").mockImplementation();
       (Subscription.findForUser as jest.Mock).mockRejectedValue(
         new Error("DB error"),
       );

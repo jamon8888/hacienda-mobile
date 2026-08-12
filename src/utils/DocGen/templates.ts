@@ -27,14 +27,14 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
       return generateDocx({
         title: `Invoice-${Date.now()}`,
         content: [
-          `Invoice`,
-          ``,
+          "Invoice",
+          "",
           `From: ${data.company}`,
           `To: ${data.client}`,
-          ``,
-          `Items:`,
+          "",
+          "Items:",
           data.items,
-          ``,
+          "",
           `Total: $${data.total}`,
           `Due Date: ${data.dueDate}`,
         ],
@@ -54,7 +54,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
       const { generateDocx } = await import("./DocGenerator");
       return generateDocx({
         title: data.title,
-        content: [data.content, ``, `Conclusion:`, data.conclusion],
+        content: [data.content, "", "Conclusion:", data.conclusion],
       });
     },
   },

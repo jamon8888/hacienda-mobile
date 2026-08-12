@@ -13,6 +13,7 @@ import ConnectToInstance from "./ConnectToInstance";
 
 import DevToolsMenu from "./Dev";
 import SubscriptionScreen from "./Subscription/SubscriptionScreen";
+import MemoPlayerScreen from "./AudioMemos/MemoPlayerScreen";
 
 export default {
   OnboardingWelcome,
@@ -32,4 +33,5 @@ export default {
   ConnectToInstance,
 
   SubscriptionScreen,
+  MemoPlayerScreen,
 };

@@ -44,12 +44,14 @@ interface UseVoiceTranscriptionReturn {
 ```
 
 **Why not reuse `VoicePipelineProvider`?**
+
 - VoicePipelineProvider loads **both ASR (Parakeet) + LLM (Gemma)** — ~1.5GB RAM, 2-3s init
 - Push-to-talk needs **instant response** (<500ms)
 - Transcription-only hook loads **only CactusSTT** — ~200MB RAM, ~500ms init
 - Shares model download with VoiceChat (same Parakeet model) via existing `CACTUS_VOICE_MODELS` catalog
 
 **Key Implementation Details:**
+
 - Use `CactusSTT` directly (same as VoicePipelineProvider's ASR path)
 - VAD configuration from user's Voice Settings (`vadThreshold`)
 - Transcription callback feeds `chatHandler.setPrompt(text)` — inserts at cursor
@@ -58,16 +60,17 @@ interface UseVoiceTranscriptionReturn {
 
 ### Integration Points
 
-| File | Change |
-|------|--------|
-| `src/screens/WorkspaceChat/PromptInput/Actions/AttachmentsButton/index.tsx` | Add mic button alongside attachment button |
-| `src/screens/WorkspaceChat/PromptInput/index.tsx` | Wire up `useVoiceTranscription` hook, handle transcript insertion |
-| `src/hooks/useVoiceTranscription.ts` | **New** — ASR-only hook with push-to-talk semantics |
-| `src/utils/AiProviders/onDevice/voice/VoiceAudioStream.ts` | Reuse for volume metering (no changes needed) |
+| File                                                                        | Change                                                            |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `src/screens/WorkspaceChat/PromptInput/Actions/AttachmentsButton/index.tsx` | Add mic button alongside attachment button                        |
+| `src/screens/WorkspaceChat/PromptInput/index.tsx`                           | Wire up `useVoiceTranscription` hook, handle transcript insertion |
+| `src/hooks/useVoiceTranscription.ts`                                        | **New** — ASR-only hook with push-to-talk semantics               |
+| `src/utils/AiProviders/onDevice/voice/VoiceAudioStream.ts`                  | Reuse for volume metering (no changes needed)                     |
 
 ### Settings
 
 Add to `VoiceSettingsView`:
+
 - **Push-to-talk in chat** (toggle, default: on)
 - Uses existing `vadThreshold` for silence detection
 
@@ -78,10 +81,12 @@ Add to `VoiceSettingsView`:
 ### User Flow
 
 **Entry Points:**
+
 - Workspace Drawer: "Audio Memos" item (below workspaces list)
 - Global: User Settings → "Audio Memos" (quick access)
 
 **Memos Screen (`AudioMemosScreen`):**
+
 - Segmented control: **Workspace** / **Global**
 - List of memos, each row shows:
   - Play/pause button
@@ -97,6 +102,7 @@ Add to `VoiceSettingsView`:
   - Delete button
 
 **Recording Flow:**
+
 - FAB or "New Memo" button → starts recording immediately
 - Live waveform during recording (same visual as VoiceChat)
 - Stop → auto-saves with transcript (first phrase = title)
@@ -105,12 +111,14 @@ Add to `VoiceSettingsView`:
 ### Technical Approach: `react-native-waveform-recorder` + New DB Table
 
 **Dependency:** `react-native-waveform-recorder` (GitHub: `maitrungduc1410/react-native-waveform-recorder`)
+
 - Native Fabric component with imperative `start()`/`stop()`/`pause()`/`resume()`
 - Live waveform rendering during recording (zero JS on hot path)
 - Returns onComplete: `{ uri, durationMs, samples: number[64] }` — peaks ready for list thumbnails
 - Pair with `react-native-waveform-player` (same author) for playback
 
 **Why not reuse VoicePipelineProvider?**
+
 - Memo recording needs **live waveform visual** — `react-native-waveform-recorder` does this natively
 - VoicePipelineProvider has no waveform UI during record (only volume bars)
 - Pre-computed 64 peaks = instant list rendering, no decode-on-scroll
@@ -154,18 +162,18 @@ export type AudioMemoType = {
 
 ### Integration Points
 
-| File | Change |
-|------|--------|
-| `src/database/schema.ts` | Add `audio_memos` table |
-| `src/database/migrations.ts` | Add migration v3 |
-| `src/database/models/AudioMemo.ts` | **New** model |
-| `src/screens/index.ts` | Export `AudioMemosScreen`, `MemoPlayerScreen` |
-| `src/utils/paths.ts` | Add `audio_memos`, `audio_memo_player` routes |
-| `src/components/WorkspaceDrawer/SidebarContent/index.tsx` | Add "Audio Memos" nav item |
-| `src/screens/UserSettings/Main/index.tsx` | Add "Audio Memos" quick access |
-| `src/screens/AudioMemos/AudioMemosScreen.tsx` | **New** — list with segmented control |
-| `src/screens/AudioMemos/MemoPlayerScreen.tsx` | **New** — full-screen player |
-| `src/hooks/useAudioMemos.ts` | **New** — CRUD + playback hook |
+| File                                                      | Change                                        |
+| --------------------------------------------------------- | --------------------------------------------- |
+| `src/database/schema.ts`                                  | Add `audio_memos` table                       |
+| `src/database/migrations.ts`                              | Add migration v3                              |
+| `src/database/models/AudioMemo.ts`                        | **New** model                                 |
+| `src/screens/index.ts`                                    | Export `AudioMemosScreen`, `MemoPlayerScreen` |
+| `src/utils/paths.ts`                                      | Add `audio_memos`, `audio_memo_player` routes |
+| `src/components/WorkspaceDrawer/SidebarContent/index.tsx` | Add "Audio Memos" nav item                    |
+| `src/screens/UserSettings/Main/index.tsx`                 | Add "Audio Memos" quick access                |
+| `src/screens/AudioMemos/AudioMemosScreen.tsx`             | **New** — list with segmented control         |
+| `src/screens/AudioMemos/MemoPlayerScreen.tsx`             | **New** — full-screen player                  |
+| `src/hooks/useAudioMemos.ts`                              | **New** — CRUD + playback hook                |
 
 ### UI Components (New)
 
@@ -185,6 +193,7 @@ src/screens/AudioMemos/
 ### Model Download Sharing
 
 Both features use **Parakeet (ASR)** from `CACTUS_VOICE_MODELS`. The model downloads once and is reused:
+
 - VoiceChat loads it via `VoicePipelineProvider`
 - Push-to-talk loads it via `useVoiceTranscription`
 - Memo recorder loads it via `react-native-waveform-recorder` (which uses platform speech recognition, not Cactus)
@@ -198,13 +207,13 @@ Both features use **Parakeet (ASR)** from `CACTUS_VOICE_MODELS`. The model downl
 
 ### Error Handling
 
-| Scenario | Handling |
-|----------|----------|
-| Mic permission denied | Toast + open settings deep link |
+| Scenario                 | Handling                                                 |
+| ------------------------ | -------------------------------------------------------- |
+| Mic permission denied    | Toast + open settings deep link                          |
 | ASR model not downloaded | Auto-download with progress (reuse existing download UI) |
-| Transcription empty | Don't insert, show "No speech detected" toast |
-| Audio file corrupted | Delete memo, show error |
-| Disk full | Toast, disable recording |
+| Transcription empty      | Don't insert, show "No speech detected" toast            |
+| Audio file corrupted     | Delete memo, show error                                  |
+| Disk full                | Toast, disable recording                                 |
 
 ---
 
@@ -220,6 +229,7 @@ Both features use **Parakeet (ASR)** from `CACTUS_VOICE_MODELS`. The model downl
 ## Testing Checklist
 
 ### Push-to-Talk
+
 - [ ] Hold mic → waveform animates
 - [ ] Speak → live transcript appears
 - [ ] Release → text inserts at cursor
@@ -229,6 +239,7 @@ Both features use **Parakeet (ASR)** from `CACTUS_VOICE_MODELS`. The model downl
 - [ ] Model downloads on first use if needed
 
 ### Audio Memos
+
 - [ ] Record → live waveform
 - [ ] Pause/resume segments
 - [ ] Stop → saves with transcript
@@ -252,13 +263,13 @@ Both features use **Parakeet (ASR)** from `CACTUS_VOICE_MODELS`. The model downl
 
 ## Open Questions (Resolved)
 
-| Question | Decision |
-|----------|----------|
-| Voice input UX | Push-to-talk (hold → record, release → transcribe) |
-| Transcription destination | Insert into prompt text field |
-| Memo organization | Workspace-specific + Global (nullable workspace_slug) |
-| Waveform library | `react-native-waveform-recorder` + `react-native-waveform-player` |
-| ASR for memos | Platform-native (SpeechFramework/SpeechRecognizer) via waveform-recorder |
+| Question                  | Decision                                                                 |
+| ------------------------- | ------------------------------------------------------------------------ |
+| Voice input UX            | Push-to-talk (hold → record, release → transcribe)                       |
+| Transcription destination | Insert into prompt text field                                            |
+| Memo organization         | Workspace-specific + Global (nullable workspace_slug)                    |
+| Waveform library          | `react-native-waveform-recorder` + `react-native-waveform-player`        |
+| ASR for memos             | Platform-native (SpeechFramework/SpeechRecognizer) via waveform-recorder |
 
 ---
 

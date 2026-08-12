@@ -22,38 +22,42 @@
 ## File Structure
 
 ### New Files (7)
-| File | Responsibility |
-|------|----------------|
-| `src/hooks/useVoiceTranscription.ts` | ASR-only hook with push-to-talk semantics, CactusSTT lifecycle |
-| `src/database/models/AudioMemo.ts` | WatermelonDB model for audio_memos table |
-| `src/hooks/useAudioMemos.ts` | CRUD operations + playback state for memos |
-| `src/screens/AudioMemos/AudioMemosScreen.tsx` | Main list with Workspace/Global segmented control |
-| `src/screens/AudioMemos/MemoPlayerScreen.tsx` | Full-screen player with waveform scrubber |
-| `src/screens/AudioMemos/MemoRow.tsx` | List item: play | waveform | title | duration | date |
-| `src/screens/AudioMemos/index.ts` | Screen exports |
+
+| File                                          | Responsibility                                                 |
+| --------------------------------------------- | -------------------------------------------------------------- | -------- | ----- | -------- | ---- |
+| `src/hooks/useVoiceTranscription.ts`          | ASR-only hook with push-to-talk semantics, CactusSTT lifecycle |
+| `src/database/models/AudioMemo.ts`            | WatermelonDB model for audio_memos table                       |
+| `src/hooks/useAudioMemos.ts`                  | CRUD operations + playback state for memos                     |
+| `src/screens/AudioMemos/AudioMemosScreen.tsx` | Main list with Workspace/Global segmented control              |
+| `src/screens/AudioMemos/MemoPlayerScreen.tsx` | Full-screen player with waveform scrubber                      |
+| `src/screens/AudioMemos/MemoRow.tsx`          | List item: play                                                | waveform | title | duration | date |
+| `src/screens/AudioMemos/index.ts`             | Screen exports                                                 |
 
 ### Modified Files (8)
-| File | Change |
-|------|--------|
-| `src/database/schema.ts` | Add audio_memos table definition |
-| `src/database/migrations.ts` | Add migration v3 for audio_memos |
-| `src/screens/WorkspaceChat/PromptInput/Actions/AttachmentsButton/index.tsx` | Add mic button |
-| `src/screens/WorkspaceChat/PromptInput/index.tsx` | Wire useVoiceTranscription, handle transcript insertion |
-| `src/components/WorkspaceDrawer/SidebarContent/index.tsx` | Add "Audio Memos" nav item |
-| `src/screens/UserSettings/Main/index.tsx` | Add "Audio Memos" quick access |
-| `src/utils/paths.ts` | Add audio_memos, audio_memo_player routes |
-| `src/screens/index.ts` | Export AudioMemosScreen, MemoPlayerScreen |
+
+| File                                                                        | Change                                                  |
+| --------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `src/database/schema.ts`                                                    | Add audio_memos table definition                        |
+| `src/database/migrations.ts`                                                | Add migration v3 for audio_memos                        |
+| `src/screens/WorkspaceChat/PromptInput/Actions/AttachmentsButton/index.tsx` | Add mic button                                          |
+| `src/screens/WorkspaceChat/PromptInput/index.tsx`                           | Wire useVoiceTranscription, handle transcript insertion |
+| `src/components/WorkspaceDrawer/SidebarContent/index.tsx`                   | Add "Audio Memos" nav item                              |
+| `src/screens/UserSettings/Main/index.tsx`                                   | Add "Audio Memos" quick access                          |
+| `src/utils/paths.ts`                                                        | Add audio_memos, audio_memo_player routes               |
+| `src/screens/index.ts`                                                      | Export AudioMemosScreen, MemoPlayerScreen               |
 
 ---
 
 ## Task 1: Database Schema & Migration
 
 **Files:**
+
 - Create: `src/database/models/AudioMemo.ts`
 - Modify: `src/database/schema.ts:1-57`
 - Modify: `src/database/migrations.ts`
 
 **Interfaces:**
+
 - Consumes: database instance from `src/database/index.ts`
 - Produces: AudioMemoType, AudioMemo.create(), AudioMemo.find(), AudioMemo.delete()
 
@@ -128,52 +132,77 @@ export default class AudioMemo extends Model {
   @text("audio_uri") audioUri!: string;
   @text("transcript") transcript!: string | null;
   @field("duration_ms") durationMs!: number;
-  @json("waveform_peaks", (peaks) => peaks) waveformPeaks!: number[];
+  @json("waveform_peaks", peaks => peaks) waveformPeaks!: number[];
   @field("created_at") createdAt!: number;
   @field("updated_at") updatedAt!: number;
 
   static toAudioMemoObject(data: any): AudioMemoType {
-    const { uuid, workspaceSlug, audioUri, transcript, durationMs, waveformPeaks, createdAt, updatedAt } = data;
-    return { uuid, workspaceSlug, audioUri, transcript, durationMs, waveformPeaks, createdAt, updatedAt };
+    const {
+      uuid,
+      workspaceSlug,
+      audioUri,
+      transcript,
+      durationMs,
+      waveformPeaks,
+      createdAt,
+      updatedAt,
+    } = data;
+    return {
+      uuid,
+      workspaceSlug,
+      audioUri,
+      transcript,
+      durationMs,
+      waveformPeaks,
+      createdAt,
+      updatedAt,
+    };
   }
 
   static async find(
     where: { field: string; value: string | null }[] = [],
-    orderBy: { field: string; direction: "asc" | "desc" }[] = []
+    orderBy: { field: string; direction: "asc" | "desc" }[] = [],
   ): Promise<AudioMemoType[]> {
     const memos = await database
       .get(AudioMemo.table)
       .query(
         ...where.map(({ field, value }) => Q.where(field, value)),
-        ...orderBy.map(({ field, direction }) => Q.sortBy(field, direction))
+        ...orderBy.map(({ field, direction }) => Q.sortBy(field, direction)),
       )
       .fetch();
-    return memos.map((memo) => this.toAudioMemoObject(memo));
+    return memos.map(memo => this.toAudioMemoObject(memo));
   }
 
   static async create(data: Partial<AudioMemoType>): Promise<AudioMemoType> {
-    const { uuid, workspaceSlug, audioUri, transcript, durationMs, waveformPeaks } = data;
+    const {
+      uuid,
+      workspaceSlug,
+      audioUri,
+      transcript,
+      durationMs,
+      waveformPeaks,
+    } = data;
 
     let newMemo: any;
     await database.write(async () => {
-      newMemo = await database
-        .get(AudioMemo.table)
-        .create((memo: any) => {
-          memo.uuid = uuid ?? generateUUID();
-          memo.workspaceSlug = workspaceSlug ?? null;
-          memo.audioUri = audioUri;
-          memo.transcript = transcript ?? null;
-          memo.durationMs = durationMs ?? 0;
-          memo.waveformPeaks = JSON.stringify(waveformPeaks ?? []);
-          memo.createdAt = Date.now();
-          memo.updatedAt = Date.now();
-        });
+      newMemo = await database.get(AudioMemo.table).create((memo: any) => {
+        memo.uuid = uuid ?? generateUUID();
+        memo.workspaceSlug = workspaceSlug ?? null;
+        memo.audioUri = audioUri;
+        memo.transcript = transcript ?? null;
+        memo.durationMs = durationMs ?? 0;
+        memo.waveformPeaks = JSON.stringify(waveformPeaks ?? []);
+        memo.createdAt = Date.now();
+        memo.updatedAt = Date.now();
+      });
     });
 
     return this.toAudioMemoObject(newMemo);
   }
 
-  static async delete(where: { field: string; value: string }[]): Promise<boolean> {
+  static async delete(
+    where: { field: string; value: string }[],
+  ): Promise<boolean> {
     try {
       return await database.write(async () => {
         const memos = (await database
@@ -182,7 +211,7 @@ export default class AudioMemo extends Model {
           .fetch()) as (Model & AudioMemoType)[];
         if (memos.length === 0) return false;
 
-        await database.batch(memos.map((memo) => memo.prepareMarkAsDeleted()));
+        await database.batch(memos.map(memo => memo.prepareMarkAsDeleted()));
         return true;
       });
     } catch (error) {
@@ -212,9 +241,11 @@ git commit -m "feat(db): add audio_memos table with migration v3"
 ## Task 2: Paths & Navigation Constants
 
 **Files:**
+
 - Modify: `src/utils/paths.ts`
 
 **Interfaces:**
+
 - Consumes: existing PATHS object structure
 - Produces: audio_memos, audio_memo_player route paths
 
@@ -241,9 +272,11 @@ git commit -m "feat(paths): add audio memo route constants"
 ## Task 3: useVoiceTranscription Hook
 
 **Files:**
+
 - Create: `src/hooks/useVoiceTranscription.ts`
 
 **Interfaces:**
+
 - Consumes: CactusSTT from cactus-react-native, VoiceAudioStream, CACTUS_VOICE_MODELS, DEFAULT_CACTUS_ASR_MODEL
 - Produces: UseVoiceTranscriptionReturn interface
 
@@ -300,7 +333,7 @@ export function useVoiceTranscription(): UseVoiceTranscriptionReturn {
         });
 
         await asrModelRef.current.download({
-          onProgress: (p) => console.log("ASR download:", p),
+          onProgress: p => console.log("ASR download:", p),
         });
         await asrModelRef.current.init();
       } catch (err) {
@@ -332,12 +365,14 @@ export function useVoiceTranscription(): UseVoiceTranscriptionReturn {
 
       const audioStream = new VoiceAudioStream({ vadThreshold: 0.5 });
 
-      audioStream.on("onSpeechSegment", async (segment) => {
+      audioStream.on("onSpeechSegment", async segment => {
         if (!segment.isFinal || !asrModelRef.current) return;
 
         try {
           const samples = pcmBase64ToInt16Samples(segment.audioBase64);
-          const result = await asrModelRef.current.transcribe({ audio: samples });
+          const result = await asrModelRef.current.transcribe({
+            audio: samples,
+          });
           if (result.response) {
             setCurrentTranscript(result.response);
             setIsFinal(true);
@@ -347,8 +382,8 @@ export function useVoiceTranscription(): UseVoiceTranscriptionReturn {
         }
       });
 
-      audioStream.on("onVolumeChange", (v) => setVolume(v));
-      audioStream.on("onError", (err) => setError(err));
+      audioStream.on("onVolumeChange", v => setVolume(v));
+      audioStream.on("onError", err => setError(err));
 
       await audioStream.start();
       audioStreamRef.current = audioStream;
@@ -398,9 +433,11 @@ git commit -m "feat(hooks): add useVoiceTranscription for push-to-talk"
 ## Task 4: Mic Button in PromptInput Actions
 
 **Files:**
+
 - Modify: `src/screens/WorkspaceChat/PromptInput/Actions/AttachmentsButton/index.tsx`
 
 **Interfaces:**
+
 - Consumes: useVoiceTranscription hook
 - Produces: MicButton component with press/release handlers
 
@@ -482,10 +519,12 @@ git commit -m "feat(ui): add MicButton component for push-to-talk"
 ## Task 5: Wire Voice Input into PromptInput
 
 **Files:**
+
 - Modify: `src/screens/WorkspaceChat/PromptInput/Actions/index.tsx`
 - Modify: `src/screens/WorkspaceChat/PromptInput/index.tsx`
 
 **Interfaces:**
+
 - Consumes: MicButton component, chatHandler.setPrompt
 - Produces: Voice input integrated into prompt flow
 
@@ -556,7 +595,7 @@ const handleTranscriptReady = useCallback(
     const newPrompt = currentPrompt ? `${currentPrompt} ${text}` : text;
     chatHandler.setPrompt(newPrompt);
   },
-  [chatHandler]
+  [chatHandler],
 );
 
 // Update ActionMenu call to pass handler
@@ -566,7 +605,7 @@ const handleTranscriptReady = useCallback(
   attachmentHandler={attachmentHandler}
   chatHandler={chatHandler}
   onTranscriptReady={handleTranscriptReady}
-/>
+/>;
 ```
 
 - [ ] **Step 3: Commit**
@@ -581,9 +620,11 @@ git commit -m "feat(ui): wire voice transcription into prompt input"
 ## Task 6: useAudioMemos Hook
 
 **Files:**
+
 - Create: `src/hooks/useAudioMemos.ts`
 
 **Interfaces:**
+
 - Consumes: AudioMemo model, react-native-audio-player (or expo-av)
 - Produces: CRUD operations + playback state
 
@@ -627,9 +668,10 @@ export function useAudioMemos(): UseAudioMemosReturn {
   const fetchMemos = useCallback(async (workspaceSlug?: string | null) => {
     setLoading(true);
     try {
-      const where = workspaceSlug !== undefined
-        ? [{ field: "workspace_slug", value: workspaceSlug }]
-        : [];
+      const where =
+        workspaceSlug !== undefined
+          ? [{ field: "workspace_slug", value: workspaceSlug }]
+          : [];
       const fetched = await AudioMemo.find(where, [
         { field: "created_at", direction: "desc" },
       ]);
@@ -641,38 +683,44 @@ export function useAudioMemos(): UseAudioMemosReturn {
     }
   }, []);
 
-  const createMemo = useCallback(async (data: {
-    audioUri: string;
-    transcript?: string;
-    durationMs: number;
-    waveformPeaks: number[];
-    workspaceSlug?: string | null;
-  }) => {
-    const memo = await AudioMemo.create({
-      audioUri: data.audioUri,
-      transcript: data.transcript ?? null,
-      durationMs: data.durationMs,
-      waveformPeaks: data.waveformPeaks,
-      workspaceSlug: data.workspaceSlug ?? null,
-    });
-    setMemos((prev) => [memo, ...prev]);
-    return memo;
-  }, []);
+  const createMemo = useCallback(
+    async (data: {
+      audioUri: string;
+      transcript?: string;
+      durationMs: number;
+      waveformPeaks: number[];
+      workspaceSlug?: string | null;
+    }) => {
+      const memo = await AudioMemo.create({
+        audioUri: data.audioUri,
+        transcript: data.transcript ?? null,
+        durationMs: data.durationMs,
+        waveformPeaks: data.waveformPeaks,
+        workspaceSlug: data.workspaceSlug ?? null,
+      });
+      setMemos(prev => [memo, ...prev]);
+      return memo;
+    },
+    [],
+  );
 
   const deleteMemo = useCallback(async (uuid: string) => {
     const success = await AudioMemo.delete([{ field: "uuid", value: uuid }]);
     if (success) {
-      setMemos((prev) => prev.filter((m) => m.uuid !== uuid));
+      setMemos(prev => prev.filter(m => m.uuid !== uuid));
     }
     return success;
   }, []);
 
-  const updateMemo = useCallback(async (uuid: string, updates: Partial<AudioMemoType>) => {
-    // Implementation for updating memo (transcript rename, etc.)
-    setMemos((prev) =>
-      prev.map((m) => (m.uuid === uuid ? { ...m, ...updates } : m))
-    );
-  }, []);
+  const updateMemo = useCallback(
+    async (uuid: string, updates: Partial<AudioMemoType>) => {
+      // Implementation for updating memo (transcript rename, etc.)
+      setMemos(prev =>
+        prev.map(m => (m.uuid === uuid ? { ...m, ...updates } : m)),
+      );
+    },
+    [],
+  );
 
   // Playback functions would use expo-av or react-native-audio-player
   const playMemo = useCallback(async (uuid: string, audioUri: string) => {
@@ -729,11 +777,13 @@ git commit -m "feat(hooks): add useAudioMemos for CRUD and playback"
 ## Task 7: AudioMemosScreen (List View)
 
 **Files:**
+
 - Create: `src/screens/AudioMemos/AudioMemosScreen.tsx`
 - Create: `src/screens/AudioMemos/MemoRow.tsx`
 - Create: `src/screens/AudioMemos/index.ts`
 
 **Interfaces:**
+
 - Consumes: useAudioMemos hook, navigation
 - Produces: AudioMemosScreen with segmented control
 
@@ -783,7 +833,8 @@ export default function MemoRow({
   onPress,
 }: MemoRowProps) {
   const title = memo.transcript
-    ? memo.transcript.substring(0, 30) + (memo.transcript.length > 30 ? "..." : "")
+    ? memo.transcript.substring(0, 30) +
+      (memo.transcript.length > 30 ? "..." : "")
     : "Untitled Memo";
 
   return (
@@ -831,7 +882,13 @@ export default function MemoRow({
 ```typescript
 // src/screens/AudioMemos/AudioMemosScreen.tsx
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 import SafeView from "@/components/SafeView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowLeft, Plus } from "phosphor-react-native";
@@ -844,20 +901,34 @@ type TabType = "workspace" | "global";
 
 export default function AudioMemosScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const { memos, loading, playingId, fetchMemos, deleteMemo, playMemo, pauseMemo } = useAudioMemos();
+  const {
+    memos,
+    loading,
+    playingId,
+    fetchMemos,
+    deleteMemo,
+    playMemo,
+    pauseMemo,
+  } = useAudioMemos();
   const [activeTab, setActiveTab] = useState<TabType>("workspace");
 
   useEffect(() => {
     fetchMemos(activeTab === "workspace" ? "current" : null);
   }, [activeTab, fetchMemos]);
 
-  const handleDelete = useCallback(async (uuid: string) => {
-    await deleteMemo(uuid);
-  }, [deleteMemo]);
+  const handleDelete = useCallback(
+    async (uuid: string) => {
+      await deleteMemo(uuid);
+    },
+    [deleteMemo],
+  );
 
-  const handlePlay = useCallback((uuid: string, audioUri: string) => {
-    playMemo(uuid, audioUri);
-  }, [playMemo]);
+  const handlePlay = useCallback(
+    (uuid: string, audioUri: string) => {
+      playMemo(uuid, audioUri);
+    },
+    [playMemo],
+  );
 
   const tabs: { key: TabType; label: string }[] = [
     { key: "workspace", label: "Workspace" },
@@ -870,21 +941,27 @@ export default function AudioMemosScreen({ navigation }: any) {
       containerStyle={{ flex: 1, backgroundColor: "#1B1B1E" }}>
       {/* Header */}
       <View
-        style={{ paddingTop: insets.top, paddingHorizontal: 20, paddingBottom: 16 }}
+        style={{
+          paddingTop: insets.top,
+          paddingHorizontal: 20,
+          paddingBottom: 16,
+        }}
         className="flex-row items-center justify-between">
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft size={24} color="#FFF" weight="bold" />
         </TouchableOpacity>
         <Text className="text-white text-lg font-medium">Audio Memos</Text>
         <TouchableOpacity
-          onPress={() => navigation.navigate(PATHS.audio_memo_player, { mode: "record" })}>
+          onPress={() =>
+            navigation.navigate(PATHS.audio_memo_player, { mode: "record" })
+          }>
           <Plus size={24} color="#FFF" weight="bold" />
         </TouchableOpacity>
       </View>
 
       {/* Segmented Control */}
       <View className="flex-row mx-4 mb-4 bg-[#27282A] rounded-lg p-1">
-        {tabs.map((tab) => (
+        {tabs.map(tab => (
           <TouchableOpacity
             key={tab.key}
             onPress={() => setActiveTab(tab.key)}
@@ -915,7 +992,7 @@ export default function AudioMemosScreen({ navigation }: any) {
       ) : (
         <FlatList
           data={memos}
-          keyExtractor={(item) => item.uuid}
+          keyExtractor={item => item.uuid}
           renderItem={({ item }) => (
             <MemoRow
               memo={item}
@@ -958,9 +1035,11 @@ git commit -m "feat(ui): add AudioMemosScreen with list view"
 ## Task 8: MemoPlayerScreen
 
 **Files:**
+
 - Create: `src/screens/AudioMemos/MemoPlayerScreen.tsx`
 
 **Interfaces:**
+
 - Consumes: useAudioMemos hook, route params (memoId, mode)
 - Produces: Full-screen player with waveform scrubber
 
@@ -981,8 +1060,17 @@ type SpeedOption = 0.5 | 1 | 1.5 | 2;
 export default function MemoPlayerScreen({ route, navigation }: any) {
   const insets = useSafeAreaInsets();
   const { memoId, mode } = route.params;
-  const { memos, playingId, playbackPosition, playMemo, pauseMemo, stopMemo, seekTo, updateMemo, deleteMemo } =
-    useAudioMemos();
+  const {
+    memos,
+    playingId,
+    playbackPosition,
+    playMemo,
+    pauseMemo,
+    stopMemo,
+    seekTo,
+    updateMemo,
+    deleteMemo,
+  } = useAudioMemos();
 
   const [memo, setMemo] = useState<AudioMemoType | null>(null);
   const [speed, setSpeed] = useState<SpeedOption>(1);
@@ -990,7 +1078,7 @@ export default function MemoPlayerScreen({ route, navigation }: any) {
   const [editedTranscript, setEditedTranscript] = useState("");
 
   useEffect(() => {
-    const found = memos.find((m) => m.uuid === memoId);
+    const found = memos.find(m => m.uuid === memoId);
     if (found) {
       setMemo(found);
       setEditedTranscript(found.transcript ?? "");
@@ -1036,7 +1124,11 @@ export default function MemoPlayerScreen({ route, navigation }: any) {
       containerStyle={{ flex: 1, backgroundColor: "#1B1B1E" }}>
       {/* Header */}
       <View
-        style={{ paddingTop: insets.top, paddingHorizontal: 20, paddingBottom: 16 }}
+        style={{
+          paddingTop: insets.top,
+          paddingHorizontal: 20,
+          paddingBottom: 16,
+        }}
         className="flex-row items-center justify-between">
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft size={24} color="#FFF" weight="bold" />
@@ -1087,14 +1179,17 @@ export default function MemoPlayerScreen({ route, navigation }: any) {
 
         {/* Speed Control */}
         <View className="flex-row gap-2 mb-6">
-          {speeds.map((s) => (
+          {speeds.map(s => (
             <TouchableOpacity
               key={s}
               onPress={() => setSpeed(s)}
               className={`px-4 py-2 rounded-lg ${
                 speed === s ? "bg-[#3B82F6]" : "bg-[#27282A]"
               }`}>
-              <Text className={`text-sm ${speed === s ? "text-white" : "text-white/60"}`}>
+              <Text
+                className={`text-sm ${
+                  speed === s ? "text-white" : "text-white/60"
+                }`}>
                 {s}x
               </Text>
             </TouchableOpacity>
@@ -1150,10 +1245,12 @@ git commit -m "feat(ui): add MemoPlayerScreen with waveform and playback"
 ## Task 9: Navigation & Route Integration
 
 **Files:**
+
 - Modify: `src/screens/index.ts`
 - Modify: `src/App.tsx`
 
 **Interfaces:**
+
 - Consumes: AudioMemosScreen, MemoPlayerScreen
 - Produces: Routes registered in navigation
 
@@ -1199,9 +1296,11 @@ git commit -m "feat(nav): register audio memo routes in navigation"
 ## Task 10: Workspace Drawer Integration
 
 **Files:**
+
 - Modify: `src/components/WorkspaceDrawer/SidebarContent/index.tsx`
 
 **Interfaces:**
+
 - Consumes: PATHS, navigation
 - Produces: "Audio Memos" nav item in drawer
 
@@ -1228,7 +1327,7 @@ const goToAudioMemos = () => {
   className="flex flex-1 flex-row items-center justify-center bg-white/10 rounded-lg py-[11px]">
   <MusicNotes size={20} color="#FFF" />
   <Text className="text-white text-sm ml-2">Audio Memos</Text>
-</TouchableOpacity>
+</TouchableOpacity>;
 ```
 
 - [ ] **Step 2: Commit**
@@ -1243,9 +1342,11 @@ git commit -m "feat(ui): add Audio Memos navigation to workspace drawer"
 ## Task 11: User Settings Quick Access
 
 **Files:**
+
 - Modify: `src/screens/UserSettings/Main/index.tsx`
 
 **Interfaces:**
+
 - Consumes: PATHS, navigation
 - Produces: "Audio Memos" quick access in user settings
 
@@ -1264,7 +1365,7 @@ import { MusicNotes } from "phosphor-react-native";
     <MusicNotes size={18} color="#FFF" />
     <Text className="text-white text-lg">Audio Memos</Text>
   </View>
-</TouchableOpacity>
+</TouchableOpacity>;
 ```
 
 - [ ] **Step 2: Commit**
@@ -1279,11 +1380,13 @@ git commit -m "feat(ui): add Audio Memos quick access to user settings"
 ## Task 12: Integration Testing
 
 **Files:**
+
 - Test: `src/hooks/useVoiceTranscription.test.ts`
 - Test: `src/hooks/useAudioMemos.test.ts`
 - Test: `src/database/models/AudioMemo.test.ts`
 
 **Interfaces:**
+
 - Consumes: All created modules
 - Produces: Passing test suite
 
@@ -1387,9 +1490,11 @@ git commit -m "test: add tests for voice transcription and audio memos"
 ## Task 13: Type Checking & Lint
 
 **Files:**
+
 - All modified/created files
 
 **Interfaces:**
+
 - Consumes: TypeScript compiler, ESLint
 - Produces: Zero errors
 
@@ -1417,9 +1522,11 @@ git commit -m "fix: resolve type and lint errors"
 ## Task 14: Final Integration Test
 
 **Files:**
+
 - All
 
 **Interfaces:**
+
 - Consumes: Complete implementation
 - Produces: Working app with both features
 

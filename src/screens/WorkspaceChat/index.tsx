@@ -70,14 +70,20 @@ export default function WorkspaceChat() {
         thread={thread}
         llmProvider={LLMProvider!}>
         <ChatHistory />
-        <PromptInput attachmentHandler={attachmentHandler} workspaceSlug={wsSlug} />
+        <PromptInput
+          attachmentHandler={attachmentHandler}
+          workspaceSlug={wsSlug}
+        />
       </ChatHandlerWrapper>
 
       <SettingsActionSheet workspace={workspace} thread={thread} />
       <ToolsActionSheet />
       <WorkspaceFilesActionSheet workspace={workspace} />
       <CitationsActionSheet />
-      <AttachmentActionMenu attachmentHandler={attachmentHandler} workspaceSlug={wsSlug} />
+      <AttachmentActionMenu
+        attachmentHandler={attachmentHandler}
+        workspaceSlug={wsSlug}
+      />
     </SafeView>
   );
 }

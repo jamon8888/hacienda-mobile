@@ -47,7 +47,7 @@ export function useVoiceTranscription(): UseVoiceTranscriptionReturn {
         });
 
         await asrModelRef.current.download({
-          onProgress: (p) => console.log("ASR download:", p),
+          onProgress: p => console.log("ASR download:", p),
         });
         await asrModelRef.current.init();
       } catch (err) {
@@ -81,12 +81,14 @@ export function useVoiceTranscription(): UseVoiceTranscriptionReturn {
 
       const audioStream = new VoiceAudioStream({ vadThreshold: 0.5 });
 
-      audioStream.on("onSpeechSegment", async (segment) => {
+      audioStream.on("onSpeechSegment", async segment => {
         if (!segment.isFinal || !asrModelRef.current) return;
 
         try {
           const samples = pcmBase64ToInt16Samples(segment.audioBase64);
-          const result = await asrModelRef.current.transcribe({ audio: samples });
+          const result = await asrModelRef.current.transcribe({
+            audio: samples,
+          });
           if (result.response) {
             setCurrentTranscript(result.response);
             setIsFinal(true);
@@ -96,8 +98,8 @@ export function useVoiceTranscription(): UseVoiceTranscriptionReturn {
         }
       });
 
-      audioStream.on("onVolumeChange", (v) => setVolume(v));
-      audioStream.on("onError", (err) => setError(err));
+      audioStream.on("onVolumeChange", v => setVolume(v));
+      audioStream.on("onError", err => setError(err));
 
       await audioStream.start();
       audioStreamRef.current = audioStream;

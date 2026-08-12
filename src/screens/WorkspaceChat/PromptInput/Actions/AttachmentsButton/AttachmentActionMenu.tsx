@@ -1,5 +1,12 @@
 import { useRef } from "react";
-import { Alert, Platform, View, TouchableOpacity, Text, StyleSheet } from "react-native";
+import {
+  Alert,
+  Platform,
+  View,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+} from "react-native";
 import { File, FolderSimple, X } from "phosphor-react-native";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import {
@@ -60,12 +67,14 @@ export default function AttachmentActionMenu({
       if (realPath.startsWith("content://")) {
         Alert.alert(
           "Cannot Scan",
-          "This folder picker can't be scanned here. Choose individual files instead."
+          "This folder picker can't be scanned here. Choose individual files instead.",
         );
         return;
       }
 
-      const collectSupportedFiles = async (dirPath: string): Promise<string[]> => {
+      const collectSupportedFiles = async (
+        dirPath: string,
+      ): Promise<string[]> => {
         const SUPPORTED_EXTENSIONS = new Set(
           Object.values(SUPPORTED_FILE_TYPES)
             .flat()
@@ -136,12 +145,16 @@ export default function AttachmentActionMenu({
         enablePanDownToClose={true}
         backgroundStyle={{ backgroundColor: "#1B1B1E" }}
         handleIndicatorStyle={{ display: "none" }}
-        onDismiss={() => presentSheet(BOTTOM_SHEET_NAMES.PRIMARY_PROMPT_INPUT, true)}>
+        onDismiss={() =>
+          presentSheet(BOTTOM_SHEET_NAMES.PRIMARY_PROMPT_INPUT, true)
+        }>
         <View style={styles.container}>
           <View style={styles.header}>
             <Text style={styles.title}>Add to Conversation</Text>
             <TouchableOpacity
-              onPress={() => presentSheet(BOTTOM_SHEET_NAMES.PRIMARY_PROMPT_INPUT, true)}
+              onPress={() =>
+                presentSheet(BOTTOM_SHEET_NAMES.PRIMARY_PROMPT_INPUT, true)
+              }
               style={styles.closeButton}>
               <X size={24} color="#FFF" />
             </TouchableOpacity>

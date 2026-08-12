@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { TouchableOpacity, View, ActivityIndicator } from "react-native";
 import { Microphone, MicrophoneSlash } from "phosphor-react-native";
 import { useVoiceTranscription } from "@/hooks/useVoiceTranscription";
@@ -17,16 +17,23 @@ export function MicButton({ onTranscriptReady }: MicButtonProps) {
     error,
   } = useVoiceTranscription();
 
+  const onTranscriptReadyRef = useRef(onTranscriptReady);
+  onTranscriptReadyRef.current = onTranscriptReady;
+
+  useEffect(() => {
+    if (isFinal && currentTranscript.trim()) {
+      onTranscriptReadyRef.current(currentTranscript);
+      stopRecording();
+    }
+  }, [isFinal, currentTranscript, stopRecording]);
+
   const handlePressIn = useCallback(() => {
     startRecording();
   }, [startRecording]);
 
   const handlePressOut = useCallback(() => {
-    if (isFinal && currentTranscript.trim()) {
-      onTranscriptReady(currentTranscript);
-    }
     stopRecording();
-  }, [isFinal, currentTranscript, onTranscriptReady, stopRecording]);
+  }, [stopRecording]);
 
   return (
     <TouchableOpacity
@@ -43,11 +50,7 @@ export function MicButton({ onTranscriptReady }: MicButtonProps) {
           <Microphone size={20} color="#EF4444" weight="fill" />
         </View>
       ) : error ? (
-        <MicrophoneSlash
-          testID="mic-button-error"
-          size={20}
-          color="#9F9FA0"
-        />
+        <MicrophoneSlash testID="mic-button-error" size={20} color="#9F9FA0" />
       ) : (
         <Microphone size={20} color="#9F9FA0" />
       )}
