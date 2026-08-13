@@ -111,9 +111,10 @@ export function useVoiceTranscription(): UseVoiceTranscriptionReturn {
       audioStreamRef.current = audioStream;
       setIsRecording(true);
     } catch (err) {
+      recordingRef.current = false;
       setError(err as Error);
     }
-  }, [recordingRef, initializeASR]);
+  }, [initializeASR]);
 
   const stopRecording = useCallback(async () => {
     recordingRef.current = false;

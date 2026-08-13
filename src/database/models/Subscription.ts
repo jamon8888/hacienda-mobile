@@ -74,9 +74,14 @@ export default class Subscription extends Model {
   ): Promise<SubscriptionType> {
     let updatedSubscription: Subscription | null = null;
     await database.write(async () => {
-      const record = (await database
-        .get(Subscription.table)
-        .find(id)) as Subscription;
+      let record: Subscription;
+      try {
+        record = (await database
+          .get(Subscription.table)
+          .find(id)) as Subscription;
+      } catch {
+        throw new Error(`Subscription record not found: ${id}`);
+      }
       updatedSubscription = (await record.update(
         (subscription: Subscription) => {
           if (updates.tier !== undefined) {

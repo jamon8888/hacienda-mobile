@@ -151,9 +151,7 @@ describe("AudioMemo.create", () => {
     };
     callback(memoObj);
 
-    expect(memoObj.waveformPeaks).toBe(
-      JSON.stringify([0.1, 0.2, 0.3, 0.4, 0.5]),
-    );
+    expect(memoObj.waveformPeaks).toEqual([0.1, 0.2, 0.3, 0.4, 0.5]);
     expect(memoObj.uuid).toBe("generated-uuid");
     expect(memoObj.audioUri).toBe("file:///test.m4a");
     expect(memoObj.createdAt).toBeGreaterThan(0);
@@ -192,7 +190,7 @@ describe("AudioMemo.create", () => {
     expect(result).toHaveProperty("waveformPeaks");
     expect(result).toHaveProperty("createdAt");
     expect(result).toHaveProperty("updatedAt");
-    expect(typeof result.waveformPeaks).toBe("string"); // raw string from mock
+    expect(Array.isArray(result.waveformPeaks)).toBe(true);
   });
 });
 
@@ -276,7 +274,7 @@ describe("AudioMemo.update", () => {
 
     await AudioMemo.update("test-uuid", { waveformPeaks: [0.1, 0.2] });
 
-    expect(existingMemo.waveformPeaks).toBe(JSON.stringify([0.1, 0.2]));
+    expect(existingMemo.waveformPeaks).toEqual([0.1, 0.2]);
   });
 });
 

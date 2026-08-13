@@ -18,22 +18,22 @@ export async function initializeTokenizer(): Promise<void> {
   if (isInitialized && spmProcessor) return;
 
   try {
-    let modelPath: string;
+    let modelData: string;
 
     if (Platform.OS === "android") {
-      modelPath = `${RNFS.MainBundlePath}/sentencepiece.model`;
+      // Android assets live inside the APK and must be read via readFileAssets.
+      // MainBundlePath + exists() works on iOS only.
+      modelData = await RNFS.readFileAssets("sentencepiece.model", "base64");
     } else {
-      modelPath = RNFS.MainBundlePath + "/sentencepiece.model";
+      const modelPath = `${RNFS.MainBundlePath}/sentencepiece.model`;
+      const modelExists = await RNFS.exists(modelPath);
+      if (!modelExists) {
+        throw new Error(
+          `SentencePiece model not found at ${modelPath}. Run download script.`,
+        );
+      }
+      modelData = await RNFS.readFile(modelPath, "base64");
     }
-
-    const modelExists = await RNFS.exists(modelPath);
-    if (!modelExists) {
-      throw new Error(
-        `SentencePiece model not found at ${modelPath}. Run download script.`,
-      );
-    }
-
-    const modelData = await RNFS.readFile(modelPath, "base64");
 
     spmProcessor = new SentencePieceProcessor();
     await spmProcessor.loadFromB64StringModel(modelData);

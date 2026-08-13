@@ -30,14 +30,9 @@ jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
-jest.mock("react-native-waveform-player", () => {
-  const React = jest.requireActual("react");
-  return {
-    AudioWaveformView: React.forwardRef((_props: any, ref: any) => {
-      return React.createElement("AudioWaveformView", { ref });
-    }),
-  };
-});
+jest.mock("react-native-waveform-player", () => ({
+  AudioWaveformView: "AudioWaveformView",
+}));
 
 jest.mock("phosphor-react-native", () => {
   const React = jest.requireActual("react");

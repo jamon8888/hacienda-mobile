@@ -60,9 +60,18 @@ class SubscriptionStore {
     }
   }
 
+  private requireSubscriptionId(): string {
+    if (!this.subscriptionId) {
+      throw new Error(
+        "No subscription loaded. Call loadSubscription(userId) first.",
+      );
+    }
+    return this.subscriptionId;
+  }
+
   async activateTrial() {
     const trialEndsAt = Date.now() + 3 * 24 * 60 * 60 * 1000; // 3 days
-    await Subscription.update(this.subscriptionId!, {
+    await Subscription.update(this.requireSubscriptionId(), {
       tier: "paid",
       status: "trial",
       trialEndsAt,
@@ -75,7 +84,7 @@ class SubscriptionStore {
   }
 
   async activatePaid() {
-    await Subscription.update(this.subscriptionId!, {
+    await Subscription.update(this.requireSubscriptionId(), {
       tier: "paid",
       status: "active",
       trialEndsAt: null,
@@ -88,7 +97,7 @@ class SubscriptionStore {
   }
 
   async cancelSubscription() {
-    await Subscription.update(this.subscriptionId!, {
+    await Subscription.update(this.requireSubscriptionId(), {
       tier: "free",
       status: "cancelled",
       trialEndsAt: null,

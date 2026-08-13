@@ -1,12 +1,22 @@
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from "docx";
 import * as XLSX from "xlsx";
 import PptxGenJS from "pptxgenjs";
+import { Platform } from "react-native";
 import {
   DocumentDirectoryPath,
   writeFile,
   mkdir,
   exists,
 } from "@dr.pogodin/react-native-fs";
+
+function sanitizeFilename(name: string): string {
+  // Keep letters, numbers, spaces, hyphens and underscores; collapse the rest.
+  const safe = name
+    .replace(/[^\w\s-]/g, "_")
+    .replace(/\s+/g, " ")
+    .trim();
+  return safe.length > 0 ? safe : "document";
+}
 
 interface DocxConfig {
   title: string;
@@ -64,7 +74,7 @@ export async function generateDocx(config: DocxConfig): Promise<string> {
   });
 
   const base64 = await Packer.toBase64String(doc);
-  const uri = `${DOC_GEN_FOLDER}/${config.title}.docx`;
+  const uri = `${DOC_GEN_FOLDER}/${sanitizeFilename(config.title)}.docx`;
   await writeFile(uri, base64, "base64");
   return uri;
 }
@@ -79,7 +89,7 @@ export async function generateXlsx(config: XlsxConfig): Promise<string> {
 
   const wbBytes = XLSX.write(wb, { type: "array", bookType: "xlsx" });
   const base64 = uint8ArrayToBase64(wbBytes);
-  const uri = `${DOC_GEN_FOLDER}/${config.title}.xlsx`;
+  const uri = `${DOC_GEN_FOLDER}/${sanitizeFilename(config.title)}.xlsx`;
   await writeFile(uri, base64, "base64");
   return uri;
 }
@@ -108,7 +118,7 @@ export async function generatePptx(config: PptxConfig): Promise<string> {
     }
   }
 
-  const uri = `${DOC_GEN_FOLDER}/${config.title}.pptx`;
+  const uri = `${DOC_GEN_FOLDER}/${sanitizeFilename(config.title)}.pptx`;
   await pptx.writeFile({ fileName: uri });
   return uri;
 }
@@ -128,6 +138,16 @@ function getMimeType(uri: string): string {
 
 export async function shareDocument(uri: string): Promise<void> {
   const { Share } = require("react-native");
+
+  if (Platform.OS === "android") {
+    // React Native's Share API on Android ignores `url`; sharing files
+    // requires a content:// URI via a FileProvider. Use react-native-share
+    // or a similar library and update this path before enabling Android.
+    throw new Error(
+      "Document sharing is not implemented on Android. Provide a FileProvider-backed sharing library (e.g. react-native-share).",
+    );
+  }
+
   await Share.share({
     url: uri,
     type: getMimeType(uri),

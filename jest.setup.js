@@ -103,7 +103,7 @@ NativeModules.WebScraperModule = {
 };
 
 NativeModules.AudioDecoderModule = {
-  decode: jest.fn().mockResolvedValue({ samples: new Float32Array(1024), sampleRate: 16000 }),
+  decodeToPCM16: jest.fn().mockResolvedValue({ samples: Array(16000).fill(0), sampleRate: 16000, durationMs: 1000 }),
 };
 
 NativeModules.TextToSpeechModule = {
@@ -135,7 +135,10 @@ jest.mock("cactus-react-native", () => {
     __esModule: true,
     CactusLM: jest.fn().mockImplementation(() => mockContext),
     CactusSTT: jest.fn().mockImplementation(() => ({
-      transcribe: jest.fn().mockResolvedValue("mock transcription"),
+      download: jest.fn().mockResolvedValue(undefined),
+      init: jest.fn().mockResolvedValue(undefined),
+      transcribe: jest.fn().mockResolvedValue({ response: "mock transcription" }),
+      destroy: jest.fn().mockResolvedValue(undefined),
     })),
     CactusTTS: jest.fn().mockImplementation(() => ({
       synthesize: jest.fn().mockResolvedValue(new Float32Array(1024)),
@@ -144,22 +147,25 @@ jest.mock("cactus-react-native", () => {
 });
 
 // ── react-native-fs ───────────────────────────────────────────
-jest.mock("@dr.pogodin/react-native-fs", () => ({
-  __esModule: true,
-  default: {
+jest.mock("@dr.pogodin/react-native-fs", () => {
+  const fs = {
     DocumentDirectoryPath: "/tmp/test-docs",
     CachesDirectoryPath: "/tmp/test-cache",
     writeFile: jest.fn().mockResolvedValue(undefined),
     readFile: jest.fn().mockResolvedValue("mock file content"),
+    readFileAssets: jest.fn().mockResolvedValue("mock asset content"),
     exists: jest.fn().mockResolvedValue(true),
     mkdir: jest.fn().mockResolvedValue(undefined),
     unlink: jest.fn().mockResolvedValue(undefined),
     readDir: jest.fn().mockResolvedValue([]),
     stat: jest.fn().mockResolvedValue({ size: 1024, mtime: Date.now() }),
-  },
-  DocumentDirectoryPath: "/tmp/test-docs",
-  CachesDirectoryPath: "/tmp/test-cache",
-}));
+  };
+  return {
+    __esModule: true,
+    default: fs,
+    ...fs,
+  };
+});
 
 // ── react-native-keychain ─────────────────────────────────────
 jest.mock("react-native-keychain", () => ({
@@ -171,6 +177,12 @@ jest.mock("react-native-keychain", () => ({
 // ── react-native-haptic-feedback ──────────────────────────────
 jest.mock("react-native-haptic-feedback", () => ({
   trigger: jest.fn(),
+}));
+
+// ── react-native-linear-gradient ───────────────────────────────
+jest.mock("react-native-linear-gradient", () => ({
+  __esModule: true,
+  default: "LinearGradient",
 }));
 
 // ── react-native-get-random-values ────────────────────────────
@@ -191,6 +203,12 @@ jest.mock("react-native-vision-camera", () => ({
   useCameraDevices: jest.fn().mockReturnValue({ back: null, front: null }),
   useCameraPermission: jest.fn().mockReturnValue({ granted: true, requestPermission: jest.fn() }),
   Camera: "Camera",
+}));
+
+// ── react-native-waveform-player ───────────────────────────────
+jest.mock("react-native-waveform-player", () => ({
+  __esModule: true,
+  AudioWaveformView: "AudioWaveformView",
 }));
 
 // ── react-native-nitro-modules ─────────────────────────────────
