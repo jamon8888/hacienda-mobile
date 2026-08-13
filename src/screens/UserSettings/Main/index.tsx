@@ -12,6 +12,7 @@ import {
   GithubLogo,
   MoneyWavy,
   Crown,
+  MusicNotes,
 } from "phosphor-react-native";
 import { IWorkspacePageKey } from "../index";
 import uiStore from "@/store/UIStore";
@@ -216,6 +217,20 @@ export function MainView({ goToPage }: MainViewProps) {
             <View className="flex flex-row gap-2 items-center">
               <Crown size={18} color="#3B82F6" weight="fill" />
               <Text className="text-white text-lg">Subscription</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Audio Memos */}
+          <TouchableOpacity
+            onPress={() =>
+              // @ts-ignore
+              navigation.navigate(PATHS.audio_memos)
+            }
+            style={{ backgroundColor: "#27282A", padding: 14, gap: 20 }}
+            className="w-full flex flex-row items-center rounded-lg">
+            <View className="flex flex-row gap-2 items-center">
+              <MusicNotes size={18} color="#FFF" />
+              <Text className="text-white text-lg">Audio Memos</Text>
             </View>
           </TouchableOpacity>
 
