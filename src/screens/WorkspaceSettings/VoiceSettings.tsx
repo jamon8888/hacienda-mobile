@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { CACTUS_VOICE_MODELS, CactusVoiceModelId, DEFAULT_CACTUS_ASR_MODEL, DEFAULT_CACTUS_LLM_MODEL } from "@/utils/models/defaults";
 import { useDeviceCapabilities } from "@/hooks/useDeviceCapabilities";
 import { CACTUS_VOICE_MODELS as VOICE_MODELS } from "@/utils/models/defaults";
+import { ModelPickerModal } from "./VoiceSettings/ModalPicker";
 
 type VoiceModelCategory = 'asr' | 'llm';
 
@@ -85,6 +86,16 @@ const LLM_MODEL_OPTIONS: VoiceModelOption[] = [
 const DEFAULT_ASR_MODEL: CactusVoiceModelId = 'parakeet-tdt-0.6b-cq2';
 const DEFAULT_LLM_MODEL: CactusVoiceModelId = 'gemma-4-e2b-hybrid-cq2.54';
 
+interface StoredVoiceSettings {
+    asrModel?: CactusVoiceModelId;
+    llmModel?: CactusVoiceModelId;
+    confidenceThreshold?: number;
+    autoHandoff?: boolean;
+    processingDelay?: number;
+    enableTTS?: boolean;
+    vadThreshold?: number;
+}
+
 export function VoiceSettingsView({ workspace, goToPage }: any) {
     const navigation = useNavigation();
     const insets = useSafeAreaInsets();
@@ -103,7 +114,7 @@ export function VoiceSettingsView({ workspace, goToPage }: any) {
     // Load saved preferences
     useEffect(() => {
         const loadSettings = async () => {
-            const saved = await uiStore.getFromStorage('voiceSettings', {});
+            const saved = await uiStore.getFromStorage<StoredVoiceSettings>('voiceSettings', {});
             if (saved.asrModel) setAsrModel(saved.asrModel);
             if (saved.llmModel) setLlmModel(saved.llmModel);
             if (saved.confidenceThreshold !== undefined) setConfidenceThreshold(saved.confidenceThreshold);
@@ -131,7 +142,7 @@ export function VoiceSettingsView({ workspace, goToPage }: any) {
     };
 
     const getRecommendedBadge = (model: VoiceModelOption) => {
-        if (!deviceCaps) return null;
+        if (!deviceCaps) return false;
         const ramTier = deviceCaps.ramTier;
         return model.recommendedFor.includes(ramTier);
     };
@@ -183,7 +194,9 @@ export function VoiceSettingsView({ workspace, goToPage }: any) {
                         <View className="bg-[#27282A] px-4 py-2 rounded-lg border border-[#3A3B3D]">
                             <Text className="text-white/60 text-xs uppercase">Available RAM</Text>
                             <Text className="text-white text-base font-medium">
-                                {(deviceCaps?.availableRAM / (1024**3)).toFixed(1)} GB
+                                {deviceCaps?.availableRAM === undefined
+                                    ? 'Unknown'
+                                    : `${(deviceCaps.availableRAM / (1024 ** 3)).toFixed(1)} GB`}
                             </Text>
                         </View>
                     </View>
@@ -225,7 +238,7 @@ export function VoiceSettingsView({ workspace, goToPage }: any) {
                         onPress={() => setShowLlmPicker(true)}
                     >
                         <View className="flex flex-row gap-2 items-center">
-                            <CPU size={18} color="#FFF" />
+                            <Cpu size={18} color="#FFF" />
                             <Text className="text-white text-lg">LLM Model</Text>
                         </View>
                         <View className="flex flex-1 flex-row gap-2 items-center justify-between">
@@ -390,5 +403,3 @@ export function VoiceSettingsView({ workspace, goToPage }: any) {
         </SafeView>
     );
 }
-
-export { VoiceSettingsView };

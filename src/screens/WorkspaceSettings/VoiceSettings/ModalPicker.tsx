@@ -3,7 +3,7 @@ import { BottomSheetBackdrop, BottomSheetBackdropProps, BottomSheetModal } from 
 import { useBottomSheet, BOTTOM_SHEET_NAMES } from '@/contexts/BottomSheetContext';
 import { View, Text, TouchableOpacity, FlatList } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Radio, Check, ChevronDown } from "phosphor-react-native";
+import { Radio, Check, CaretDown } from "phosphor-react-native";
 
 interface VoiceModelOption {
     id: string;
@@ -108,7 +108,7 @@ export function ModelPickerModal({
                 <View className='flex flex-row items-center justify-between mb-4'>
                     <Text className='text-white text-xl font-medium'>{title}</Text>
                     <TouchableOpacity onPress={onClose}>
-                        <ChevronDown size={24} color="#FFF" />
+                        <CaretDown size={24} color="#FFF" />
                     </TouchableOpacity>
                 </View>
                 <FlatList
@@ -122,5 +122,3 @@ export function ModelPickerModal({
         </BottomSheetModal>
     );
 }
-
-export { ModelPickerModal };

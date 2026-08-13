@@ -239,6 +239,10 @@ export default class OnDeviceEmbedderProvider implements EmbeddingProvider {
         return !!this.cactusLmContext;
     }
 
+    touch(): void {
+        if (this.cactusLmContext) this.keepAlive();
+    }
+
     supportsMatryoshka(): boolean {
         return false;
     }
