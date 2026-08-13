@@ -33,7 +33,9 @@ export default function AudioMemosScreen() {
   const [activeTab, setActiveTab] = useState<TabType>("workspace");
 
   useEffect(() => {
-    fetchMemos(activeTab === "workspace" ? "current" : null);
+    // TODO: Get actual current workspace slug from navigation context
+    // For now, fetch all memos (workspace tab shows all, global shows all)
+    fetchMemos(null);
   }, [activeTab, fetchMemos]);
 
   const handleDelete = useCallback(
