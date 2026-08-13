@@ -124,7 +124,7 @@ public class VoiceAudioModule extends ReactContextBaseJavaModule implements Life
     @ReactMethod
     public void startRecording(Promise promise) {
         if (isRecording) {
-            promise.reject("ALREADY_RECORDING", "Already recording");
+            promise.resolve(true); // no-op if already recording
             return;
         }
 

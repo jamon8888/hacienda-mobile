@@ -18,7 +18,12 @@ export async function runMemoryDecay(): Promise<{
     [DECAY_RATE, now, now],
   );
 
-  // 2. Prune memories below threshold
+  // 2. Prune memories below threshold (delete vectors first since they reference
+  // the memories rowid).
+  await db.execute(
+    "DELETE FROM memories_vec WHERE rowid IN (SELECT rowid FROM memories WHERE importance < ?)",
+    [IMPORTANCE_THRESHOLD],
+  );
   const pruneResult = await db.execute(
     "DELETE FROM memories WHERE importance < ?",
     [IMPORTANCE_THRESHOLD],

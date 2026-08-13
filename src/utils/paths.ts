@@ -10,11 +10,14 @@ export const PATHS = {
   voice_chat: "VoiceChat",
   workspace_settings: "WorkspaceSettings",
   user_settings: "UserSettings",
+  subscription: "subscription",
   developer: {
     home: "DevToolsMenu",
   },
 
   connect_to_instance: "ConnectToInstance",
+  audio_memos: "audio_memos",
+  audio_memo_player: "audio_memo_player",
 
   remote_version_url: "https://cdn.anythingllm.com/mobile/latest/version.txt",
   google_play_store:

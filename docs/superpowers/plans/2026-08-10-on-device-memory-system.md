@@ -24,11 +24,13 @@
 ### Task 1.1: Install op-sqlite
 
 **Files:**
+
 - Modify: `package.json`
 - Modify: `android/app/build.gradle`
 - Modify: `ios/Podfile`
 
 **Interfaces:**
+
 - Produces: `op-sqlite` available as `import { open } from 'op-sqlite'`
 
 - [ ] **Step 1: Install op-sqlite package**
@@ -40,6 +42,7 @@ yarn add op-sqlite
 - [ ] **Step 2: Enable sqlite-vec and FTS5 in package.json**
 
 Add to `package.json`:
+
 ```json
 "op-sqlite": {
   "sqliteVec": true,
@@ -63,11 +66,11 @@ Note: If you encounter SQLite symbol conflicts, you may need to add a `pre_insta
 
 ```typescript
 // src/utils/MemoryDB/test-connection.ts
-import { open } from 'op-sqlite';
+import { open } from "op-sqlite";
 
 export async function testConnection() {
-  const db = open({ name: 'test.db' });
-  await db.executeAsync('SELECT 1');
+  const db = open({ name: "test.db" });
+  await db.executeAsync("SELECT 1");
   db.close();
   return true;
 }
@@ -91,10 +94,12 @@ git commit -m "feat: install op-sqlite for on-device vector search"
 ### Task 1.2: Create Memory Database Schema
 
 **Files:**
+
 - Create: `src/utils/MemoryDB/schema.ts`
 - Create: `src/utils/MemoryDB/index.ts`
 
 **Interfaces:**
+
 - Consumes: `op-sqlite` (open, executeAsync)
 - Produces: `initMemoryDB()` function, `MemoryDB` type
 
@@ -159,14 +164,14 @@ CREATE VIRTUAL TABLE IF NOT EXISTS memories_vec USING vec0(
 
 ```typescript
 // src/utils/MemoryDB/index.ts
-import { open, DB } from 'op-sqlite';
-import { MEMORY_SCHEMA, MEMORY_FTS_SCHEMA, MEMORY_VEC_SCHEMA } from './schema';
+import { open, DB } from "op-sqlite";
+import { MEMORY_SCHEMA, MEMORY_FTS_SCHEMA, MEMORY_VEC_SCHEMA } from "./schema";
 
 let db: DB | null = null;
 
 export function getMemoryDB(): DB {
   if (!db) {
-    db = open({ name: 'memory.db' });
+    db = open({ name: "memory.db" });
   }
   return db;
 }
@@ -205,9 +210,11 @@ git commit -m "feat: add memory database schema with sqlite-vec and FTS5"
 ### Task 1.3: Build MemoryStore (MobX)
 
 **Files:**
+
 - Create: `src/store/MemoryStore.ts`
 
 **Interfaces:**
+
 - Consumes: `getMemoryDB()` from MemoryDB
 - Produces: `MemoryStore` class with `insertMemory`, `getMemory`, `deleteMemory`, `searchByWorkspace`
 
@@ -215,14 +222,14 @@ git commit -m "feat: add memory database schema with sqlite-vec and FTS5"
 
 ```typescript
 // src/store/MemoryStore.ts
-import { makeAutoObservable } from 'mobx';
-import { getMemoryDB } from '../utils/MemoryDB';
-import { v4 as uuid } from 'uuid';
+import { makeAutoObservable } from "mobx";
+import { getMemoryDB } from "../utils/MemoryDB";
+import { v4 as uuid } from "uuid";
 
 export interface MemoryRecord {
   id: string;
   workspaceId: string;
-  kind: 'conversation' | 'document' | 'note';
+  kind: "conversation" | "document" | "note";
   content: string;
   summary?: string;
   sourceUri?: string;
@@ -244,7 +251,12 @@ export class MemoryStore {
     makeAutoObservable(this);
   }
 
-  async insertMemory(record: Omit<MemoryRecord, 'id' | 'createdAt' | 'updatedAt' | 'accessedAt' | 'accessCount'>): Promise<string> {
+  async insertMemory(
+    record: Omit<
+      MemoryRecord,
+      "id" | "createdAt" | "updatedAt" | "accessedAt" | "accessCount"
+    >,
+  ): Promise<string> {
     const db = getMemoryDB();
     const id = uuid();
     const now = Date.now();
@@ -272,13 +284,13 @@ export class MemoryStore {
         0,
         record.importance,
         record.metadata ? JSON.stringify(record.metadata) : null,
-      ]
+      ],
     );
 
     // Insert into vec index
     await db.executeAsync(
       `INSERT INTO memories_vec (rowid, embedding) VALUES ((SELECT rowid FROM memories WHERE id = ?), ?)`,
-      [id, embeddingBlob as any]
+      [id, embeddingBlob as any],
     );
 
     return id;
@@ -288,7 +300,7 @@ export class MemoryStore {
     const db = getMemoryDB();
     const result = await db.executeAsync(
       `SELECT * FROM memories WHERE id = ?`,
-      [id]
+      [id],
     );
     const row = result.rows?.[0];
     if (!row) return null;
@@ -296,7 +308,7 @@ export class MemoryStore {
     // Update accessed_at
     await db.executeAsync(
       `UPDATE memories SET accessed_at = ?, access_count = access_count + 1 WHERE id = ?`,
-      [Date.now(), id]
+      [Date.now(), id],
     );
 
     return this.rowToRecord(row);
@@ -307,15 +319,18 @@ export class MemoryStore {
     await db.executeAsync(`DELETE FROM memories WHERE id = ?`, [id]);
     await db.executeAsync(
       `DELETE FROM memories_vec WHERE rowid = (SELECT rowid FROM memories WHERE id = ?)`,
-      [id]
+      [id],
     );
   }
 
-  async getMemoriesByWorkspace(workspaceId: string, limit = 100): Promise<MemoryRecord[]> {
+  async getMemoriesByWorkspace(
+    workspaceId: string,
+    limit = 100,
+  ): Promise<MemoryRecord[]> {
     const db = getMemoryDB();
     const result = await db.executeAsync(
       `SELECT * FROM memories WHERE workspace_id = ? ORDER BY updated_at DESC LIMIT ?`,
-      [workspaceId, limit]
+      [workspaceId, limit],
     );
     return (result.rows || []).map(this.rowToRecord);
   }
@@ -364,9 +379,11 @@ git commit -m "feat: add MemoryStore MobX store for episodic memory"
 ### Task 1.4: Build MemorySearch (Hybrid Vector + BM25)
 
 **Files:**
+
 - Create: `src/utils/MemoryDB/MemorySearch.ts`
 
 **Interfaces:**
+
 - Consumes: `getMemoryDB()` from MemoryDB, `MemoryRecord` from MemoryStore
 - Produces: `memorySearch()` function with hybrid retrieval + reranking
 
@@ -374,8 +391,8 @@ git commit -m "feat: add MemoryStore MobX store for episodic memory"
 
 ```typescript
 // src/utils/MemoryDB/MemorySearch.ts
-import { getMemoryDB } from './index';
-import { MemoryRecord } from '../../store/MemoryStore';
+import { getMemoryDB } from "./index";
+import { MemoryRecord } from "../../store/MemoryStore";
 
 export interface SearchOptions {
   workspaceId: string;
@@ -395,7 +412,7 @@ export interface SearchResult {
 export async function memorySearch(
   query: string,
   queryEmbedding: Float32Array,
-  options: SearchOptions
+  options: SearchOptions,
 ): Promise<SearchResult[]> {
   const db = getMemoryDB();
   const {
@@ -413,10 +430,12 @@ export async function memorySearch(
      FROM memories_vec v
      JOIN memories m ON m.id = v.id
      WHERE v.embedding MATCH ? AND m.workspace_id = ?
-     ${clientId ? 'AND m.client_id = ?' : ''}
+     ${clientId ? "AND m.client_id = ?" : ""}
      ORDER BY v.distance ASC
      LIMIT 50`,
-    clientId ? [embeddingBlob as any, workspaceId, clientId] : [embeddingBlob as any, workspaceId]
+    clientId
+      ? [embeddingBlob as any, workspaceId, clientId]
+      : [embeddingBlob as any, workspaceId],
   );
 
   // Step 2: BM25 search (top 20)
@@ -425,14 +444,17 @@ export async function memorySearch(
      FROM memories_fts fts
      JOIN memories m ON m.rowid = fts.rowid
      WHERE memories_fts MATCH ? AND m.workspace_id = ?
-     ${clientId ? 'AND m.client_id = ?' : ''}
+     ${clientId ? "AND m.client_id = ?" : ""}
      ORDER BY fts.rank
      LIMIT 20`,
-    clientId ? [query, workspaceId, clientId] : [query, workspaceId]
+    clientId ? [query, workspaceId, clientId] : [query, workspaceId],
   );
 
   // Step 3: Merge and deduplicate
-  const merged = new Map<string, { memory: MemoryRecord; vectorScore: number; bm25Score: number }>();
+  const merged = new Map<
+    string,
+    { memory: MemoryRecord; vectorScore: number; bm25Score: number }
+  >();
 
   for (const row of vectorResults.rows || []) {
     merged.set(row.id, {
@@ -451,15 +473,17 @@ export async function memorySearch(
         memory: rowToRecord(row),
         vectorScore: 0,
         bm25Score: Math.abs(row.rank || 0),
-     });
+      });
     }
   }
 
   // Step 4: Compute final scores
   const results: SearchResult[] = [];
   for (const [, data] of merged) {
-    const freshnessBonus = Math.exp(-(Date.now() - data.memory.createdAt) / (1000 * 60 * 60 * 24) * 0.1);
-    const structuralPriority = data.memory.kind === 'document' ? 0.15 : 0;
+    const freshnessBonus = Math.exp(
+      (-(Date.now() - data.memory.createdAt) / (1000 * 60 * 60 * 24)) * 0.1,
+    );
+    const structuralPriority = data.memory.kind === "document" ? 0.15 : 0;
     const importanceBonus = data.memory.importance * 0.1;
 
     const finalScore =
@@ -525,11 +549,13 @@ git commit -m "feat: add hybrid memory search with vector + BM25 scoring"
 ### Task 2.1: Create Android EmbeddingGemma Module
 
 **Files:**
+
 - Create: `android/app/src/main/java/com/hacienda/embedding/EmbeddingGemmaModule.kt`
 - Create: `android/app/src/main/java/com/hacienda/embedding/EmbeddingGemmaPackage.kt`
 - Modify: `android/app/src/main/java/com/hacienda/MainApplication.kt`
 
 **Interfaces:**
+
 - Consumes: LiteRT runtime (org.tensorflow.lite)
 - Produces: `EmbeddingGemmaModule` native module with `embed(text) -> float[]`, `embedBatch(texts) -> float[][]`, `isAvailable() -> boolean`
 
@@ -699,11 +725,13 @@ git commit -m "feat: add Android EmbeddingGemma native module with LiteRT"
 ### Task 2.2: Create iOS EmbeddingGemma Module
 
 **Files:**
+
 - Create: `ios/Hacienda/EmbeddingGemmaModule.h`
 - Create: `ios/Hacienda/EmbeddingGemmaModule.m`
 - Create: `ios/Hacienda/EmbeddingGemmaModule.swift`
 
 **Interfaces:**
+
 - Consumes: LiteRT framework (TensorFlowLite)
 - Produces: `EmbeddingGemmaModule` with same interface as Android
 
@@ -833,7 +861,7 @@ class EmbeddingGemmaModule: NSObject {
       // Set tokenized input...
       try interp.invoke()
       let output = try interp.output(at: 0)
-      let floatArray = output.data.withUnsafeBytes { Array($0.bindMemory(to: Float.self).prefix(dims)) } 
+      let floatArray = output.data.withUnsafeBytes { Array($0.bindMemory(to: Float.self).prefix(dims)) }
       resolve(floatArray.map { NSNumber(value: $0) })
     } catch {
       reject("EMBED_ERROR", error.localizedDescription, error)
@@ -875,10 +903,12 @@ git commit -m "feat: add iOS EmbeddingGemma native module with LiteRT"
 ### Task 2.3: Create TypeScript Bridge for Embedding Engine
 
 **Files:**
+
 - Create: `src/utils/Embedder/onDevice/EmbeddingGemmaBridge.ts`
 - Modify: `src/utils/Embedder/factory.ts`
 
 **Interfaces:**
+
 - Consumes: `EmbeddingGemmaModule` (NativeModules)
 - Produces: `embedText()`, `embedBatch()`, `isEmbeddingGemmaAvailable()` functions
 
@@ -886,7 +916,7 @@ git commit -m "feat: add iOS EmbeddingGemma native module with LiteRT"
 
 ```typescript
 // src/utils/Embedder/onDevice/EmbeddingGemmaBridge.ts
-import { NativeModules, Platform } from 'react-native';
+import { NativeModules, Platform } from "react-native";
 
 const { EmbeddingGemmaModule } = NativeModules;
 
@@ -901,22 +931,28 @@ export async function isEmbeddingGemmaAvailable(): Promise<boolean> {
 
 export async function initEmbeddingGemma(): Promise<void> {
   if (!EmbeddingGemmaModule) {
-    throw new Error('EmbeddingGemma native module not available');
+    throw new Error("EmbeddingGemma native module not available");
   }
   await EmbeddingGemmaModule.initModel();
 }
 
-export async function embedText(text: string, dims = 128): Promise<Float32Array> {
+export async function embedText(
+  text: string,
+  dims = 128,
+): Promise<Float32Array> {
   if (!EmbeddingGemmaModule) {
-    throw new Error('EmbeddingGemma native module not available');
+    throw new Error("EmbeddingGemma native module not available");
   }
   const result = await EmbeddingGemmaModule.embed(text, dims);
   return new Float32Array(result);
 }
 
-export async function embedBatch(texts: string[], dims = 128): Promise<Float32Array[]> {
+export async function embedBatch(
+  texts: string[],
+  dims = 128,
+): Promise<Float32Array[]> {
   if (!EmbeddingGemmaModule) {
-    throw new Error('EmbeddingGemma native module not available');
+    throw new Error("EmbeddingGemma native module not available");
   }
   const results = await EmbeddingGemmaModule.embedBatch(texts, dims);
   return results.map((r: number[]) => new Float32Array(r));
@@ -927,7 +963,10 @@ export async function embedBatch(texts: string[], dims = 128): Promise<Float32Ar
 
 ```typescript
 // src/utils/Embedder/factory.ts - add import and check
-import { isEmbeddingGemmaAvailable, initEmbeddingGemma } from './onDevice/EmbeddingGemmaBridge';
+import {
+  isEmbeddingGemmaAvailable,
+  initEmbeddingGemma,
+} from "./onDevice/EmbeddingGemmaBridge";
 
 // In getEmbeddingProvider(), add EmbeddingGemma as first choice
 if (await isEmbeddingGemmaAvailable()) {
@@ -955,9 +994,11 @@ git commit -m "feat: add TypeScript bridge for EmbeddingGemma native module"
 ### Task 3.1: Build IngestPipeline
 
 **Files:**
+
 - Create: `src/utils/MemoryDB/IngestPipeline.ts`
 
 **Interfaces:**
+
 - Consumes: `memoryStore` from MemoryStore, `embedBatch` from EmbeddingGemmaBridge, `chunkText` from LangChain
 - Produces: `ingestText()`, `ingestDocument()` functions
 
@@ -965,9 +1006,9 @@ git commit -m "feat: add TypeScript bridge for EmbeddingGemma native module"
 
 ```typescript
 // src/utils/MemoryDB/IngestPipeline.ts
-import { memoryStore } from '../../store/MemoryStore';
-import { embedBatch } from '../Embedder/onDevice/EmbeddingGemmaBridge';
-import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
+import { memoryStore } from "../../store/MemoryStore";
+import { embedBatch } from "../Embedder/onDevice/EmbeddingGemmaBridge";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 
 const splitter = new RecursiveCharacterTextSplitter({
   chunkSize: 500,
@@ -979,12 +1020,12 @@ export interface IngestOptions {
   clientId?: string;
   sourceUri?: string;
   sourceType?: string;
-  kind?: 'conversation' | 'document' | 'note';
+  kind?: "conversation" | "document" | "note";
 }
 
 export async function ingestText(
   text: string,
-  options: IngestOptions
+  options: IngestOptions,
 ): Promise<number> {
   const chunks = await splitter.splitText(text);
   const embeddings = await embedBatch(chunks);
@@ -993,13 +1034,13 @@ export async function ingestText(
   for (let i = 0; i < chunks.length; i++) {
     await memoryStore.insertMemory({
       workspaceId: options.workspaceId,
-      kind: options.kind || 'document',
+      kind: options.kind || "document",
       content: chunks[i],
       sourceUri: options.sourceUri,
       sourceType: options.sourceType,
       clientId: options.clientId,
       embedding: embeddings[i],
-      embeddingModel: 'embeddinggemma-300m-q4_0',
+      embeddingModel: "embeddinggemma-300m-q4_0",
       embeddingDims: 128,
       importance: 0.5,
     });
@@ -1016,14 +1057,14 @@ export async function ingestDocument(
     clientId?: string;
     filePath: string;
     fileType: string;
-  }
+  },
 ): Promise<number> {
   return ingestText(text, {
     workspaceId: metadata.workspaceId,
     clientId: metadata.clientId,
     sourceUri: metadata.filePath,
     sourceType: metadata.fileType,
-    kind: 'document',
+    kind: "document",
   });
 }
 ```
@@ -1046,9 +1087,11 @@ git commit -m "feat: add ingest pipeline for memory creation"
 ### Task 3.2: Build RetrievalPipeline with Optional Reranker
 
 **Files:**
+
 - Create: `src/utils/MemoryDB/RetrievalPipeline.ts`
 
 **Interfaces:**
+
 - Consumes: `memorySearch()` from MemorySearch, `embedText()` from EmbeddingGemmaBridge
 - Produces: `retrieveContext()` function with optional cross-encoder reranking
 
@@ -1056,9 +1099,9 @@ git commit -m "feat: add ingest pipeline for memory creation"
 
 ```typescript
 // src/utils/MemoryDB/RetrievalPipeline.ts
-import { memorySearch, SearchResult } from './MemorySearch';
-import { embedText } from '../Embedder/onDevice/EmbeddingGemmaBridge';
-import { NativeModules } from 'react-native';
+import { memorySearch, SearchResult } from "./MemorySearch";
+import { embedText } from "../Embedder/onDevice/EmbeddingGemmaBridge";
+import { NativeModules } from "react-native";
 
 const { RerankerModule } = NativeModules;
 
@@ -1071,14 +1114,9 @@ export interface RetrieveOptions {
 
 export async function retrieveContext(
   query: string,
-  options: RetrieveOptions
+  options: RetrieveOptions,
 ): Promise<SearchResult[]> {
-  const {
-    workspaceId,
-    clientId,
-    topK = 5,
-    useReranker = true,
-  } = options;
+  const { workspaceId, clientId, topK = 5, useReranker = true } = options;
 
   // 1. Embed query
   const queryEmbedding = await embedText(query);
@@ -1097,7 +1135,7 @@ export async function retrieveContext(
       if (isAvailable) {
         const reranked = await RerankerModule.rerank(
           query,
-          results.map(r => r.memory.content)
+          results.map(r => r.memory.content),
         );
 
         // Merge reranker scores with existing scores
@@ -1119,8 +1157,10 @@ export async function retrieveContext(
 
 export function buildContextString(results: SearchResult[]): string {
   return results
-    .map(r => `[Source: ${r.memory.sourceUri || 'unknown'}]: ${r.memory.content}`)
-    .join('\n\n');
+    .map(
+      r => `[Source: ${r.memory.sourceUri || "unknown"}]: ${r.memory.content}`,
+    )
+    .join("\n\n");
 }
 ```
 
@@ -1142,9 +1182,11 @@ git commit -m "feat: add retrieval pipeline with optional cross-encoder rerankin
 ### Task 3.3: Build Memory Lifecycle Manager
 
 **Files:**
+
 - Create: `src/utils/MemoryDB/LifecycleManager.ts`
 
 **Interfaces:**
+
 - Consumes: `getMemoryDB()` from MemoryDB
 - Produces: `runMemoryDecay()`, `pruneOldMemories()` functions
 
@@ -1152,12 +1194,15 @@ git commit -m "feat: add retrieval pipeline with optional cross-encoder rerankin
 
 ```typescript
 // src/utils/MemoryDB/LifecycleManager.ts
-import { getMemoryDB } from './index';
+import { getMemoryDB } from "./index";
 
 const DECAY_RATE = 0.05;
 const IMPORTANCE_THRESHOLD = 0.05;
 
-export async function runMemoryDecay(): Promise<{ pruned: number; decayed: number }> {
+export async function runMemoryDecay(): Promise<{
+  pruned: number;
+  decayed: number;
+}> {
   const db = getMemoryDB();
   const now = Date.now();
 
@@ -1166,13 +1211,13 @@ export async function runMemoryDecay(): Promise<{ pruned: number; decayed: numbe
     `UPDATE memories
      SET importance = importance * exp(-? * (? - accessed_at) / (1000 * 60 * 60 * 24))
      WHERE (? - accessed_at) > 7 * 24 * 60 * 60 * 1000`,
-    [DECAY_RATE, now, now]
+    [DECAY_RATE, now, now],
   );
 
   // 2. Prune memories below threshold
   const pruneResult = await db.executeAsync(
     `DELETE FROM memories WHERE importance < ?`,
-    [IMPORTANCE_THRESHOLD]
+    [IMPORTANCE_THRESHOLD],
   );
 
   // 3. Compact vec index
@@ -1199,7 +1244,7 @@ export async function getMemoryStats(workspaceId: string): Promise<{
        MAX(created_at) as newest
      FROM memories
      WHERE workspace_id = ?`,
-    [workspaceId]
+    [workspaceId],
   );
 
   const row = result.rows?.[0];
@@ -1232,16 +1277,21 @@ git commit -m "feat: add memory lifecycle manager with decay and pruning"
 ### Task 4.1: Integrate with VoicePipelineProvider
 
 **Files:**
+
 - Modify: `src/utils/AiProviders/onDevice/voice/VoicePipelineProvider.ts`
 
 **Interfaces:**
+
 - Consumes: `retrieveContext()`, `buildContextString()` from RetrievalPipeline
 
 - [ ] **Step 1: Add memory retrieval to voice pipeline**
 
 ```typescript
 // In VoicePipelineProvider.ts - before cactusLm.generate()
-import { retrieveContext, buildContextString } from '../../../utils/MemoryDB/RetrievalPipeline';
+import {
+  retrieveContext,
+  buildContextString,
+} from "../../../utils/MemoryDB/RetrievalPipeline";
 
 // In processVoiceInput():
 const contextResults = await retrieveContext(transcript, {
@@ -1276,16 +1326,18 @@ git commit -m "feat: integrate memory retrieval into voice pipeline"
 ### Task 4.2: Integrate with Xberg Document Extraction
 
 **Files:**
+
 - Modify: `src/store/XbergStore.ts`
 
 **Interfaces:**
+
 - Consumes: `ingestDocument()` from IngestPipeline
 
 - [ ] **Step 1: Add embedding on extraction complete**
 
 ```typescript
 // In XbergStore.ts - after extraction succeeds
-import { ingestDocument } from '../utils/MemoryDB/IngestPipeline';
+import { ingestDocument } from "../utils/MemoryDB/IngestPipeline";
 
 // After extractionResult is received:
 await ingestDocument(extractionResult.text, {
@@ -1313,9 +1365,11 @@ git commit -m "feat: auto-ingest extracted documents into memory store"
 ### Task 4.3: Add Memory Store to App Initialization
 
 **Files:**
+
 - Modify: `src/store/ModelStore.ts`
 
 **Interfaces:**
+
 - Consumes: `initMemoryDB()` from MemoryDB, `runMemoryDecay()` from LifecycleManager
 
 **Note:** ModelStore initializes in its constructor via `makePersistable().then(() => this.initializeStore())`. There is no explicit `initialize()` method. The memory DB init should be added inside the `initializeStore()` method.
@@ -1361,6 +1415,7 @@ git commit -m "feat: initialize memory database on app start"
 ### Task 5.1: Unit Tests for Memory Pipeline
 
 **Files:**
+
 - Create: `__tests__/MemoryDB/schema.test.ts`
 - Create: `__tests__/MemoryDB/MemorySearch.test.ts`
 - Create: `__tests__/MemoryDB/LifecycleManager.test.ts`
@@ -1369,13 +1424,21 @@ git commit -m "feat: initialize memory database on app start"
 
 ```typescript
 // __tests__/MemoryDB/schema.test.ts
-import { MEMORY_SCHEMA, MEMORY_FTS_SCHEMA, MEMORY_VEC_SCHEMA } from '../../src/utils/MemoryDB/schema';
+import {
+  MEMORY_SCHEMA,
+  MEMORY_FTS_SCHEMA,
+  MEMORY_VEC_SCHEMA,
+} from "../../src/utils/MemoryDB/schema";
 
-describe('Memory Schema', () => {
-  it('should have valid SQL syntax', () => {
-    expect(MEMORY_SCHEMA).toContain('CREATE TABLE IF NOT EXISTS memories');
-    expect(MEMORY_FTS_SCHEMA).toContain('CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts');
-    expect(MEMORY_VEC_SCHEMA).toContain('CREATE VIRTUAL TABLE IF NOT EXISTS memories_vec');
+describe("Memory Schema", () => {
+  it("should have valid SQL syntax", () => {
+    expect(MEMORY_SCHEMA).toContain("CREATE TABLE IF NOT EXISTS memories");
+    expect(MEMORY_FTS_SCHEMA).toContain(
+      "CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts",
+    );
+    expect(MEMORY_VEC_SCHEMA).toContain(
+      "CREATE VIRTUAL TABLE IF NOT EXISTS memories_vec",
+    );
   });
 });
 ```
@@ -1384,12 +1447,12 @@ describe('Memory Schema', () => {
 
 ```typescript
 // __tests__/MemoryDB/MemorySearch.test.ts
-describe('MemorySearch', () => {
-  it('should merge vector and BM25 results', () => {
+describe("MemorySearch", () => {
+  it("should merge vector and BM25 results", () => {
     // Test merge logic
   });
 
-  it('should compute final scores correctly', () => {
+  it("should compute final scores correctly", () => {
     // Test scoring weights
   });
 });
@@ -1399,8 +1462,8 @@ describe('MemorySearch', () => {
 
 ```typescript
 // __tests__/MemoryDB/LifecycleManager.test.ts
-describe('LifecycleManager', () => {
-  it('should apply exponential decay to importance', () => {
+describe("LifecycleManager", () => {
+  it("should apply exponential decay to importance", () => {
     const importance = 0.5;
     const daysSinceAccess = 30;
     const decayRate = 0.05;
@@ -1428,19 +1491,20 @@ git commit -m "test: add unit tests for memory pipeline"
 ### Task 5.2: Integration Test
 
 **Files:**
+
 - Create: `__tests__/MemoryDB/integration.test.ts`
 
 - [ ] **Step 1: Create integration test**
 
 ```typescript
 // __tests__/MemoryDB/integration.test.ts
-describe('Memory Pipeline Integration', () => {
-  it('should ingest and retrieve text', async () => {
+describe("Memory Pipeline Integration", () => {
+  it("should ingest and retrieve text", async () => {
     // Mock native modules
     // Test full pipeline: ingest -> search -> retrieve
   });
 
-  it('should handle workspace isolation', async () => {
+  it("should handle workspace isolation", async () => {
     // Verify client_id filtering
   });
 });

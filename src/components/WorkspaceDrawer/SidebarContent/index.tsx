@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { DrawerContentScrollView } from "@react-navigation/drawer";
-import { Gear, QrCode } from "phosphor-react-native";
+import { Gear, MusicNotes, QrCode } from "phosphor-react-native";
 import WorkspaceItem from "./WorkspaceItem";
 import useWorkspaces from "@/hooks/useWorkspaces";
 import NewWorkspaceModal, {
@@ -59,6 +59,17 @@ export default function SidebarContent({ navigation }: { navigation: any }) {
       index: 0,
       // @ts-ignore
       routes: [{ name: PATHS.connect_to_instance }],
+    });
+  };
+
+  const goToAudioMemos = () => {
+    uiStore.emitter.emit(uiStore.globalEvents.REDIRECT, {
+      path: PATHS.audio_memos,
+    });
+    navigation.reset({
+      index: 0,
+      // @ts-ignore
+      routes: [{ name: PATHS.audio_memos }],
     });
   };
 
@@ -161,6 +172,13 @@ export default function SidebarContent({ navigation }: { navigation: any }) {
               style={{ height: "100%", width: 42 }}
               className="flex items-center justify-center bg-white/10 rounded-lg p-[11px]">
               <QrCode size={30} color="#FFF" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={goToAudioMemos}
+              activeOpacity={0.8}
+              className="flex flex-1 flex-row items-center justify-center bg-white/10 rounded-lg py-[11px]">
+              <MusicNotes size={20} color="#FFF" />
+              <Text className="text-white text-sm ml-2">Audio Memos</Text>
             </TouchableOpacity>
           </View>
         </View>

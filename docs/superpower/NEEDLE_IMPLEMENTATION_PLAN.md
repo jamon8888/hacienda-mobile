@@ -139,16 +139,16 @@ const results = await VectorDB.runSemanticSearch(
 
 ## Files (all new unless noted)
 
-| Path                                                                     | Action                               |
-| ------------------------------------------------------------------------ | ------------------------------------ |
+| Path                                                                  | Action                               |
+| --------------------------------------------------------------------- | ------------------------------------ |
 | `android/.../com/hacienda/needle/{NeedleModule.kt, NeedlePackage.kt}` | create                               |
-| `android/app/build.gradle` (+ prefab or CMake)                           | add `.so` link (edit)                |
+| `android/app/build.gradle` (+ prefab or CMake)                        | add `.so` link (edit)                |
 | `ios/Hacienda/{NeedleModule.swift, NeedleModule.m, needle.h}`         | create                               |
-| `ios/Podfile` / Podspec                                                  | add staticlib pod (edit)             |
-| `src/utils/Needle/{types.ts, NeedleClient.ts, index.ts}`                 | create                               |
-| `src/store/NeedleStore.ts`, `src/hooks/useNeedle.ts`                     | create                               |
-| `src/AiProviders/baseOpenAILikeProvider/index.ts`                        | edit `getContextTexts`               |
-| `src/screens/WorkspaceSettings/index.tsx` (maybe)                        | settings toggle for router (skip v1) |
+| `ios/Podfile` / Podspec                                               | add staticlib pod (edit)             |
+| `src/utils/Needle/{types.ts, NeedleClient.ts, index.ts}`              | create                               |
+| `src/store/NeedleStore.ts`, `src/hooks/useNeedle.ts`                  | create                               |
+| `src/AiProviders/baseOpenAILikeProvider/index.ts`                     | edit `getContextTexts`               |
+| `src/screens/WorkspaceSettings/index.tsx` (maybe)                     | settings toggle for router (skip v1) |
 
 ## Rollback / safety
 

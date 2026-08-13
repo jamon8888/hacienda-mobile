@@ -1,0 +1,231 @@
+import AudioMemo from "@/database/models/AudioMemo";
+
+jest.mock("@/database/models/AudioMemo", () => ({
+  __esModule: true,
+  default: {
+    find: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+}));
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { renderHook, act } = require("@testing-library/react-hooks");
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { useAudioMemos } = require("./useAudioMemos");
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+
+describe("useAudioMemos", () => {
+  it("should initialize with empty memos", () => {
+    const { result } = renderHook(() => useAudioMemos());
+    expect(result.current.memos).toEqual([]);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.playingId).toBeNull();
+    expect(result.current.playbackPosition).toBe(0);
+    expect(result.current.playbackDuration).toBe(0);
+  });
+
+  describe("fetchMemos", () => {
+    it("should fetch memos and set loading state", async () => {
+      const mockMemos = [
+        {
+          uuid: "1",
+          audioUri: "file:///test1.m4a",
+          durationMs: 5000,
+          waveformPeaks: [0.5],
+          workspaceSlug: null,
+          transcript: null,
+          createdAt: 1000,
+          updatedAt: 1000,
+        },
+      ];
+      (AudioMemo.find as jest.Mock).mockResolvedValue(mockMemos);
+
+      const { result } = renderHook(() => useAudioMemos());
+
+      await act(async () => {
+        await result.current.fetchMemos();
+      });
+
+      expect(result.current.memos).toEqual(mockMemos);
+      expect(result.current.loading).toBe(false);
+    });
+
+    it("should set loading to false after fetch completes", async () => {
+      (AudioMemo.find as jest.Mock).mockResolvedValue([]);
+
+      const { result } = renderHook(() => useAudioMemos());
+
+      await act(async () => {
+        await result.current.fetchMemos();
+      });
+
+      expect(result.current.loading).toBe(false);
+    });
+
+    it("should pass workspace slug filter to AudioMemo.find", async () => {
+      (AudioMemo.find as jest.Mock).mockResolvedValue([]);
+
+      const { result } = renderHook(() => useAudioMemos());
+
+      await act(async () => {
+        await result.current.fetchMemos("my-workspace");
+      });
+
+      expect(AudioMemo.find).toHaveBeenCalledWith(
+        [{ field: "workspace_slug", value: "my-workspace" }],
+        [{ field: "created_at", direction: "desc" }],
+      );
+    });
+  });
+
+  describe("createMemo", () => {
+    it("should create a memo and add to list", async () => {
+      const newMemo = {
+        uuid: "new-uuid",
+        audioUri: "file:///new.m4a",
+        durationMs: 3000,
+        waveformPeaks: [0.1, 0.2],
+        workspaceSlug: null,
+        transcript: "hello",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      (AudioMemo.create as jest.Mock).mockResolvedValue(newMemo);
+
+      const { result } = renderHook(() => useAudioMemos());
+
+      let created;
+      await act(async () => {
+        created = await result.current.createMemo({
+          audioUri: "file:///new.m4a",
+          durationMs: 3000,
+          waveformPeaks: [0.1, 0.2],
+          transcript: "hello",
+        });
+      });
+
+      expect(created).toEqual(newMemo);
+      expect(result.current.memos).toContainEqual(newMemo);
+    });
+  });
+
+  describe("deleteMemo", () => {
+    it("should delete memo and remove from list", async () => {
+      const existingMemo = {
+        uuid: "to-delete",
+        audioUri: "file:///del.m4a",
+        durationMs: 1000,
+        waveformPeaks: [],
+        workspaceSlug: null,
+        transcript: null,
+        createdAt: 1000,
+        updatedAt: 1000,
+      };
+
+      (AudioMemo.find as jest.Mock).mockResolvedValue([existingMemo]);
+      (AudioMemo.delete as jest.Mock).mockResolvedValue(true);
+
+      const { result } = renderHook(() => useAudioMemos());
+
+      await act(async () => {
+        await result.current.fetchMemos();
+      });
+
+      await act(async () => {
+        await result.current.deleteMemo("to-delete");
+      });
+
+      expect(AudioMemo.delete).toHaveBeenCalledWith([
+        { field: "uuid", value: "to-delete" },
+      ]);
+      expect(result.current.memos).toHaveLength(0);
+    });
+  });
+
+  describe("updateMemo", () => {
+    it("should update memo in the list", async () => {
+      const existingMemo = {
+        uuid: "to-update",
+        audioUri: "file:///old.m4a",
+        durationMs: 1000,
+        waveformPeaks: [],
+        workspaceSlug: null,
+        transcript: "old",
+        createdAt: 1000,
+        updatedAt: 1000,
+      };
+      const updatedMemo = { ...existingMemo, transcript: "new" };
+
+      (AudioMemo.find as jest.Mock).mockResolvedValue([existingMemo]);
+      (AudioMemo.update as jest.Mock).mockResolvedValue(updatedMemo);
+
+      const { result } = renderHook(() => useAudioMemos());
+
+      await act(async () => {
+        await result.current.fetchMemos();
+      });
+
+      await act(async () => {
+        await result.current.updateMemo("to-update", { transcript: "new" });
+      });
+
+      expect(result.current.memos[0].transcript).toBe("new");
+    });
+  });
+
+  describe("playback controls", () => {
+    it("should set playingId on playMemo", async () => {
+      const { result } = renderHook(() => useAudioMemos());
+
+      await act(async () => {
+        await result.current.playMemo("memo-1", "file:///test.m4a");
+      });
+
+      expect(result.current.playingId).toBe("memo-1");
+    });
+
+    it("should clear playingId on pauseMemo", async () => {
+      const { result } = renderHook(() => useAudioMemos());
+
+      await act(async () => {
+        await result.current.playMemo("memo-1", "file:///test.m4a");
+      });
+
+      await act(async () => {
+        await result.current.pauseMemo();
+      });
+
+      expect(result.current.playingId).toBeNull();
+    });
+
+    it("should clear playingId and position on stopMemo", async () => {
+      const { result } = renderHook(() => useAudioMemos());
+
+      await act(async () => {
+        await result.current.playMemo("memo-1", "file:///test.m4a");
+      });
+
+      await act(async () => {
+        await result.current.stopMemo();
+      });
+
+      expect(result.current.playingId).toBeNull();
+      expect(result.current.playbackPosition).toBe(0);
+    });
+
+    it("should update playbackPosition on seekTo", async () => {
+      const { result } = renderHook(() => useAudioMemos());
+
+      await act(async () => {
+        await result.current.seekTo(5000);
+      });
+
+      expect(result.current.playbackPosition).toBe(5000);
+    });
+  });
+});

@@ -51,7 +51,7 @@ The design thesis of a "Local AI First" of Hacienda applies to the mobile app as
 | Provider                    | Type                   |
 | --------------------------- | ---------------------- |
 | On-device (GGUF via cactus) | Local inference        |
-| Hacienda Instance        | Delegated (LAN/remote) |
+| Hacienda Instance           | Delegated (LAN/remote) |
 | Ollama                      | Local/remote           |
 | LM Studio                   | Local/remote           |
 | OpenRouter                  | Cloud                  |

@@ -15,6 +15,30 @@ import {
   DEFAULT_MULTILINGUAL_EMBEDDING_MODEL,
 } from "@/utils/models/defaults";
 
+export type XbergConfig = {
+  enabled: boolean;
+  ocrLanguage: string;
+  chunkingStrategy: "semantic" | "text" | "markdown";
+  maxChunkSize: number;
+  chunkOverlap: number;
+  tableExtraction: boolean;
+  codeIntelligence: boolean;
+  transcriptionModel: "tiny" | "base" | "small";
+  autoTranscribe: boolean;
+};
+
+export const DEFAULT_XBERG_CONFIG: XbergConfig = {
+  enabled: true,
+  ocrLanguage: "eng",
+  chunkingStrategy: "semantic",
+  maxChunkSize: 512,
+  chunkOverlap: 50,
+  tableExtraction: true,
+  codeIntelligence: true,
+  transcriptionModel: "tiny",
+  autoTranscribe: false,
+};
+
 export type WorkspaceType = {
   name: string;
   slug: string;
@@ -37,6 +61,8 @@ export type WorkspaceType = {
     autoDetectLanguage: boolean;
     modelVersion: string;
   };
+  /** Xberg extraction configuration for this workspace */
+  xbergConfig?: XbergConfig;
   /** Check if the remote server is reachable */
   remoteServerReachable: () => Promise<boolean>;
   /** Get the model tag for the workspace from the remote server */
@@ -124,6 +150,26 @@ export default class Workspace extends Model {
         return { valid: !error, error };
       },
     },
+    xbergConfig: {
+      validate: (value: any) => {
+        let error = "";
+        if (!value || typeof value !== "object")
+          error = "Xberg config must be an object";
+        if (
+          value.chunkingStrategy &&
+          !["semantic", "text", "markdown"].includes(value.chunkingStrategy)
+        ) {
+          error = "Invalid chunking strategy";
+        }
+        if (
+          value.transcriptionModel &&
+          !["tiny", "base", "small"].includes(value.transcriptionModel)
+        ) {
+          error = "Invalid transcription model";
+        }
+        return { valid: !error, error };
+      },
+    },
   };
 
   static associations = {
@@ -147,6 +193,8 @@ export default class Workspace extends Model {
   remoteConfig!: WorkspaceType["remoteConfig"];
   @json("embedding_config", (json: any) => json)
   embeddingConfig!: WorkspaceType["embeddingConfig"];
+  @json("xberg_config", (json: any) => json)
+  xbergConfig!: WorkspaceType["xbergConfig"];
   @field("created_at") createdAt!: number;
 
   static log(message: any, ...args: any[]) {
@@ -164,6 +212,7 @@ export default class Workspace extends Model {
       isRemote = false,
       remoteConfig = null,
       embeddingConfig = null,
+      xbergConfig = null,
     } = data;
     return {
       name: name,
@@ -181,6 +230,7 @@ export default class Workspace extends Model {
         autoDetectLanguage: true,
         modelVersion: "1.0",
       },
+      xbergConfig: xbergConfig || DEFAULT_XBERG_CONFIG,
       threads: [],
       createdAt,
 
@@ -306,6 +356,7 @@ export default class Workspace extends Model {
           workspace.is_remote = false;
           workspace.remote_config = null;
           workspace.embedding_config = defaultEmbeddingConfig;
+          workspace.xberg_config = DEFAULT_XBERG_CONFIG;
           workspace.created_at = Date.now();
         });
     });

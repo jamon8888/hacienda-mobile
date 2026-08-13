@@ -477,6 +477,7 @@ export const CACTUS_VOICE_MODELS = {
       "Vision, audio, completion and tool-calling capable multimodal model.",
     slug: "gemma-4-e2b-it",
     quantization: "int4",
+    pro: false,
     // The actual weights/gemma-4-e2b-it-int4.zip on HF is ~3.85GB (verified via HEAD request),
     // not the ~650MB previously listed here -- it bundles vision + audio encoders alongside the
     // text model, not just a quantized text-only LLM.
@@ -497,6 +498,7 @@ export const CACTUS_VOICE_MODELS = {
       "Best-in-class streaming ASR, smallest bundle. Non-autoregressive, real-time factor ~0.1x.",
     slug: "parakeet-tdt-0.6b-v3",
     quantization: "int4",
+    pro: false,
     size: "~180MB",
     hasConfidenceProbe: false,
     supportsCloudHandoff: false,
@@ -510,6 +512,7 @@ export const CACTUS_VOICE_MODELS = {
     description: "Highest accuracy at this size. Use when RAM allows.",
     slug: "parakeet-tdt-0.6b-v3",
     quantization: "int8",
+    pro: false,
     size: "~320MB",
     hasConfidenceProbe: false,
     supportsCloudHandoff: false,
@@ -523,6 +526,7 @@ export const CACTUS_VOICE_MODELS = {
     description: "Larger model for challenging audio (accents, noise).",
     slug: "parakeet-ctc-1.1b",
     quantization: "int8",
+    pro: false,
     size: "~600MB",
     hasConfidenceProbe: false,
     supportsCloudHandoff: false,

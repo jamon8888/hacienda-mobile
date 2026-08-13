@@ -12,8 +12,17 @@ export class XbergStore {
   lastResult: ExtractionResult | null = null;
   error: string | null = null;
 
+  /** Transcription options selected by the user in TranscriptionOptionsSheet */
+  transcriptionModel: string = "base";
+  transcriptionLanguage: string = "auto";
+
   constructor() {
     makeAutoObservable(this);
+  }
+
+  setTranscriptionOptions(model: string, language: string) {
+    this.transcriptionModel = model;
+    this.transcriptionLanguage = language;
   }
 
   async extractFile(
@@ -34,7 +43,7 @@ export class XbergStore {
       // Ingest extracted text into memory store
       if (workspaceId && result.results?.length > 0) {
         const fullText = result.results
-          .map((r) => r.content)
+          .map(r => r.content)
           .filter(Boolean)
           .join("\n\n");
         if (fullText) {

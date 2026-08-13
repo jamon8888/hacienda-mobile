@@ -1,0 +1,97 @@
+import React from "react";
+import { TouchableOpacity } from "react-native";
+import renderer from "react-test-renderer";
+import MemoRow from "./MemoRow";
+import { AudioMemoType } from "@/database/models/AudioMemo";
+
+const mockMemo: AudioMemoType = {
+  uuid: "test-uuid-1",
+  workspaceSlug: "test-workspace",
+  audioUri: "file:///test/audio.m4a",
+  transcript: "This is a test transcript for the memo",
+  durationMs: 65000,
+  waveformPeaks: [0.1, 0.5, 0.3, 0.8, 0.2],
+  createdAt: Date.now() - 86400000,
+  updatedAt: Date.now() - 86400000,
+};
+
+describe("MemoRow", () => {
+  const defaultProps = {
+    memo: mockMemo,
+    isPlaying: false,
+    onPlay: jest.fn(),
+    onPause: jest.fn(),
+    onDelete: jest.fn(),
+    onPress: jest.fn(),
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("renders memo title from transcript", () => {
+    const tree = renderer.create(<MemoRow {...defaultProps} />);
+    const root = tree.root;
+    const titleText = root.findByProps({ numberOfLines: 1 });
+    expect(titleText.props.children).toBe(
+      "This is a test transcript for the memo",
+    );
+  });
+
+  it("renders 'Untitled Memo' when transcript is null", () => {
+    const memoWithoutTranscript = { ...mockMemo, transcript: null };
+    const tree = renderer.create(
+      <MemoRow {...defaultProps} memo={memoWithoutTranscript} />,
+    );
+    const root = tree.root;
+    const titleText = root.findByProps({ numberOfLines: 1 });
+    expect(titleText.props.children).toBe("Untitled Memo");
+  });
+
+  it("truncates long transcripts to 30 characters", () => {
+    const longTranscript = "A".repeat(50);
+    const memoWithLongTranscript = { ...mockMemo, transcript: longTranscript };
+    const tree = renderer.create(
+      <MemoRow {...defaultProps} memo={memoWithLongTranscript} />,
+    );
+    const root = tree.root;
+    const titleText = root.findByProps({ numberOfLines: 1 });
+    expect(titleText.props.children).toBe("A".repeat(30) + "...");
+  });
+
+  it("calls onPress when row is pressed", () => {
+    const tree = renderer.create(<MemoRow {...defaultProps} />);
+    const root = tree.root;
+    const row = root.findAllByType(TouchableOpacity)[0];
+    row?.props.onPress();
+    expect(defaultProps.onPress).toHaveBeenCalled();
+  });
+
+  it("calls onPlay when play button is pressed and not playing", () => {
+    const tree = renderer.create(
+      <MemoRow {...defaultProps} isPlaying={false} />,
+    );
+    const root = tree.root;
+    const playButton = root.findAllByType(TouchableOpacity)[0];
+    playButton?.props.onPress();
+    expect(defaultProps.onPlay).toHaveBeenCalled();
+  });
+
+  it("calls onPause when pause button is pressed and playing", () => {
+    const tree = renderer.create(
+      <MemoRow {...defaultProps} isPlaying={true} />,
+    );
+    const root = tree.root;
+    const pauseButton = root.findAllByType(TouchableOpacity)[0];
+    pauseButton?.props.onPress();
+    expect(defaultProps.onPause).toHaveBeenCalled();
+  });
+
+  it("calls onDelete when delete button is pressed", () => {
+    const tree = renderer.create(<MemoRow {...defaultProps} />);
+    const root = tree.root;
+    const deleteButton = root.findAllByType(TouchableOpacity)[1];
+    deleteButton?.props.onPress();
+    expect(defaultProps.onDelete).toHaveBeenCalled();
+  });
+});

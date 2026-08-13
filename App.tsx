@@ -180,6 +180,28 @@ const App = observer(() => {
                           )}
                           options={{ headerShown: false }}
                         />
+
+                        <Drawer.Screen
+                          name={PATHS.subscription}
+                          component={gestureHandlerRootHOC(
+                            Screens.SubscriptionScreen,
+                          )}
+                          options={{ headerShown: false }}
+                        />
+                        <Drawer.Screen
+                          name={PATHS.audio_memos}
+                          component={gestureHandlerRootHOC(
+                            Screens.AudioMemosScreen,
+                          )}
+                          options={{ headerShown: false }}
+                        />
+                        <Drawer.Screen
+                          name={PATHS.audio_memo_player}
+                          component={gestureHandlerRootHOC(
+                            Screens.MemoPlayerScreen,
+                          )}
+                          options={{ headerShown: false }}
+                        />
                       </WorkspaceDrawer>
                     </NavigationContainer>
                   </BottomSheetModalProvider>

@@ -19,6 +19,7 @@ import SettingsActionSheet from "./PromptInput/Actions/Settings";
 import ToolsActionSheet from "./PromptInput/Actions/Settings/Tools";
 import WorkspaceFilesActionSheet from "./PromptInput/Actions/Settings/Files";
 import CitationsActionSheet from "./ChatHistory/CitationsActionSheet";
+import AttachmentActionMenu from "./PromptInput/Actions/AttachmentsButton/AttachmentActionMenu";
 
 export default function WorkspaceChat() {
   useRedirect();
@@ -69,13 +70,20 @@ export default function WorkspaceChat() {
         thread={thread}
         llmProvider={LLMProvider!}>
         <ChatHistory />
-        <PromptInput attachmentHandler={attachmentHandler} />
+        <PromptInput
+          attachmentHandler={attachmentHandler}
+          workspaceSlug={wsSlug}
+        />
       </ChatHandlerWrapper>
 
       <SettingsActionSheet workspace={workspace} thread={thread} />
       <ToolsActionSheet />
       <WorkspaceFilesActionSheet workspace={workspace} />
       <CitationsActionSheet />
+      <AttachmentActionMenu
+        attachmentHandler={attachmentHandler}
+        workspaceSlug={wsSlug}
+      />
     </SafeView>
   );
 }

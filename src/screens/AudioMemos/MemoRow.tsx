@@ -1,0 +1,84 @@
+import React from "react";
+import { View, Text, TouchableOpacity, Pressable } from "react-native";
+import { Play, Pause, Trash } from "phosphor-react-native";
+import { AudioMemoType } from "@/database/models/AudioMemo";
+
+interface MemoRowProps {
+  memo: AudioMemoType;
+  isPlaying: boolean;
+  onPlay: () => void;
+  onPause: () => void;
+  onDelete: () => void;
+  onPress: () => void;
+}
+
+function formatDuration(ms: number): string {
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${minutes}:${secs.toString().padStart(2, "0")}`;
+}
+
+function formatDate(timestamp: number): string {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+  if (days === 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 7) return `${days} days ago`;
+  return date.toLocaleDateString();
+}
+
+export default function MemoRow({
+  memo,
+  isPlaying,
+  onPlay,
+  onPause,
+  onDelete,
+  onPress,
+}: MemoRowProps) {
+  const title = memo.transcript
+    ? memo.transcript.substring(0, 30) +
+      (memo.transcript.length > 30 ? "..." : "")
+    : "Untitled Memo";
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      className="flex-row items-center p-4 bg-[#27282A] rounded-lg mb-2 border border-[#3A3B3D]">
+      {/* Play/Pause Button */}
+      <Pressable
+        onPress={isPlaying ? onPause : onPlay}
+        className="w-10 h-10 rounded-full bg-[#3B82F6] items-center justify-center mr-3">
+        {isPlaying ? (
+          <Pause size={18} color="#FFF" weight="fill" />
+        ) : (
+          <Play size={18} color="#FFF" weight="fill" />
+        )}
+      </Pressable>
+
+      {/* Content */}
+      <View className="flex-1">
+        <Text className="text-white text-base font-medium" numberOfLines={1}>
+          {title}
+        </Text>
+        <View className="flex-row items-center gap-2 mt-1">
+          <Text className="text-white/60 text-xs">
+            {formatDuration(memo.durationMs)}
+          </Text>
+          <Text className="text-white/60 text-xs">•</Text>
+          <Text className="text-white/60 text-xs">
+            {formatDate(memo.createdAt)}
+          </Text>
+        </View>
+      </View>
+
+      {/* Delete Button */}
+      <Pressable onPress={onDelete} className="p-2">
+        <Trash size={18} color="#9F9FA0" />
+      </Pressable>
+    </TouchableOpacity>
+  );
+}

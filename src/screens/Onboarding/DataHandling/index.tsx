@@ -17,6 +17,7 @@ import { FileDashed, Sparkle } from "phosphor-react-native";
 import Workspace from "@/database/models/Workspace";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Telemetry from "@/utils/Telemetry";
+import LogoIcon from "@/components/LogoIcon";
 
 export default function DataHandling() {
   const navigation = useNavigation();
@@ -85,11 +86,7 @@ export default function DataHandling() {
           containerClassNames="h-full z-[1]"
           containerStyle={{ paddingTop: insets.top + 20 }}>
           <View className="flex flex-col gap-y-1 items-center my-auto">
-            <Image
-              source={require("@/assets/logo/anything-llm.png")}
-              resizeMode="contain"
-              className="w-[70vw]"
-            />
+            <LogoIcon size={120} />
             <View className="flex flex-row gap-x-2 items-center -mt-8">
               <ActivityIndicator size="small" animating={true} color="#fff" />
               <Text className="text-white text-xl text-center animate-pulse">

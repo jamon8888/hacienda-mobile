@@ -8,6 +8,8 @@ import Workspace from "./models/Workspace";
 import WorkspaceThread from "./models/WorkspaceThread";
 import Document from "./models/Document";
 import WorkspaceChat from "./models/WorkspaceChat";
+import AudioMemo from "./models/AudioMemo";
+import Subscription from "./models/Subscription";
 
 const adapter = new SQLiteAdapter({
   schema,
@@ -19,7 +21,14 @@ const adapter = new SQLiteAdapter({
 
 export const database = new Database({
   adapter,
-  modelClasses: [Workspace, WorkspaceThread, Document, WorkspaceChat],
+  modelClasses: [
+    Workspace,
+    WorkspaceThread,
+    Document,
+    WorkspaceChat,
+    AudioMemo,
+    Subscription,
+  ],
 });
 
 export const databaseTables = [
@@ -27,4 +36,9 @@ export const databaseTables = [
   WorkspaceThread.table,
   Document.table,
   WorkspaceChat.table,
+  AudioMemo.table,
+  Subscription.table,
 ];
+
+export { default as AudioMemo } from "./models/AudioMemo";
+export { default as Subscription } from "./models/Subscription";

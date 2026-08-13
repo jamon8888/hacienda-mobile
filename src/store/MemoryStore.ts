@@ -94,6 +94,16 @@ export class MemoryStore {
 
   async deleteMemory(id: string): Promise<void> {
     const db = getMemoryDB();
+    // Delete the vector row first (it references the memories rowid).
+    const rowResult = await db.execute(
+      "SELECT rowid FROM memories WHERE id = ?",
+      [id],
+    );
+    const rowid = (rowResult.rows?.[0] as { rowid?: number } | undefined)
+      ?.rowid;
+    if (rowid !== undefined) {
+      await db.execute("DELETE FROM memories_vec WHERE rowid = ?", [rowid]);
+    }
     await db.execute("DELETE FROM memories WHERE id = ?", [id]);
   }
 

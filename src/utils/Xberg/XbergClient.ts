@@ -1,10 +1,11 @@
-import { NativeModules } from "react-native";
+import { NativeModules, Platform } from "react-native";
 import {
   ExtractionConfig,
   ExtractionResult,
   ExtractionResultItem,
   SupportedFormat,
   TranscriptionConfig,
+  TranscriptionEngine,
   SUPPORTED_FILE_TYPES,
 } from "./types";
 
@@ -287,6 +288,15 @@ export class XbergClient {
     model: TranscriptionConfig["model"] = "tiny",
     language?: string,
   ): Promise<ExtractionResult> {
+    // On Android, use Cactus Parakeet instead of Xberg Whisper
+    if (Platform.OS === "android") {
+      const { CactusTranscriptionService } = await import(
+        "./CactusTranscriptionService"
+      );
+      return CactusTranscriptionService.transcribe(filePath);
+    }
+
+    // On iOS, use Xberg Whisper
     const raw = await requireModule().transcribeAudio(
       filePath,
       model,
@@ -295,8 +305,21 @@ export class XbergClient {
     return parseExtractionResult(raw, `transcribeAudio(${filePath})`);
   }
 
+  static getTranscriptionEngine(): TranscriptionEngine {
+    return Platform.OS === "android" ? "cactus-parakeet" : "whisper";
+  }
+
   static isAvailable(): boolean {
     return !!XbergModule;
+  }
+
+  /**
+   * Transcription is available on both platforms:
+   * - iOS: Uses Xberg Whisper (ONNX Runtime)
+   * - Android: Uses Cactus Parakeet (on-device ASR)
+   */
+  static isTranscriptionAvailable(): boolean {
+    return true;
   }
 
   static isAudioFile(filePath: string): boolean {
