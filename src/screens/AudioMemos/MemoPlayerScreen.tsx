@@ -2,14 +2,21 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import { View, Text, TouchableOpacity, TextInput } from "react-native";
 import SafeView from "@/components/SafeView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ArrowLeft, Trash2 } from "phosphor-react-native";
+import { ArrowLeft, Play, Pause, Trash2 } from "phosphor-react-native";
 import { AudioWaveformView, type AudioWaveformViewRef } from "react-native-waveform-player";
 import { useAudioMemos } from "@/hooks/useAudioMemos";
 import { AudioMemoType } from "@/database/models/AudioMemo";
 
-export default function MemoPlayerScreen({ route, navigation }: any) {
+type SpeedOption = 0.5 | 1 | 1.5 | 2;
+
+type MemoPlayerScreenProps = {
+  route: { params: { memoId: string; mode?: string } };
+  navigation: { goBack: () => void; navigate: (name: string, params?: object) => void };
+};
+
+export default function MemoPlayerScreen({ route, navigation }: MemoPlayerScreenProps) {
   const insets = useSafeAreaInsets();
-  const { memoId, mode } = route.params;
+  const { memoId, mode: _mode } = route.params;
   const {
     memos,
     playingId,
@@ -23,6 +30,7 @@ export default function MemoPlayerScreen({ route, navigation }: any) {
   } = useAudioMemos();
 
   const [memo, setMemo] = useState<AudioMemoType | null>(null);
+  const [speed, setSpeed] = useState<SpeedOption>(1);
   const [isEditing, setIsEditing] = useState(false);
   const [editedTranscript, setEditedTranscript] = useState("");
   const waveformRef = useRef<AudioWaveformViewRef>(null);
@@ -35,6 +43,14 @@ export default function MemoPlayerScreen({ route, navigation }: any) {
     }
   }, [memoId, memos]);
 
+  // Cleanup waveformRef on unmount or memo change
+  useEffect(() => {
+    return () => {
+      waveformRef.current?.stop();
+      waveformRef.current = null;
+    };
+  }, [memoId]);
+
   const handlePlayPause = useCallback(() => {
     if (!memo) return;
     if (playingId === memo.uuid) {
@@ -45,6 +61,11 @@ export default function MemoPlayerScreen({ route, navigation }: any) {
       waveformRef.current?.play();
     }
   }, [memo, playingId, pauseMemo, playMemo]);
+
+  const handleSpeedChange = useCallback((newSpeed: SpeedOption) => {
+    setSpeed(newSpeed);
+    waveformRef.current?.setSpeed(newSpeed);
+  }, []);
 
   const handleSaveTranscript = useCallback(async () => {
     if (!memo) return;
@@ -61,11 +82,6 @@ export default function MemoPlayerScreen({ route, navigation }: any) {
   const handleSeek = useCallback((positionMs: number) => {
     seekTo(positionMs);
   }, [seekTo]);
-
-  const handleSpeedChange = useCallback((speed: number) => {
-    // Speed is handled natively by AudioWaveformView
-    // We could sync this with playback state if needed
-  }, []);
 
   if (!memo) {
     return (
@@ -105,7 +121,13 @@ export default function MemoPlayerScreen({ route, navigation }: any) {
         <AudioWaveformView
           ref={waveformRef}
           source={{ uri: memo.audioUri }}
-          samples={memo.waveformPeaks?.length ? memo.waveformPeaks : undefined}
+          samples={
+            memo.waveformPeaks
+              ? typeof memo.waveformPeaks === "string"
+                ? JSON.parse(memo.waveformPeaks)
+                : memo.waveformPeaks
+              : undefined
+          }
           style={{ height: 120, marginBottom: 16 }}
           containerBackgroundColor="#27282A"
           containerBorderRadius={12}
@@ -117,6 +139,10 @@ export default function MemoPlayerScreen({ route, navigation }: any) {
           showTime={false}
           showSpeedControl={false}
           showBackground={true}
+          onError={() => {
+            // Error handling for waveform load failure
+            console.warn("Failed to load waveform");
+          }}
         />
 
         {/* Time Display */}
