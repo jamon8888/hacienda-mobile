@@ -10,7 +10,7 @@ import {
 } from "@/contexts/BottomSheetContext";
 import { View, Text, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Radio, MusicNotes, Warning } from "phosphor-react-native";
+import { Radio, MusicNotes } from "phosphor-react-native";
 import { xbergStore } from "@/store/XbergStore";
 import { XbergClient } from "@/utils/Xberg";
 
@@ -98,19 +98,32 @@ export default function TranscriptionOptionsSheet() {
           </Text>
         </View>
 
-        {!transcriptionAvailable && (
+        {transcriptionAvailable ? (
           <View
-            style={{ backgroundColor: "rgba(249,112,102,0.15)", padding: 12 }}
+            style={{ backgroundColor: "rgba(108,233,166,0.15)", padding: 12 }}
             className="rounded-lg flex flex-row items-start gap-3 mb-4">
-            <Warning size={18} color="#F97066" style={{ marginTop: 2 }} />
+            <MusicNotes size={18} color="#6CE9A6" style={{ marginTop: 2 }} />
             <View className="flex-1">
-              <Text style={{ color: "#F97066" }} className="text-sm font-medium">
-                Not available on Android
+              <Text style={{ color: "#6CE9A6" }} className="text-sm font-medium">
+                Engine: Xberg Whisper
               </Text>
               <Text style={{ color: "#9F9FA0" }} className="text-xs mt-1">
-                Whisper transcription requires ONNX Runtime, which is excluded
-                from the Android build. Audio files will be imported without
-                transcription.
+                Using ONNX Whisper for high-accuracy transcription.
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <View
+            style={{ backgroundColor: "rgba(59,130,246,0.15)", padding: 12 }}
+            className="rounded-lg flex flex-row items-start gap-3 mb-4">
+            <MusicNotes size={18} color="#3B82F6" style={{ marginTop: 2 }} />
+            <View className="flex-1">
+              <Text style={{ color: "#3B82F6" }} className="text-sm font-medium">
+                Engine: Cactus Parakeet
+              </Text>
+              <Text style={{ color: "#9F9FA0" }} className="text-xs mt-1">
+                Using Parakeet TDT 0.6B for on-device transcription. Model is
+                already bundled — no download needed.
               </Text>
             </View>
           </View>
