@@ -3,20 +3,22 @@ import { View, Text, TouchableOpacity, TextInput } from "react-native";
 import SafeView from "@/components/SafeView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowLeft, Play, Pause, Trash, Share } from "phosphor-react-native";
-import { AudioWaveformView, type AudioWaveformViewRef } from "react-native-waveform-player";
+import {
+  AudioWaveformView,
+  type AudioWaveformViewRef,
+} from "react-native-waveform-player";
 import { useAudioMemos } from "@/hooks/useAudioMemos";
 import { AudioMemoType } from "@/database/models/AudioMemo";
+import { useRoute, useNavigation } from "@react-navigation/native";
+import { DrawerNavigationProp } from "@react-navigation/drawer";
 
 type SpeedOption = 0.5 | 1 | 1.5 | 2;
 
-type MemoPlayerScreenProps = {
-  route: { params: { memoId: string; mode?: string } };
-  navigation: { goBack: () => void; navigate: (name: string, params?: object) => void };
-};
-
-export default function MemoPlayerScreen({ route, navigation }: MemoPlayerScreenProps) {
+export default function MemoPlayerScreen() {
   const insets = useSafeAreaInsets();
-  const { memoId, mode: _mode } = route.params;
+  const route = useRoute();
+  const navigation = useNavigation<DrawerNavigationProp<any>>();
+  const { memoId } = route.params as { memoId: string; mode?: string };
   const {
     memos,
     playingId,
@@ -43,8 +45,9 @@ export default function MemoPlayerScreen({ route, navigation }: MemoPlayerScreen
 
   // Cleanup waveformRef on unmount or memo change
   useEffect(() => {
+    const currentRef = waveformRef.current;
     return () => {
-      waveformRef.current?.pause();
+      currentRef?.pause();
     };
   }, [memoId]);
 

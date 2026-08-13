@@ -5,6 +5,7 @@ import {
   ExtractionResultItem,
   SupportedFormat,
   TranscriptionConfig,
+  TranscriptionEngine,
   SUPPORTED_FILE_TYPES,
 } from "./types";
 
@@ -287,12 +288,25 @@ export class XbergClient {
     model: TranscriptionConfig["model"] = "tiny",
     language?: string,
   ): Promise<ExtractionResult> {
+    // On Android, use Cactus Parakeet instead of Xberg Whisper
+    if (Platform.OS === "android") {
+      const { CactusTranscriptionService } = await import(
+        "./CactusTranscriptionService"
+      );
+      return CactusTranscriptionService.transcribe(filePath);
+    }
+
+    // On iOS, use Xberg Whisper
     const raw = await requireModule().transcribeAudio(
       filePath,
       model,
       language || null,
     );
     return parseExtractionResult(raw, `transcribeAudio(${filePath})`);
+  }
+
+  static getTranscriptionEngine(): TranscriptionEngine {
+    return Platform.OS === "android" ? "cactus-parakeet" : "whisper";
   }
 
   static isAvailable(): boolean {

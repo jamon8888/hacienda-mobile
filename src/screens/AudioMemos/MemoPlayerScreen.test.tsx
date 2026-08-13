@@ -11,8 +11,10 @@ const mockNavigation = {
   navigate: jest.fn(),
 };
 
+const mockRoute = { params: { memoId: "test-uuid-1", mode: "play" } };
 jest.mock("@react-navigation/native", () => ({
   useNavigation: () => mockNavigation,
+  useRoute: () => mockRoute,
 }));
 
 jest.mock("@/hooks/useAudioMemos", () => ({
@@ -83,15 +85,12 @@ describe("MemoPlayerScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (useAudioMemos as jest.Mock).mockReturnValue(mockUseAudioMemos);
+    mockRoute.params = { memoId: "test-uuid-1", mode: "play" };
   });
 
   const createScreen = (memoId = "test-uuid-1") => {
-    return renderer.create(
-      <MemoPlayerScreen
-        route={{ params: { memoId, mode: "play" } }}
-        navigation={mockNavigation}
-      />,
-    );
+    mockRoute.params.memoId = memoId;
+    return renderer.create(<MemoPlayerScreen />);
   };
 
   it("renders 'Memo not found' when memo does not exist", () => {
@@ -199,27 +198,27 @@ describe("MemoPlayerScreen", () => {
   it("renders speed control options", () => {
     const tree = createScreen();
     const root = tree.root;
-    const speedButtons = root.findAllByProps({ "data-icon": undefined }).filter(
-      (node: any) => node.props.className?.includes("px-4"),
-    );
+    const speedButtons = root
+      .findAllByProps({ "data-icon": undefined })
+      .filter((node: any) => node.props.className?.includes("px-4"));
     expect(speedButtons.length).toBe(4);
   });
 
   it("calls handleSpeedChange when speed button is pressed", () => {
     const tree = createScreen();
     const root = tree.root;
-    const touchables = root.findAllByType(View).filter(
-      (node: any) => node.props.className?.includes("px-4"),
-    );
+    const touchables = root
+      .findAllByType(View)
+      .filter((node: any) => node.props.className?.includes("px-4"));
     expect(touchables.length).toBe(4);
   });
 
   it("has Edit button for transcript", () => {
     const tree = createScreen();
     const root = tree.root;
-    const editTexts = root.findAllByType(Text).filter(
-      (t: any) => t.props.children === "Edit",
-    );
+    const editTexts = root
+      .findAllByType(Text)
+      .filter((t: any) => t.props.children === "Edit");
     expect(editTexts.length).toBe(1);
   });
 });

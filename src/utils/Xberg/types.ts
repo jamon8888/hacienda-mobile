@@ -75,6 +75,8 @@ export interface TranscriptionConfig {
   timestamps?: boolean;
 }
 
+export type TranscriptionEngine = "whisper" | "cactus-parakeet";
+
 export const SUPPORTED_FILE_TYPES = {
   document: [
     ".pdf",
