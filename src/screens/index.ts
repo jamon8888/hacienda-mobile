@@ -13,6 +13,7 @@ import ConnectToInstance from "./ConnectToInstance";
 
 import DevToolsMenu from "./Dev";
 import SubscriptionScreen from "./Subscription/SubscriptionScreen";
+import AudioMemosScreen from "./AudioMemos/AudioMemosScreen";
 import MemoPlayerScreen from "./AudioMemos/MemoPlayerScreen";
 
 export default {
@@ -33,5 +34,6 @@ export default {
   ConnectToInstance,
 
   SubscriptionScreen,
+  AudioMemosScreen,
   MemoPlayerScreen,
 };

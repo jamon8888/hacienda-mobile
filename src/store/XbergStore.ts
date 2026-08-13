@@ -12,8 +12,17 @@ export class XbergStore {
   lastResult: ExtractionResult | null = null;
   error: string | null = null;
 
+  /** Transcription options selected by the user in TranscriptionOptionsSheet */
+  transcriptionModel: string = "base";
+  transcriptionLanguage: string = "auto";
+
   constructor() {
     makeAutoObservable(this);
+  }
+
+  setTranscriptionOptions(model: string, language: string) {
+    this.transcriptionModel = model;
+    this.transcriptionLanguage = language;
   }
 
   async extractFile(

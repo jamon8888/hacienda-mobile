@@ -1,4 +1,4 @@
-import { NativeModules } from "react-native";
+import { NativeModules, Platform } from "react-native";
 import {
   ExtractionConfig,
   ExtractionResult,
@@ -297,6 +297,15 @@ export class XbergClient {
 
   static isAvailable(): boolean {
     return !!XbergModule;
+  }
+
+  /**
+   * Transcription (Whisper) is excluded from the Android AAR's `android-target` feature set.
+   * Only iOS (and desktop/server builds) include the ONNX Runtime dependency required for
+   * Whisper inference. On Android, calling transcribeAudio() will throw at the native layer.
+   */
+  static isTranscriptionAvailable(): boolean {
+    return Platform.OS === "ios";
   }
 
   static isAudioFile(filePath: string): boolean {

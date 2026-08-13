@@ -61,5 +61,17 @@ export default schemaMigrations({
         }),
       ],
     },
+    {
+      toVersion: 5,
+      steps: [
+        addColumns({
+          table: "workspaces",
+          columns: [
+            { name: "embedding_config", type: "string", isOptional: true },
+            { name: "xberg_config", type: "string", isOptional: true },
+          ],
+        }),
+      ],
+    },
   ],
 });

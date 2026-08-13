@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from "@nozbe/watermelondb";
 
 export default appSchema({
-  version: 3,
+  version: 5,
   tables: [
     tableSchema({
       name: "workspaces",
@@ -13,6 +13,8 @@ export default appSchema({
         { name: "context_length", type: "number", isOptional: true },
         { name: "is_remote", type: "boolean", isOptional: true },
         { name: "remote_config", type: "string", isOptional: true },
+        { name: "embedding_config", type: "string", isOptional: true },
+        { name: "xberg_config", type: "string", isOptional: true },
         { name: "created_at", type: "number" },
       ],
     }),

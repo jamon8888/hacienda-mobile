@@ -71,8 +71,8 @@ describe("AudioMemo Database Schema", () => {
     });
   });
 
-  it("should have schema version 3", () => {
-    expect(schema.version).toBe(3);
+  it("should have schema version 5", () => {
+    expect(schema.version).toBe(5);
   });
 });
 

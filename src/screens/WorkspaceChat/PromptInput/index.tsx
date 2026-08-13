@@ -32,6 +32,7 @@ import useRouteObserver from "@/hooks/useRouteObserver";
 import { useChatHandlerContext } from "@/hooks/useChatHandler/index";
 import useLlmPreference from "@/hooks/useLLMPreference";
 import { touchCurrentEmbeddingProvider } from "@/utils/Embedder";
+import TranscriptionOptionsSheet from "./Actions/TranscriptionOptionsSheet";
 
 const defaultPadding = [0, 0, 32]; // top padding for snap points
 export const snapPointsDefault = ["22%", "60%", "100%"];
@@ -228,6 +229,7 @@ export default function PromptInput({
       {sheetIndex === 0 && (
         <ChatWindowAttachmentsContainer attachmentHandler={attachmentHandler} />
       )}
+      <TranscriptionOptionsSheet />
       <BottomSheetModal
         ref={bottomSheetRef}
         index={0}

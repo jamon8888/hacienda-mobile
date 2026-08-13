@@ -10,7 +10,9 @@ import {
 } from "@/contexts/BottomSheetContext";
 import { View, Text, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Radio, MusicNotes } from "phosphor-react-native";
+import { Radio, MusicNotes, Warning } from "phosphor-react-native";
+import { xbergStore } from "@/store/XbergStore";
+import { XbergClient } from "@/utils/Xberg";
 
 const MODEL_OPTIONS = [
   { value: "tiny", label: "Tiny", size: "10 MB", description: "Fastest" },
@@ -34,18 +36,16 @@ const LANGUAGE_OPTIONS = [
   { value: "ko", label: "Korean" },
 ];
 
-interface TranscriptionOptionsProps {
-  onConfirm: (model: string, language: string) => void;
-}
-
-export default function TranscriptionOptionsSheet({
-  onConfirm,
-}: TranscriptionOptionsProps) {
+export default function TranscriptionOptionsSheet() {
   const insets = useSafeAreaInsets();
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const { registerSheet, dismissSheet } = useBottomSheet();
-  const [selectedModel, setSelectedModel] = useState("base");
-  const [selectedLanguage, setSelectedLanguage] = useState("auto");
+  const [selectedModel, setSelectedModel] = useState(
+    xbergStore.transcriptionModel,
+  );
+  const [selectedLanguage, setSelectedLanguage] = useState(
+    xbergStore.transcriptionLanguage,
+  );
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -64,9 +64,11 @@ export default function TranscriptionOptionsSheet({
   }, [registerSheet]);
 
   function handleConfirm() {
-    onConfirm(selectedModel, selectedLanguage);
+    xbergStore.setTranscriptionOptions(selectedModel, selectedLanguage);
     bottomSheetRef.current?.dismiss();
   }
+
+  const transcriptionAvailable = XbergClient.isTranscriptionAvailable();
 
   return (
     <BottomSheetModal
@@ -95,6 +97,24 @@ export default function TranscriptionOptionsSheet({
             Audio Transcription
           </Text>
         </View>
+
+        {!transcriptionAvailable && (
+          <View
+            style={{ backgroundColor: "rgba(249,112,102,0.15)", padding: 12 }}
+            className="rounded-lg flex flex-row items-start gap-3 mb-4">
+            <Warning size={18} color="#F97066" style={{ marginTop: 2 }} />
+            <View className="flex-1">
+              <Text style={{ color: "#F97066" }} className="text-sm font-medium">
+                Not available on Android
+              </Text>
+              <Text style={{ color: "#9F9FA0" }} className="text-xs mt-1">
+                Whisper transcription requires ONNX Runtime, which is excluded
+                from the Android build. Audio files will be imported without
+                transcription.
+              </Text>
+            </View>
+          </View>
+        )}
 
         <Text style={{ color: "#9F9FA0" }} className="text-sm uppercase mb-2">
           Model Size
@@ -146,7 +166,8 @@ export default function TranscriptionOptionsSheet({
               }}>
               <Text
                 style={{
-                  color: selectedLanguage === lang.value ? "#FFF" : "#9F9FA0",
+                  color:
+                    selectedLanguage === lang.value ? "#FFF" : "#9F9FA0",
                 }}
                 className="text-sm">
                 {lang.label}
@@ -160,7 +181,7 @@ export default function TranscriptionOptionsSheet({
           style={{ backgroundColor: "#3B82F6", padding: 14 }}
           className="rounded-lg items-center">
           <Text className="text-white text-base font-medium">
-            Transcribe & Import
+            Save Settings
           </Text>
         </TouchableOpacity>
       </View>
