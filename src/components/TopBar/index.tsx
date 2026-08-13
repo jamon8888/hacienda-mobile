@@ -1,9 +1,5 @@
 import React from "react";
-import {
-  View,
-  TouchableOpacity,
-  NativeEventEmitter,
-} from "react-native";
+import { View, TouchableOpacity, NativeEventEmitter } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { DrawerNavigationProp } from "@react-navigation/drawer";
 import { List, Microphone } from "phosphor-react-native";
