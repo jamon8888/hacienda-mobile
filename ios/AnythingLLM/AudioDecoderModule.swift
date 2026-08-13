@@ -27,7 +27,12 @@ class AudioDecoderModule: NSObject {
 
         // Read entire file into buffer
         let buffer = AVAudioPCMBuffer(pcmFormat: sourceFormat, frameCapacity: AVAudioFrameCount(frameLength))!
-        try? audioFile.read(into: buffer)
+        do {
+            try audioFile.read(into: buffer)
+        } catch {
+            reject("DECODE_ERROR", "Failed to read audio data: \(error.localizedDescription)", error)
+            return
+        }
 
         guard let channelData = buffer.floatChannelData else {
             reject("DECODE_ERROR", "No audio data in file", nil)
