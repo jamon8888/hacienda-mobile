@@ -10,7 +10,6 @@ import {
   File,
   Trash,
   Gear,
-  Warning,
 } from "phosphor-react-native";
 import uiStore from "@/store/UIStore";
 import { useState, useEffect } from "react";
@@ -179,16 +178,16 @@ export function DocumentsSettingsView({
           <Text style={{ color: "#9F9FA0" }} className="text-sm uppercase">
             Audio Transcription
           </Text>
-          {!XbergClient.isTranscriptionAvailable() && (
-            <View
-              style={{ backgroundColor: "rgba(249,112,102,0.15)", padding: 10 }}
-              className="rounded-lg flex flex-row items-center gap-2">
-              <Warning size={14} color="#F97066" />
-              <Text style={{ color: "#F97066" }} className="text-xs flex-1">
-                Not available on Android — audio imports without transcription
-              </Text>
-            </View>
-          )}
+          <View
+            style={{ backgroundColor: "rgba(108,233,166,0.15)", padding: 10 }}
+            className="rounded-lg flex flex-row items-center gap-2">
+            <MusicNote size={14} color="#6CE9A6" />
+            <Text style={{ color: "#6CE9A6" }} className="text-xs flex-1">
+              {XbergClient.getTranscriptionEngine() === "whisper"
+                ? "Engine: Xberg Whisper (ONNX Runtime)"
+                : "Engine: Cactus Parakeet (on-device ASR)"}
+            </Text>
+          </View>
           <TouchableOpacity
             style={{ backgroundColor: "#27282A", padding: 14 }}
             className="w-full flex flex-row items-center rounded-lg"

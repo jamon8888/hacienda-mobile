@@ -68,8 +68,6 @@ export default function TranscriptionOptionsSheet() {
     bottomSheetRef.current?.dismiss();
   }
 
-  const transcriptionAvailable = XbergClient.isTranscriptionAvailable();
-
   return (
     <BottomSheetModal
       ref={bottomSheetRef}
@@ -98,7 +96,7 @@ export default function TranscriptionOptionsSheet() {
           </Text>
         </View>
 
-        {transcriptionAvailable ? (
+        {XbergClient.getTranscriptionEngine() === "whisper" ? (
           <View
             style={{ backgroundColor: "rgba(108,233,166,0.15)", padding: 12 }}
             className="rounded-lg flex flex-row items-start gap-3 mb-4">

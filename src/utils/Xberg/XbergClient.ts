@@ -314,12 +314,12 @@ export class XbergClient {
   }
 
   /**
-   * Transcription (Whisper) is excluded from the Android AAR's `android-target` feature set.
-   * Only iOS (and desktop/server builds) include the ONNX Runtime dependency required for
-   * Whisper inference. On Android, calling transcribeAudio() will throw at the native layer.
+   * Transcription is available on both platforms:
+   * - iOS: Uses Xberg Whisper (ONNX Runtime)
+   * - Android: Uses Cactus Parakeet (on-device ASR)
    */
   static isTranscriptionAvailable(): boolean {
-    return Platform.OS === "ios";
+    return true;
   }
 
   static isAudioFile(filePath: string): boolean {
