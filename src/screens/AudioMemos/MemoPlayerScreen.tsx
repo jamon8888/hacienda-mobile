@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import { View, Text, TouchableOpacity, TextInput } from "react-native";
 import SafeView from "@/components/SafeView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ArrowLeft, Play, Pause, Trash2 } from "phosphor-react-native";
+import { ArrowLeft, Play, Pause, Trash, Share } from "phosphor-react-native";
 import { AudioWaveformView, type AudioWaveformViewRef } from "react-native-waveform-player";
 import { useAudioMemos } from "@/hooks/useAudioMemos";
 import { AudioMemoType } from "@/database/models/AudioMemo";
@@ -23,8 +23,6 @@ export default function MemoPlayerScreen({ route, navigation }: MemoPlayerScreen
     playbackPosition,
     playMemo,
     pauseMemo,
-    stopMemo,
-    seekTo,
     updateMemo,
     deleteMemo,
   } = useAudioMemos();
@@ -46,8 +44,7 @@ export default function MemoPlayerScreen({ route, navigation }: MemoPlayerScreen
   // Cleanup waveformRef on unmount or memo change
   useEffect(() => {
     return () => {
-      waveformRef.current?.stop();
-      waveformRef.current = null;
+      waveformRef.current?.pause();
     };
   }, [memoId]);
 
@@ -79,10 +76,6 @@ export default function MemoPlayerScreen({ route, navigation }: MemoPlayerScreen
     navigation.goBack();
   }, [memo, deleteMemo, navigation]);
 
-  const handleSeek = useCallback((positionMs: number) => {
-    seekTo(positionMs);
-  }, [seekTo]);
-
   if (!memo) {
     return (
       <SafeView safeAreaClassNames="bg-[#1B1B1E]">
@@ -111,7 +104,10 @@ export default function MemoPlayerScreen({ route, navigation }: MemoPlayerScreen
         <Text className="text-white text-lg font-medium">Memo</Text>
         <View className="flex-row gap-4">
           <TouchableOpacity onPress={handleDelete}>
-            <Trash2 size={22} color="#9F9FA0" />
+            <Trash size={22} color="#9F9FA0" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => {}}>
+            <Share size={22} color="#9F9FA0" />
           </TouchableOpacity>
         </View>
       </View>
@@ -139,7 +135,7 @@ export default function MemoPlayerScreen({ route, navigation }: MemoPlayerScreen
           showTime={false}
           showSpeedControl={false}
           showBackground={true}
-          onError={() => {
+          onLoadError={() => {
             // Error handling for waveform load failure
             console.warn("Failed to load waveform");
           }}
@@ -160,13 +156,9 @@ export default function MemoPlayerScreen({ route, navigation }: MemoPlayerScreen
           onPress={handlePlayPause}
           className="w-16 h-16 rounded-full bg-[#3B82F6] items-center justify-center mb-6 align-self-center">
           {playingId === memo.uuid ? (
-            <View>
-              <Text>⏸</Text>
-            </View>
+            <Pause size={28} color="#FFF" weight="fill" />
           ) : (
-            <View>
-              <Text>▶</Text>
-            </View>
+            <Play size={28} color="#FFF" weight="fill" />
           )}
         </TouchableOpacity>
 
@@ -175,13 +167,13 @@ export default function MemoPlayerScreen({ route, navigation }: MemoPlayerScreen
           {[0.5, 1, 1.5, 2].map(s => (
             <TouchableOpacity
               key={s}
-              onPress={() => waveformRef.current?.setSpeed(s)}
+              onPress={() => handleSpeedChange(s as SpeedOption)}
               className={`px-4 py-2 rounded-lg ${
-                s === 1 ? "bg-[#3B82F6]" : "bg-[#27282A]"
+                speed === s ? "bg-[#3B82F6]" : "bg-[#27282A]"
               }`}>
               <Text
                 className={`text-sm ${
-                  s === 1 ? "text-white" : "text-white/60"
+                  speed === s ? "text-white" : "text-white/60"
                 }`}>
                 {s}x
               </Text>
