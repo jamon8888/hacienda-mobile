@@ -82,9 +82,7 @@ export default class AudioMemo extends Model {
         audioMemo.audioUri = audioUri ?? "";
         audioMemo.transcript = transcript ?? null;
         audioMemo.durationMs = durationMs ?? 0;
-        audioMemo.waveformPeaks = JSON.stringify(
-          waveformPeaks ?? [],
-        ) as unknown as number[];
+        audioMemo.waveformPeaks = waveformPeaks ?? [];
         audioMemo.createdAt = Date.now();
         audioMemo.updatedAt = Date.now();
       })) as AudioMemo;
@@ -118,9 +116,7 @@ export default class AudioMemo extends Model {
           if (updates.durationMs !== undefined)
             audioMemo.durationMs = updates.durationMs;
           if (updates.waveformPeaks !== undefined)
-            audioMemo.waveformPeaks = JSON.stringify(
-              updates.waveformPeaks,
-            ) as unknown as number[];
+            audioMemo.waveformPeaks = updates.waveformPeaks;
           if (updates.workspaceSlug !== undefined)
             audioMemo.workspaceSlug = updates.workspaceSlug;
           audioMemo.updatedAt = Date.now();

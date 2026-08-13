@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { View, Text, TouchableOpacity, TextInput } from "react-native";
+import { View, Text, TouchableOpacity, TextInput, Alert } from "react-native";
 import SafeView from "@/components/SafeView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowLeft, Play, Pause, Trash, Share } from "phosphor-react-native";
@@ -75,8 +75,12 @@ export default function MemoPlayerScreen() {
 
   const handleDelete = useCallback(async () => {
     if (!memo) return;
-    await deleteMemo(memo.uuid);
-    navigation.goBack();
+    const success = await deleteMemo(memo.uuid);
+    if (success) {
+      navigation.goBack();
+    } else {
+      Alert.alert("Error", "Failed to delete memo");
+    }
   }, [memo, deleteMemo, navigation]);
 
   if (!memo) {

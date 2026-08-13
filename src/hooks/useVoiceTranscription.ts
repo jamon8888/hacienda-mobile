@@ -29,6 +29,8 @@ export function useVoiceTranscription(): UseVoiceTranscriptionReturn {
   const asrModelRef = useRef<CactusSTT | null>(null);
   const audioStreamRef = useRef<VoiceAudioStream | null>(null);
   const initPromiseRef = useRef<Promise<void> | null>(null);
+  const recordingRef = useRef(false);
+  const mountedRef = useRef(true);
 
   // Initialize ASR model
   const initializeASR = useCallback(async () => {
@@ -41,15 +43,16 @@ export function useVoiceTranscription(): UseVoiceTranscriptionReturn {
         const asrBundle = CACTUS_VOICE_MODELS[asrId];
         if (!asrBundle) throw new Error(`Unknown ASR model: ${asrId}`);
 
-        asrModelRef.current = new CactusSTT({
+        const model = new CactusSTT({
           model: asrBundle.slug,
           options: { quantization: asrBundle.quantization, pro: asrBundle.pro },
         });
 
-        await asrModelRef.current.download({
+        await model.download({
           onProgress: p => console.log("ASR download:", p),
         });
-        await asrModelRef.current.init();
+        await model.init();
+        asrModelRef.current = model;
       } catch (err) {
         setError(err as Error);
         throw err;
@@ -63,14 +66,17 @@ export function useVoiceTranscription(): UseVoiceTranscriptionReturn {
 
   // Cleanup on unmount
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
       audioStreamRef.current?.stop().catch(console.error);
       asrModelRef.current?.destroy().catch(console.error);
     };
   }, []);
 
   const startRecording = useCallback(async () => {
-    if (isRecording) return; // no-op if already recording
+    if (recordingRef.current) return; // no-op if already recording
+    recordingRef.current = true;
 
     try {
       setError(null);
@@ -89,12 +95,12 @@ export function useVoiceTranscription(): UseVoiceTranscriptionReturn {
           const result = await asrModelRef.current.transcribe({
             audio: samples,
           });
-          if (result.response) {
+          if (result.response && mountedRef.current) {
             setCurrentTranscript(result.response);
             setIsFinal(true);
           }
         } catch (err) {
-          setError(err as Error);
+          if (mountedRef.current) setError(err as Error);
         }
       });
 
@@ -107,9 +113,10 @@ export function useVoiceTranscription(): UseVoiceTranscriptionReturn {
     } catch (err) {
       setError(err as Error);
     }
-  }, [isRecording, initializeASR]);
+  }, [recordingRef, initializeASR]);
 
   const stopRecording = useCallback(async () => {
+    recordingRef.current = false;
     if (audioStreamRef.current) {
       await audioStreamRef.current.stop();
       audioStreamRef.current = null;
