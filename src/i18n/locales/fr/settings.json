@@ -1,1 +1,28 @@
-{}
+{
+  "title": "Paramètres",
+  "sections": {
+    "appearance": "Apparence",
+    "language": "Langue",
+    "notifications": "Notifications",
+    "privacy": "Confidentialité",
+    "about": "À propos",
+    "voice": "Voix"
+  },
+  "language": {
+    "title": "Langue",
+    "subtitle": "Sélectionnez votre langue préférée",
+    "current": "Actuel : {{language}}"
+  },
+  "appearance": {
+    "darkMode": "Mode sombre",
+    "theme": "Thème"
+  },
+  "voice": {
+    "title": "Paramètres vocaux",
+    "description": "Configurez les modèles ASR et LLM utilisés pour le chat vocal."
+  },
+  "about": {
+    "version": "Version",
+    "build": "Build"
+  }
+}

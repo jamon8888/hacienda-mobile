@@ -1,1 +1,28 @@
-{}
+{
+  "app": {
+    "name": "AnythingLLM"
+  },
+  "buttons": {
+    "getStarted": "Commencer",
+    "continue": "Continuer",
+    "back": "Retour",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "confirm": "Confirmer",
+    "retry": "Réessayer",
+    "loading": "Chargement..."
+  },
+  "errors": {
+    "unknown": "Erreur inconnue",
+    "network": "Erreur réseau. Veuillez vérifier votre connexion.",
+    "required": "Ce champ est obligatoire",
+    "invalidEmail": "Veuillez entrer une adresse e-mail valide"
+  },
+  "status": {
+    "loading": "Chargement...",
+    "saving": "Enregistrement...",
+    "success": "Succès !",
+    "error": "Erreur"
+  }
+}

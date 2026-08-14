@@ -1,1 +1,23 @@
-{}
+{
+  "chat": {
+    "placeholder": "Tapez un message...",
+    "send": "Envoyer",
+    "thinking": "Réflexion...",
+    "error": {
+      "loadingLlm": "Erreur lors du chargement du fournisseur LLM",
+      "loadingWorkspace": "Erreur lors du chargement du fil de l'espace de travail",
+      "sendingMessage": "Erreur lors de l'envoi du message"
+    }
+  },
+  "history": {
+    "title": "Historique des chats",
+    "empty": "Pas encore de messages",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette conversation ?"
+  },
+  "attachments": {
+    "title": "Pièces jointes",
+    "add": "Ajouter une pièce jointe",
+    "remove": "Supprimer",
+    "unsupported": "Type de fichier non pris en charge"
+  }
+}

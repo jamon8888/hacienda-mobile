@@ -1,1 +1,26 @@
-{}
+{
+  "title": "Abonnement",
+  "plans": {
+    "pro": "Plan Pro",
+    "free": "Plan Gratuit"
+  },
+  "descriptions": {
+    "pro": "Vous avez accès à toutes les fonctionnalités premium",
+    "free": "Passez à la version payante pour débloquer l'inférence cloud, les verticales et plus encore"
+  },
+  "features": {
+    "title": "Fonctionnalités du plan",
+    "localInference": "Inférence locale",
+    "documentGeneration": "Génération de documents",
+    "officeFormatReading": "Lecture de formats bureautiques",
+    "pushToTalk": "Appuyez pour parler",
+    "audioMemos": "Memos audio",
+    "cloudInference": "Inférence cloud",
+    "verticals": "Verticales",
+    "nerExtraction": "Extraction NER",
+    "loraAdapters": "Adaptateurs LoRA"
+  },
+  "badges": {
+    "comingSoon": "Bientôt disponible"
+  }
+}

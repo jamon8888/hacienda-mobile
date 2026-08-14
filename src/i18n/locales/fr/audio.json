@@ -1,1 +1,85 @@
-{}
+{
+  "memos": {
+    "title": "Memos audio",
+    "empty": "Pas encore de mémos.\nAppuyez sur + pour enregistrer votre premier mémo.",
+    "delete": {
+      "title": "Supprimer le mémo",
+      "confirm": "Êtes-vous sûr de vouloir supprimer ce mémo ?"
+    },
+    "untitled": "Memos sans titre",
+    "tabs": {
+      "workspace": "Espace de travail",
+      "global": "Global"
+    }
+  },
+  "player": {
+    "title": "Mémo",
+    "notFound": "Mémo non trouvé",
+    "transcript": {
+      "title": "Transcription",
+      "edit": "Modifier",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "noTranscript": "Aucune transcription disponible"
+    }
+  },
+  "voiceChat": {
+    "title": "Assistant vocal",
+    "states": {
+      "tapToStart": "Appuyez pour commencer",
+      "loadingModels": "Chargement des modèles...",
+      "listening": "Écoute...",
+      "transcribing": "Transcription...",
+      "thinking": "Réflexion...",
+      "responding": "Réponse...",
+      "error": "Erreur survenue",
+      "unknown": "Inconnu"
+    },
+    "sections": {
+      "response": "Réponse",
+      "thinking": "Réflexion"
+    },
+    "confidence": "Confiance :",
+    "holdToSpeak": "Maintenez pour parler · Se libère au silence",
+    "processing": "Traitement avec Gemma 4 E2B Hybrid..."
+  },
+  "voiceSettings": {
+    "title": "Paramètres vocaux",
+    "sections": {
+      "deviceCapabilities": "Capacités de l'appareil",
+      "asr": "Reconnaissance vocale (ASR)",
+      "llm": "Modèle de langage (LLM)",
+      "advanced": "Paramètres avancés"
+    },
+    "labels": {
+      "ramTier": "Niveau de RAM",
+      "npu": "NPU",
+      "availableRam": "RAM disponible",
+      "asrModel": "Modèle ASR",
+      "llmModel": "Modèle LLM",
+      "confidenceThreshold": "Seuil de confiance",
+      "cloudHandoff": "Transfert vers le cloud",
+      "processingDelay": "Délai de traitement",
+      "vadSensitivity": "Sensibilité VAD",
+      "tts": "Synthèse vocale"
+    },
+    "descriptions": {
+      "cloudHandoff": "Rediriger les requêtes à faible confiance vers le cloud",
+      "vadSensitivity": "Seuil de détection de la parole",
+      "tts": "Lire les réponses à voix haute"
+    },
+    "buttons": {
+      "save": "Enregistrer les paramètres vocaux"
+    },
+    "toast": {
+      "saved": "Paramètres vocaux enregistrés"
+    },
+    "modal": {
+      "selectAsr": "Sélectionner le modèle ASR",
+      "selectLlm": "Sélectionner le modèle LLM"
+    }
+  },
+  "micButton": {
+    "accessibility": "Enregistrer la voix"
+  }
+}

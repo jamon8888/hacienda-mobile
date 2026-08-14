@@ -1,1 +1,28 @@
-{}
+{
+  "welcome": {
+    "title": "Bienvenue",
+    "subtitle": "Transformez votre téléphone en assistant IA personnel pour discuter avec des documents, des agents IA et plus encore - tout est privé et sur votre appareil.",
+    "backButtonWarning": "Veuillez suivre le flux d'intégration pour continuer."
+  },
+  "modelSelection": {
+    "title": "Sélectionner le modèle",
+    "subtitle": "Choisissez un modèle IA pour commencer",
+    "recommended": "Recommandé",
+    "download": "Télécharger",
+    "downloading": "Téléchargement...",
+    "insufficientStorage": "Espace de stockage insuffisant"
+  },
+  "survey": {
+    "title": "Parlez-nous de vous",
+    "subtitle": "Aidez-nous à personnaliser votre expérience",
+    "useCase": "À quoi utiliserez-vous AnythingLLM ?",
+    "experience": "Votre niveau d'expérience avec l'IA"
+  },
+  "dataHandling": {
+    "title": "Gestion des données",
+    "subtitle": "Votre vie privée compte",
+    "localProcessing": "Tout le traitement se fait sur votre appareil",
+    "noDataCollection": "Nous ne collectons aucune donnée personnelle",
+    "getStarted": "Commencer"
+  }
+}
