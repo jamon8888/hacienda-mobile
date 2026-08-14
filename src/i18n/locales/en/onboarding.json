@@ -5,12 +5,22 @@
     "backButtonWarning": "Please proceed through the onboarding flow to continue."
   },
   "modelSelection": {
-    "title": "Select Model",
-    "subtitle": "Choose an AI model to get started",
+    "title": "What model would you like to use?",
+    "subtitle": "You can change this later, but pick the one that best suits your needs.",
     "recommended": "Recommended",
     "download": "Download",
     "downloading": "Downloading...",
-    "insufficientStorage": "Insufficient storage space"
+    "insufficientStorage": "Insufficient storage space",
+    "deviceDetected": "Device Detected",
+    "ramTier": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "ramAvailable": "RAM ({{gb}}GB avail)",
+    "npu": "NPU: {{backend}}",
+    "cpuOnly": "CPU Only",
+    "llmAsr": "{{llm}} LLM / {{asr}} ASR"
   },
   "survey": {
     "title": "Tell us about yourself",

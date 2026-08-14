@@ -5,12 +5,22 @@
     "backButtonWarning": "Veuillez suivre le flux d'intégration pour continuer."
   },
   "modelSelection": {
-    "title": "Sélectionner le modèle",
-    "subtitle": "Choisissez un modèle IA pour commencer",
+    "title": "Quel modèle souhaitez-vous utiliser ?",
+    "subtitle": "Vous pourrez changer cela plus tard, mais choisissez celui qui correspond le mieux à vos besoins.",
     "recommended": "Recommandé",
     "download": "Télécharger",
     "downloading": "Téléchargement...",
-    "insufficientStorage": "Espace de stockage insuffisant"
+    "insufficientStorage": "Espace de stockage insuffisant",
+    "deviceDetected": "Appareil détecté",
+    "ramTier": {
+      "high": "Élevé",
+      "medium": "Moyen",
+      "low": "Faible"
+    },
+    "ramAvailable": "RAM ({{gb}} Go disponibles)",
+    "npu": "NPU : {{backend}}",
+    "cpuOnly": "CPU uniquement",
+    "llmAsr": "{{llm}} LLM / {{asr}} ASR"
   },
   "survey": {
     "title": "Parlez-nous de vous",
