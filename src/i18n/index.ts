@@ -43,6 +43,7 @@ export const initI18n = (): Promise<void> => {
         resources,
         lng: getDeviceLanguage(),
         fallbackLng: "en",
+        defaultNS: "common",
         interpolation: {
           escapeValue: false,
         },

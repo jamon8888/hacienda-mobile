@@ -14,6 +14,7 @@ import { PATHS } from "@/utils/paths";
 import ModelChip from "./ModelChip";
 import LogoIcon from "@/components/LogoIcon";
 import uiStore from "@/store/UIStore";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function TopBar({
   workspace,
@@ -22,6 +23,7 @@ export default function TopBar({
   workspace?: any;
   thread?: any;
 }) {
+  const { t } = useTranslation();
   const navigation = useNavigation<DrawerNavigationProp<any>>();
   const { registerPress, showDebug } = useDevShortcut({ workspace, thread });
   const canMakeThread = !!workspace && !!thread;
@@ -55,7 +57,9 @@ export default function TopBar({
 
   return (
     <View className="flex flex-row items-center justify-between h-fit min-h-[50px] pb-2">
-      <TouchableOpacity onPress={() => navigation.openDrawer()}>
+      <TouchableOpacity
+        onPress={() => navigation.openDrawer()}
+        accessibilityLabel={t("accessibility.openMenu")}>
         <List size={34} color="white" />
       </TouchableOpacity>
       <View className="flex flex-col items-center gap-y-0">
@@ -69,11 +73,14 @@ export default function TopBar({
       </View>
       {canMakeThread ? (
         <>
-          <TouchableOpacity onPress={handleNewThread}>
+          <TouchableOpacity
+            onPress={handleNewThread}
+            accessibilityLabel={t("accessibility.newThread")}>
             <NewThreadIcon width={32} height={32} fill="white" />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => navigation.navigate(PATHS.voice_chat)}
+            accessibilityLabel={t("accessibility.voiceChat")}
             className="ml-2">
             <Microphone size={32} color="white" weight="bold" />
           </TouchableOpacity>
@@ -82,7 +89,8 @@ export default function TopBar({
         <>
           <View className="w-[32px]" />
           <TouchableOpacity
-            onPress={() => navigation.navigate(PATHS.voice_chat)}>
+            onPress={() => navigation.navigate(PATHS.voice_chat)}
+            accessibilityLabel={t("accessibility.voiceChat")}>
             <Microphone size={32} color="white" weight="bold" />
           </TouchableOpacity>
         </>

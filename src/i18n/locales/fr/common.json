@@ -24,5 +24,10 @@
     "saving": "Enregistrement...",
     "success": "Succès !",
     "error": "Erreur"
+  },
+  "accessibility": {
+    "openMenu": "Ouvrir le menu",
+    "newThread": "Nouveau fil",
+    "voiceChat": "Chat vocal"
   }
 }

@@ -24,5 +24,10 @@
     "saving": "Saving...",
     "success": "Success!",
     "error": "Error"
+  },
+  "accessibility": {
+    "openMenu": "Open menu",
+    "newThread": "New thread",
+    "voiceChat": "Voice chat"
   }
 }
