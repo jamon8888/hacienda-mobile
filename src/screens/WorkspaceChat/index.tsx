@@ -6,6 +6,7 @@ import useLlmPreference from "@/hooks/useLLMPreference";
 import useChatInfoEmit from "@/hooks/useChatInfoEmit";
 import { useEffect } from "react";
 import useWorkspaceThread from "@/hooks/useWorkspaceThread";
+import { useTranslation } from "@/hooks/useTranslation";
 import PromptInput from "./PromptInput";
 import useAttachments from "@/hooks/useAttachments";
 import ChatHistory from "./ChatHistory";
@@ -22,6 +23,7 @@ import CitationsActionSheet from "./ChatHistory/CitationsActionSheet";
 import AttachmentActionMenu from "./PromptInput/Actions/AttachmentsButton/AttachmentActionMenu";
 
 export default function WorkspaceChat() {
+  const { t } = useTranslation("workspace");
   useRedirect();
   const { wsSlug, threadSlug } = useChatInfoEmit();
   const {
@@ -47,12 +49,13 @@ export default function WorkspaceChat() {
 
   if (isLoadingProvider || loadingWorkspaceThread) return <LoadingView />;
   if (!!error)
-    return <ErrorView title="Error loading LLM provider" error={error} />;
+    return <ErrorView title={t("chat.error.loadingLlm")} error={error} t={t} />;
   if (!!errorWorkspaceThread)
     return (
       <ErrorView
-        title="Error loading workspace thread"
+        title={t("chat.error.loadingWorkspace")}
         error={errorWorkspaceThread}
+        t={t}
       />
     );
   return (
@@ -103,7 +106,15 @@ function LoadingView() {
   );
 }
 
-function ErrorView({ title, error }: { title: string; error: any }) {
+function ErrorView({
+  title,
+  error,
+  t,
+}: {
+  title: string;
+  error: any;
+  t: (key: string) => string;
+}) {
   return (
     <SafeView
       scrollable={false}
@@ -114,7 +125,7 @@ function ErrorView({ title, error }: { title: string; error: any }) {
       <View className="flex h-[80vh] justify-center items-center">
         <Text className="text-red-500">{title}</Text>
         <Text className="text-red-500">
-          {error?.message || "Unknown error"}
+          {error?.message || t("common:errors.unknown")}
         </Text>
       </View>
     </SafeView>
