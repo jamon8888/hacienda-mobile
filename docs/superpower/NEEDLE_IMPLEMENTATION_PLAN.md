@@ -8,15 +8,15 @@
 
 ## 0. Phase map
 
-| #   | Phase                                         | Deliverable                                           | Done-when                                |
-| --- | --------------------------------------------- | ----------------------------------------------------- | ---------------------------------------- |
-| P0  | Feasibility spike (CQ4 bundle loads + routes) | proof run on device                                   | K0..K5                                   |
-| P1  | Bundle downloader                             | download + extract `needle-cq4.zip`                   | typecheck + unit test                    |
-| P2  | TS layer `src/utils/Needle`                   | `types.ts` / `NeedleClient.ts` / `index.ts`           | typecheck                                |
-| P3  | State + hook                                  | `NeedleStore.ts`, `useNeedle.ts`                      | typecheck                                |
-| P4  | Router integration into `getContextTexts`     | gate before embed                                     | typecheck + unit test                    |
-| P5  | Tool-ranking integration                      | `selectTools()` used by `CactusLmWrapper`             | typecheck                                |
-| P6  | Tests & quality                               | unit + integration tests                              | `yarn test`                              |
+| #   | Phase                                         | Deliverable                                           | Done-when                                | Status |
+| --- | --------------------------------------------- | ----------------------------------------------------- | ---------------------------------------- | ------ |
+| P0  | Feasibility spike (CQ4 bundle loads + routes) | proof run on device                                   | K0..K5                                   | 🔲 blocked — needs device |
+| P1  | Bundle downloader                             | download + extract `needle-cq4.zip`                   | typecheck + unit test                    | ✅ |
+| P2  | TS layer `src/utils/Needle`                   | `types.ts` / `NeedleClient.ts` / `index.ts`           | typecheck                                | ✅ |
+| P3  | State + hook                                  | `NeedleStore.ts`, `useNeedle.ts`                      | typecheck                                | ✅ |
+| P4  | Router integration into `getContextTexts`     | gate before embed                                     | typecheck + unit test                    | ✅ (default off) |
+| P5  | Tool-ranking integration                      | `selectTools()` used by `CactusLmWrapper`             | typecheck                                | ✅ (default off) |
+| P6  | Tests & quality                               | unit + integration tests                              | `yarn test`                              | 🔄 core tests done; provider integration tests pending |
 
 ---
 
@@ -178,6 +178,19 @@ This replaces the generic `toolRagTopK` engine heuristic with the dedicated Need
 
 ---
 
+## P0 on-device verification checklist
+
+Use the `NeedleSpikeView` in DevTools (added in `src/screens/Dev/views/NeedleSpikeView`) to verify before enabling `NEEDLE_ROUTER_ENABLED`:
+
+1. Tap **Download & Init Needle**. Confirm the zip downloads, extracts, and `Ready: YES` appears.
+2. Note load time, download size (≈ 16 MB), and peak RAM.
+3. Tap **Test RAG Routing** with a document-style question (e.g. "What does the budget say about travel?"). Confirm a valid `retrieve_documents` / `skip_rag` / `expand_search` tool call is returned.
+4. Tap **Test Tool Selection** with a long tool list. Confirm `selectTools` returns a subset (≤ 5) without crashing.
+5. If `needle-cq4.zip` fails to load, try `needle-pebble-ft-cq4.zip` by changing `NeedleBundleDownloader` defaults.
+6. If both fail, the CQ4 format is incompatible with `cactus-react-native@1.13.1`; escalate to the `needle-rs` v1 path.
+
+**K0 gate:** at least one valid on-device tool call is produced. Do not enable `NEEDLE_ROUTER_ENABLED` until K0 passes.
+
 ## Files (all new unless noted)
 
 | Path                                                                  | Action                               |
@@ -189,9 +202,13 @@ This replaces the generic `toolRagTopK` engine heuristic with the dedicated Need
 | `src/utils/AiProviders/onDevice/cactus/index.ts`                      | edit `streamGetChatCompletion`       |
 | `package.json`                                                        | add `jszip`                          |
 
+## Feature gate
+
+Both production integration points (`getContextTexts` and `CactusLmWrapper`) are guarded by `NEEDLE_ROUTER_ENABLED` in `src/store/NeedleStore.ts`, currently `false`. This lets us land all the wiring now without affecting users while P0 on-device verification is pending. To enable after P0 passes, flip the constant to `true`.
+
 ## Rollback / safety
 
-- The needle gate lives in one function with a guaranteed `fallback` return — reverting = revert that single edit. A broken/missing bundle can never `throw` into `getContextTexts`.
+- The needle gate lives in one function with a guaranteed `fallback` return — reverting = revert that single edit or set `NEEDLE_ROUTER_ENABLED = false`. A broken/missing bundle can never `throw` into `getContextTexts`.
 - Tool-ranking changes are additive; removing them restores prior behavior.
 - **No public API/UI change in v2.1.**
 
