@@ -118,7 +118,7 @@ const NEEDLE_CQ4_URL =
   "https://huggingface.co/Cactus-Compute/needle/resolve/main/needle-cq4.zip";
 ```
 
-Extraction is handled by `CactusFileSystem.downloadModel('needle', NEEDLE_CQ4_URL, onProgress)` if it extracts zips (to be verified in the spike), otherwise by `react-native-zip-archive`.
+Extraction is done in pure JS with `jszip` (added as a direct dependency) after downloading the zip with RNFS. This avoids relying on the SDK's internal `CactusFileSystem` API and avoids adding a native zip module.
 
 ### 4.2 Native bridge — none needed
 
@@ -255,8 +255,8 @@ This gives us a safety margin while the model is being validated in production.
 - `src/hooks/useNeedle.ts` (new)
 - `src/utils/AiProviders/baseOpenAILikeProvider/index.ts` (edit `getContextTexts`)
 - `src/utils/AiProviders/onDevice/cactus/index.ts` (edit `streamGetChatCompletion` for tool ranking)
-- `src/services/downloads/DownloadManager.ts` or new `src/services/downloads/NeedleBundleDownloader.ts` (custom CQ4 download)
-- `package.json` (add `react-native-zip-archive` only if `CactusFileSystem.downloadModel` does not extract)
+- `src/services/downloads/NeedleBundleDownloader.ts` (RNFS + jszip download/extract)
+- `package.json` (add `jszip`)
 
 ---
 

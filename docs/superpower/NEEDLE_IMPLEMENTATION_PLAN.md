@@ -25,15 +25,11 @@
 Verifies the official CQ4 bundle actually loads in our pinned runtime.
 
 1. Download `https://huggingface.co/Cactus-Compute/needle/resolve/main/needle-cq4.zip` to a dev machine and inspect the extracted folder (already done; see spec).
-2. In an RN debug build, attempt to load it via `CactusLM` using a local path:
+2. In an RN debug build, download the zip with RNFS, extract it with `jszip`, and load the folder via `CactusLM`:
    ```ts
-   const path = await CactusFileSystem.getModelPath('needle');
-   const lm = new CactusLM({ model: path });
+   const lm = new CactusLM({ model: '/data/.../Documents/models/needle' });
    await lm.init();
    ```
-   Two load strategies to test:
-   - **Strategy A**: use `CactusFileSystem.downloadModel('needle', NEEDLE_CQ4_URL)` and then `getModelPath('needle')`.
-   - **Strategy B**: download the zip with RNFS, extract with `react-native-zip-archive`, then `new CactusLM({ model: extractedDir })`.
 3. If `init()` succeeds, run the document-router tools and confirm valid JSON tool calls.
 4. Measure load time, first-route latency, and peak RAM on a mid-range Android device.
 5. If `needle-cq4.zip` fails on runtime 1.13.1, repeat with `needle-pebble-ft-cq4.zip`. If that also fails, escalate to the `needle-rs` v1 plan.
@@ -54,24 +50,22 @@ const NEEDLE_CQ4_URL =
 
 export class NeedleBundleDownloader {
   async ensureDownloaded(onProgress?: (p: number) => void): Promise<string> {
-    const modelPath = await CactusFileSystem.getModelPath("needle");
-    if (await CactusFileSystem.modelExists("needle")) {
-      return modelPath;
+    const extractDir = `${RNFS.DocumentDirectoryPath}/models/needle`;
+    if (await RNFS.exists(`${extractDir}/config.txt`)) {
+      return extractDir;
     }
-    await CactusFileSystem.downloadModel("needle", NEEDLE_CQ4_URL, onProgress);
-    return CactusFileSystem.getModelPath("needle");
+
+    const zipPath = `${extractDir}.zip`;
+    await RNFS.downloadFile({ fromUrl: NEEDLE_CQ4_URL, toFile: zipPath }).promise;
+
+    const zipData = await RNFS.readFile(zipPath, "base64");
+    const zip = await JSZip.loadAsync(zipData, { base64: true });
+    // ...write each entry to extractDir...
+
+    await RNFS.unlink(zipPath);
+    return extractDir;
   }
 }
-```
-
-If `downloadModel` does not extract the zip, fall back to:
-
-```ts
-const zipPath = `${RNFS.DocumentDirectoryPath}/models/needle/needle-cq4.zip`;
-const extractDir = `${RNFS.DocumentDirectoryPath}/models/needle/needle-cq4`;
-await RNFS.downloadFile({ fromUrl: NEEDLE_CQ4_URL, toFile: zipPath }).promise;
-await zip(zipPath, extractDir); // react-native-zip-archive
-return extractDir;
 ```
 
 **Verify**: `yarn typecheck`; on-device download completes and folder contains `config.txt` + weight files.
@@ -193,7 +187,7 @@ This replaces the generic `toolRagTopK` engine heuristic with the dedicated Need
 | `src/store/NeedleStore.ts`, `src/hooks/useNeedle.ts`                  | create                               |
 | `src/utils/AiProviders/baseOpenAILikeProvider/index.ts`               | edit `getContextTexts`               |
 | `src/utils/AiProviders/onDevice/cactus/index.ts`                      | edit `streamGetChatCompletion`       |
-| `package.json`                                                        | add `react-native-zip-archive` only if spike proves `CactusFileSystem.downloadModel` does not extract |
+| `package.json`                                                        | add `jszip`                          |
 
 ## Rollback / safety
 
