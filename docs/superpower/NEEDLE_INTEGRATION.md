@@ -1,8 +1,8 @@
-# Needle Integration — On-Device Document-Intelligence Router
+# Needle Integration v2 — Cactus-Native Router with Needle Migration Path
 
-> **Status**: Draft / Feasibility-pending
-> **v1.0.0** — spec for routing RAG retrieval via Cactus Compute's **Needle** tool-calling model, executed through the **needle-rs** Rust runtime compiled to a C ABI and bridged the same way as Xberg (`XbergModule.kt` / `XbergModule.swift`).
-> **Verified against real docs**: upstream [Cactus-Compute/needle](https://github.com/cactus-compute/needle), the [Needle model card](https://huggingface.co/Cactus-Compute/needle), the [onnx-community/needle-onnx](https://huggingface.co/onnx-community/needle-onnx) export, [Abdalrahman/needle-rs-safetensors](https://huggingface.co/Abdalrahman/needle-rs-safetensors), and the [Geekgineer/needle-rs](https://github.com/Geekgineer/needle-rs) README/BENCHMARKS/ARCHITECTURE.
+> **Status**: Draft / v2.0.0
+> **Decision**: Ship the first RAG/tool router using the **existing `cactus-react-native` engine** (`forceTools` + `toolRagTopK` + `confidenceThreshold`), not a new `needle-rs` native module. Keep the `needle-rs` path as a future optimization when Cactus publishes Needle as a registry bundle or when the 22 MB footprint advantage justifies the native work.
+> **Verified against real artifacts**: `cactus-react-native@1.13.1` source/typings, its model-registry fetcher, and the live HuggingFace `Cactus-Compute` org listing.
 
 ---
 
@@ -10,130 +10,134 @@
 
 Today RAG is unconditional:
 
-- `getContextTexts()` (`src/utils/AiProviders/baseOpenAILikeProvider/index.ts:272`) embeds the user prompt and always runs `runSemanticSearch(..., topN)` (topN=2).
-- The model is flooded with context **regardless of whether the question is actually document-grounded**, and there is no cheap, on-device signal to choose _how much_ context to pull.
+- `getContextTexts()` (`src/utils/AiProviders/baseOpenAILikeProvider/index.ts`) embeds the user prompt and always runs `VectorDB.runSemanticSearch(..., topN)`.
+- The model is flooded with context **regardless of whether the question is actually document-grounded**, and there is no cheap, on-device signal to choose _how much_ context to pull or _which tools_ to expose.
 
-Needle gives us that signal: a proven, 26M-param tool-calling model that maps `(query, tool-definitions) → single JSON call` in one forward pass. We use it to **decide the RAG strategy before embedding** — skip retrieval, narrow it, or widen it — and only then pay for semantic search / generation.
+A tiny tool-calling router gives us that signal: map `(query, tool-definitions) → single JSON call` in one forward pass, decide the RAG strategy before embedding, and only then pay for semantic search / generation.
 
-## 2. Verified facts (correcting prior assumptions)
+## 2. What changed since v1
 
-### The model — `Cactus-Compute/needle`
+| v1 assumption | v2 finding |
+| --- | --- |
+| `cactus-react-native` is a llama.cpp/ggml fork that can only load GGUF. | It is now a native Cactus engine (`CactusLM`) that supports tool calling, tool RAG, confidence scoring, embeddings, and vision/audio. |
+| Needle must be loaded through a separate `needle-rs` Rust runtime bridged as a new native module. | The same conceptual routing can be done today with any existing Cactus chat model via `complete({ tools, options: { forceTools, toolRagTopK, confidenceThreshold } })`. |
+| `Cactus-Compute/needle` is downloadable like other Cactus models. | It is **not** published in the registry format that `cactus-react-native@1.13.1` expects (no version tags, no `weights/*-int4.zip` + `weights/*-int8.zip`). `needle-pebble-ft` exists but is also not registry-compatible. |
+| needle-rs is the only mobile-viable runtime. | Cactus's own React Native SDK already ships the required APIs on Android/iOS and is already integrated in the app. |
 
-| Property              | Value                                                                   |
-| --------------------- | ----------------------------------------------------------------------- |
-| Architecture          | Encoder-decoder "Simple Attention Network" (pure attention, **no FFN**) |
-| Encoder               | 12 layers, GQA (8H/4KV), RoPE, gated residuals                          |
-| Decoder               | 8 layers, self-attn + cross-attn, gated residuals                       |
-| d_model               | 512                                                                     |
-| Vocab                 | 8192 (SentencePiece BPE)                                                |
-| Precision             | BF16; INT4-QAT during training                                          |
-| Trained on            | 200B tokens + 2B function-call tokens                                   |
-| Speed (Cactus native) | ~6000 tok/s prefill, ~1200 tok/s decode                                 |
-| License               | **MIT**                                                                 |
+**Net**: we can deliver Needle-_like_ RAG accuracy, speed, and tool-use improvements immediately with the engine we already ship, and swap to the true Needle bundle later with no architecture change.
 
-### The fatal correction: **NO GGUF exists**
-
-Prior plan assumed loading needle in the existing `CactusLM` (llama.cpp) context. **This is impossible.** The vendored `cactus-react-native@0.2.10` is a **llama.cpp/ggml fork** (`LM_GGML_USE_CPU`/`LM_GGML_USE_METAL`, `LlamaContext.java`, GGUF-only). Needle is encoder-decoder and ships JAX/Safetensors — the only ready-made runtimes are:
-
-| Quantization                           | Runtime                                  | Size                     | Mobile-relevant?       |
-| -------------------------------------- | ---------------------------------------- | ------------------------ | ---------------------- |
-| `Abdalrahman/needle-rs-safetensors`    | **needle-rs** (pure Rust + WASM + C ABI) | 22 MB INT4 (custom `I4`) | ✅ target of this spec |
-| `onnx-community/needle-onnx`           | onnxruntime (web/mobile)                 | 55 MB + 85 MB            | fallback path only     |
-| `RockMan256/needle-onnx-lfm`           | ONNX                                     | ~                        | fallback               |
-| `justinebert1/needle_finetune_example` | finetune example                         | ~                        | n/a                    |
-
-### needle-rs runtime (chosen) — verified
-
-- Pure Rust; deploys to browser WASM (258 KB), CLI (533 KB), **C/C++/Go/Swift via FFI (557 KB)**, Python, `no_std` embedded.
-- INT4 group-wise (`group_size=32`), AVX2 on x86_64, **NEON on aarch64**, scalar for WASM.
-- **Constrained decoding**: char-level trie + three-state JSON machine masks logits → output is always valid JSON pointing at a real tool (no hallucinated names).
-- Accepts both flat `{"location":{"type":"string"}}` and OpenAI `{"type":"object","properties":...}` schema forms (Python reference handles only flat — Rust handles both).
-- **Greedy/argmax only** (by design — routing, not generation). No temperature.
-- Guaranteed **560/560 token-exact** parity vs the Python/JAX reference, enforced in CI.
-- API surface: `run` / `run_stream` / `run_batch` / `encode_contrastive` / `retrieve_tools`.
-- Reserved: encoder long `≤ 1024 tokens` (tool catalogue must be pre-filtered for large lists).
-
-### Important caveat from the official repo
-
-The needle-rs README notes _"iOS / Android … (use Cactus)"_ — Cactus's official engine targets mobile/NPUs with hand-tuned ARM SIMD. We **ignore** that recommendation for two concrete reasons:
-
-1. The vendored mobile package (`cactus-react-native`) is only the llama.cpp fork — it cannot load needle. The official Rust engine is not yet packaged for RN.
-2. needle-rs already ships a **aarch64 NEON path + a tiny 557 KB C ABI**, which is trivially cross-compiled and bridged through our existing native-module template. At 22 MB weights / ~80 ms warm inference this is well under the Xberg footprint bar.
-
-→ Decision recorded for the feasibility spike (see §8): confirm REAL aarch64-NEON ARM SIMD speed on a device; if the NN path is not enabled, prefer a WASM build over the brittle x86 matvec.
-
-## 3. End-to-end data flow
+## 3. New architecture
 
 ```
 user prompt
    │
    ▼
-needle (needle-rs, native) ──"route_document_search"──► returns:
-   │                                                         ┌ retrieve_documents(query, top_k)
-   │  (or skip_rag/citation tools)                        ──┤ widen_search(query, top_k)
-   ▼                                                       └ skip_rag()
-choose RAG strategy
-   │  ┌─────────────── yes ────────────────► embed query → runSemanticSearch(slug, topK) → buildPrompt
-   ▼  │
-workspace has vectors?
-   └──────────── no ────► existing RAG path unchanged
+CactusLM router call (existing SDK)
+   │  tools: [retrieve_documents, skip_rag, expand_search]
+   │  options: { forceTools: true, toolRagTopK: 3, confidenceThreshold: 0.7 }
+   ▼
+function call + confidence
+   │
+   ├── skip_rag ───────────────────────────► return [] (no embed/search)
+   ├── retrieve_documents(query, top_k) ───► embed → runSemanticSearch(slug, topK)
+   └── expand_search(revised_query, top_k) ─► rewrite query, widen topK, then search
 ```
 
-Requirements:
+The same mechanism also improves **tool use** in `CactusLmWrapper.streamGetChatCompletion()`:
 
-- Guarantees when Needle is missing/failing (model not downloaded, native lib absent, architecture mismatch) → **graceful fallback to the current unconditional semantic search** (never block the user flow; §4.5).
-
-## 4. Design
-
-### 4.1 Native artifact (per platform)
-
-Same pattern as Xberg module pattern. Rust `needle-rs` → C ABI `libneedle.so`/`.dylib` via `cargo build --release --target aarch64-linux-android` (and `armeabi-v7a`, `x86_64`) + iOS staticlib (`aarch64-apple-ios` / `aarch64-apple-ios-sim`).
-
-Library APIs (from the repo header `crates/needle-c` today):
-
-```c
-NeedleHandle  needle_load(const char *safetensors_path, const char *vocab_path);
-const char *  needle_run(NeedleHandle h, const char *query, const char *tools_json);
-void          needle_free_str(char *out);
-void          needle_free(NeedleHandle h);
-const char *  needle_last_error(void);
+```ts
+const result = await this.cactusLmContext.complete({
+  messages,
+  tools: cactusTools,
+  options: {
+    forceTools: false,
+    toolRagTopK: 5,       // rank large catalog, only pass top-K to decoder
+    confidenceThreshold: 0.7,
+  },
+  onToken: callback,
+});
 ```
 
-Also confirmed: `engine.encode_contrastive` / `engine.retrieve_tools(query, descs, k) -> Vec<(usize, f32)>` — we can use `retrieve_tools` later to rank a growing tool catalogue, but for the current 2-3 document tools we statically pass all of them (avoids the ≤1024 encoder limit).
+`toolRagTopK` selects the most relevant tools via an internal RAG step before generation, and `confidenceThreshold` lets us gate low-confidence calls to cloud handoff or fall back to text.
 
-### 4.2 Native bridge (JS ⇄ Rust)
+## 4. Why not official Cactus Needle today
 
-Great fit for the Xberg module pattern already in the repo:
+The SDK's model registry (`node_modules/cactus-react-native/lib/module/modelRegistry.js`) only accepts models that:
 
-- **Android**: `NeedleModule.kt` + `NeedlePackage.kt`, JNI → the static `libneedle.so`.
-- **iOS**: `NeedleModule.swift` + `.m` (Turbo module mimic), link the staticlib + **C** header.
-- Exposed RN methods (mirror needles):
-  - `init({ weightsPath, vocabPath }) -> null`
-  - `route(query: string, toolsJson: string): string` (returns the JSON call, parsed in TS)
-  - `release()`
-- **always return an empty string / throw a `flag "DISABLED"` when `needle_load` fails or no weights — never the app crash.**
+1. live under `https://huggingface.co/Cactus-Compute`,
+2. have a Git tag `v{major}.{minor}.{patch}` ≤ runtime `1.13.1`,
+3. contain **both** `weights/{slug}-int4.zip` and `weights/{slug}-int8.zip`.
 
-### 4.3 TS layer — `NeedleRouter`
+Live check results:
+
+| Model | Tags | `weights/` zips | Registry-loadable? |
+| --- | --- | --- | --- |
+| `Cactus-Compute/needle` | none | none (JAX/Safetensors only) | ❌ |
+| `Cactus-Compute/needle-pebble-ft` | none | `needle-pebble-ft-int4.zip` only, plus a root-level `*-cq4.zip` | ❌ |
+
+→ `new CactusLM({ model: 'needle' })` will 404 today. We therefore **cannot** use the official Needle model through the existing SDK without Cactus publishing a compatible bundle.
+
+## 5. Why not `needle-rs` today
+
+`needle-rs` (Geekgineer/needle-rs, 26M params, 22 MB INT4, ~80 ms warm ARM NEON) is still technically viable, but it requires:
+
+- a new Rust → C ABI cross-compile for Android/iOS,
+- new TurboModules (`NeedleModule.kt` / `NeedleModule.swift`),
+- a separate weight-download path,
+- maintenance of a native bridge that duplicates capabilities already present in `cactus-react-native`.
+
+The **same user-facing improvement** (RAG routing, tool ranking, confidence gating) is achievable through the Cactus engine immediately. We keep `needle-rs` as a tracked alternative, not the v2 default.
+
+## 6. Migration path to true Needle
+
+When Cactus publishes Needle in registry format:
+
+1. Add the Needle slug to `src/utils/models/defaults.ts` (or a dedicated router model list).
+2. Instantiate a dedicated `CactusLM({ model: 'needle', options: { quantization: 'int4' } })` router in `NeedleStore`.
+3. Keep the same `NeedleRouter.routeRag()` / `routeTools()` TS contract — only the model slug changes.
+4. Reuse the existing download/init/cleanup path from `CactusLmWrapper`.
+
+If Cactus never publishes a registry bundle but the 22 MB footprint becomes critical, execute the v1 `needle-rs` native-module spike.
+
+## 7. Design
+
+### 7.1 Router model
+
+Use a small, tool-capable Cactus model. Good candidates from the current registry:
+
+| Slug | Params | Tags | Why |
+| --- | --- | --- | --- |
+| `lfm2.5-350m` | 350 M | `completion`, `tools`, `embed` | Smallest tool-capable model in the registry. |
+| `qwen3-0.6b` | 0.6 B | `completion`, `tools`, `embed` | Already a chat default; can share context if already loaded. |
+
+The choice is made in `src/utils/models/defaults.ts` and passed to `NeedleStore`.
+
+### 7.2 TS layer — `NeedleRouter`
 
 ```
 src/utils/Needle/
   types.ts          // RouteDecision union + ToolDef types
-  NeedleClient.ts   // wraps NativeModules.NeedleModule, async init, route()
-  index.ts          // exports routeRag + helpers
-src/store/NeedleStore.ts    // MobX makeAutoObservable singleton: loaded, ready, lastRoute
+  NeedleClient.ts   // wraps CactusLM, async init, routeRag(), routeTools()
+  index.ts          // exports + DOCUMENT_TOOLS / TOOL_ROUTER_TOOLS
+src/store/NeedleStore.ts    // MobX singleton: model, loaded, ready, lastRoute
 src/hooks/useNeedle.ts
 ```
 
 `routeRag(userPrompt)`:
 
-1. if `!NeedleStore.ready` → `{ action: 'rag', }` (fallback).
-2. Build `toolsJson` for the document-router (below).
-3. `const json = await NeedleClient.route(userPrompt, toolsJson)` → parse.
-4. Map to `NeedleRouterAction`: `{ type: 'retrieve', topK } | { type: 'expand', topK, revisedQuery } | { type: 'skip' }`. Fallback `{ type: 'retrieve', topK: default }`.
+1. if `!NeedleStore.ready` → `{ type: 'fallback' }`.
+2. Build `CactusLMTool[]` for the document-router.
+3. `const result = await cactusLm.complete({ messages, tools, options: { forceTools: true, maxTokens: 64 } })`.
+4. Parse `result.functionCalls[0]`; map to `NeedleRouteDecision`.
+5. Clamp `topK` to `[1, min(maxTopK, 5)]`.
 
-### 4.4 Tool definitions (document-intelligence)
+`routeTools(userPrompt, allTools, topK)`:
 
-Always pass the full set statically (no need for `retrieve_tools` while there are ≤3 tools). Needle accepts OpenAI's `{"type":"object","properties":...}` form, so we can reuse the same shape throughout. Keep `name`s `snake_case` (the trained convention) and descriptions terse to fit the encoder budget.
+1. if `!NeedleStore.ready` → return `allTools`.
+2. Call `complete({ messages, tools: allTools, options: { toolRagTopK: topK } })`.
+3. Return the subset selected by the engine (or all tools on fallback).
+
+### 7.3 Tool definitions (document-intelligence)
 
 ```ts
 const DOCUMENT_TOOLS = [
@@ -143,22 +147,15 @@ const DOCUMENT_TOOLS = [
     parameters: {
       type: "object",
       properties: {
-        query: {
-          type: "string",
-          description: "The search text to embed and match against.",
-        },
-        top_k: {
-          type: "integer",
-          description: "How many document chunks to pull (1-5).",
-        },
+        query: { type: "string", description: "The search text to embed and match against." },
+        top_k: { type: "integer", description: "How many document chunks to pull (1-5)." },
       },
       required: ["query"],
     },
   },
   {
     name: "skip_rag",
-    description:
-      "No document context is needed; answer from general knowledge.",
+    description: "No document context is needed; answer from general knowledge.",
     parameters: { type: "object", properties: {} },
   },
   {
@@ -176,67 +173,79 @@ const DOCUMENT_TOOLS = [
 ];
 ```
 
-The routed call must always name exactly one of these tools; any other result is treated as `fallback` in `NeedleRouter` (§4.3).
+### 7.4 Hook into `getContextTexts()`
 
-### 4.5 Hook into `getContextTexts()`
-
-Insert a needle gate at the top of `getContextTexts()` (line 272), **before the embed call**:
+Insert a router gate at the top of `getContextTexts()`, **before the embed call**:
 
 ```ts
-const route = await NeedleRouter.routeRag(userPrompt);
+const route = await NeedleRouter.routeRag(userPrompt, { maxTopK: this.topN * 2 });
 switch (route.type) {
   case "skip":
-    return []; // no retrieval, no embedding
+    return [];
   case "expand":
-    topN = route.topK; // widen; then fall through
   case "retrieve":
-    topN = Math.min(route.topK, this.topN * 2); // fall through
-  default: /* 'fallback' */ // existing path unchanged
+    topN = Math.min(route.topK, this.topN * 2);
+    break;
+  default:
+    // fallback: keep existing behavior
 }
 ```
 
-- The non-blocking fallback lives in `NeedleRouter`, so `getContextTexts` stays clean.
-- `topK` is clamped to `[1, min(this.topN*2, 5)]` in the router so we never explode context.
+### 7.5 Hook into `streamGetChatCompletion()`
 
-### 4.6 Failure/latency contract
+In `src/utils/AiProviders/onDevice/cactus/index.ts`:
 
-- **Timeout** the `route()` call at ~250 ms. If it exceeds (device still JIT / memory pressure), treat as `fallback`.
-- Over-invokation: cache router for a session (init once, reuse).
+```ts
+const result = await this.cactusLmContext.complete({
+  messages: messages as any,
+  options: {
+    stopSequences: [...stops],
+    maxTokens: this.nPredict,
+    ...apiParams,
+    temperature: this.temperature,
+    toolRagTopK: cactusTools.length > 5 ? 5 : undefined,
+    confidenceThreshold: 0.7,
+  },
+  tools: cactusTools.length > 0 ? cactusTools : undefined,
+  onToken: callback,
+});
+```
 
-## 5. Hoisting decisions
+### 7.6 Failure/latency contract
 
-- **Engine**: needle-rs C ABI, cross-compiled (NEON aarch64), bridged via our native-module template.
-- **Alternative**: WASM build hosted in RN via a wasm runtime lib — heavier bridge, same weights, useful if native cross-compile becomes painful. **Decision held as open** until spike.
+- **Timeout** the `routeRag()` / `routeTools()` calls at ~500 ms. If exceeded → `fallback`.
+- Cache the router `CactusLM` instance for the session; reuse across calls.
+- Serialize concurrent routing calls (the SDK's underlying engine is single-generation; `CactusLM` throws if a generation is already in progress).
+- Never propagate native errors to `getContextTexts()` or chat completion — all router errors map to `fallback`.
 
-## 6. Feasibility spike (before any UI)
+## 8. Hoisting decisions
 
-1. Build/run `needle-rs` on **aarch64** target (Android API). Confirm the NEON path actually computes (not just scalar fallback).
-2. Verify `needle_load` resolves in an RN Android build (gradle CMake staticlib linking).
-3. End-to-end: a query with the DOCUMENT_TOOLS while embedded → calls return `JSON.parse`-able, correct routing.
-4. Measure **append** cost on a mid-range device: load (~once) and per-route latency. Budget: < 300 ms warm / full cold, working set < 30 MB.
-5. If NEON proves broken, pivot to the WASM variant and re-run.
+- **Engine**: existing `cactus-react-native` `CactusLM` (no new native module).
+- **Router model**: `lfm2.5-350m` int4 by default; overridable per build.
+- **Paid-tier gating**: Needle-like routing is positioned as a Pro feature per the freemium architecture spec. The gate lives in `NeedleStore.init()` using `SubscriptionStore`.
+- **Alternative retained**: `needle-rs` native module remains documented as the footprint-optimized future path.
 
-## 7. Risks & mitigations
+## 9. Risks & mitigations
 
-| Risk                                                            | Sat status                                 | Fallback                                                   |
-| --------------------------------------------------------------- | ------------------------------------------ | ---------------------------------------------------------- |
-| NN/aarch64 path slow on device                                  | verity in spike §6                         | WASM variant                                               |
-| Mobile not primary target of needle-rs (README says use Cactus) | tiny lib + NEON already shipped            | keep tool budget; probe size                               |
-| English-only / greedy limitations                               | acceptable — keep phrases short & explicit | enforce `skip` pattern; never send chat freeform to needle |
-| `getContextTexts` blocking generation                           | gate with 250 ms timeout                   | treat as unavailable → default retrieval                   |
-| weights 22 MB download                                          | support via same download infra as Cactus  | defer until user opts in                                   |
+| Risk | Status | Mitigation |
+| --- | --- | --- |
+| Router model larger/slower than true Needle (350M vs 26M) | accepted for v2 | Measure latency in spike; if unacceptable, escalate to `needle-rs` or wait for Cactus Needle bundle. |
+| Tool-call format differs from Needle's constrained JSON | verified | Cactus returns `functionCalls` array; parser normalizes to the same `NeedleRouteDecision`. |
+| SDK's `forceTools` not deterministic enough | spike | Test routing accuracy on representative queries; tune prompts/tools. |
+| Router call contends with chat generation | verified risk | Use a separate `CactusLM` instance for routing, or serialize behind `NeedleStore`. |
+| Cactus Needle bundle arrives later | tracked | Migration is a one-line slug swap. |
 
-## 8. Files touched (all NEW — no churn on existing)
+## 10. Files touched
 
-- `android/app/src/main/java/com/hacienda/needle/{NeedleModule.kt, NeedlePackage.kt}`
-- `ios/Hacienda/{NeedleModule.swift, NeedleModule.m}`
-- `src/utils/Needle/{types.ts, NeedleClient.ts, index.ts}`
-- `src/store/NeedleStore.ts`, `src/hooks/useNeedle.ts`
-- `android/app/build.gradle` (CMake link + ABI), `ios/Podfile` (staticlib)
-- **modify** `src/AiProviders/baseOpenAILikeProvider/index.ts::getContextTexts`
+- `src/utils/Needle/{types.ts, NeedleClient.ts, index.ts}` (new)
+- `src/store/NeedleStore.ts` (new)
+- `src/hooks/useNeedle.ts` (new)
+- `src/utils/models/defaults.ts` (add router model entry)
+- `src/utils/AiProviders/baseOpenAILikeProvider/index.ts` (edit `getContextTexts`)
+- `src/utils/AiProviders/onDevice/cactus/index.ts` (edit `streamGetChatCompletion` to pass `toolRagTopK` / `confidenceThreshold`)
 
-All MIT, credit Cactus Compute + needle-rs.
+No new native modules, no Rust cross-compile, no Android/iOS build changes.
 
 ---
 
-_Next step: execute §6 spike; do not start RN-side code until an Android build passes._
+_Next step: run the Phase 0 spike (verify `lfm2.5-350m` tool-calling accuracy and latency) before writing the TS layer._
