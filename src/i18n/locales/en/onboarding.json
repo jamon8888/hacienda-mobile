@@ -1,1 +1,28 @@
-{}
+{
+  "welcome": {
+    "title": "Welcome",
+    "subtitle": "Transform your phone into a personal AI assistant to chat with documents, AI agents, and more - all private and on-device.",
+    "backButtonWarning": "Please proceed through the onboarding flow to continue."
+  },
+  "modelSelection": {
+    "title": "Select Model",
+    "subtitle": "Choose an AI model to get started",
+    "recommended": "Recommended",
+    "download": "Download",
+    "downloading": "Downloading...",
+    "insufficientStorage": "Insufficient storage space"
+  },
+  "survey": {
+    "title": "Tell us about yourself",
+    "subtitle": "Help us personalize your experience",
+    "useCase": "What will you use AnythingLLM for?",
+    "experience": "Your AI experience level"
+  },
+  "dataHandling": {
+    "title": "Data Handling",
+    "subtitle": "Your privacy matters",
+    "localProcessing": "All processing happens on your device",
+    "noDataCollection": "We don't collect any personal data",
+    "getStarted": "Get Started"
+  }
+}

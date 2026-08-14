@@ -1,1 +1,28 @@
-{}
+{
+  "title": "Settings",
+  "sections": {
+    "appearance": "Appearance",
+    "language": "Language",
+    "notifications": "Notifications",
+    "privacy": "Privacy",
+    "about": "About",
+    "voice": "Voice"
+  },
+  "language": {
+    "title": "Language",
+    "subtitle": "Select your preferred language",
+    "current": "Current: {{language}}"
+  },
+  "appearance": {
+    "darkMode": "Dark Mode",
+    "theme": "Theme"
+  },
+  "voice": {
+    "title": "Voice Settings",
+    "description": "Configure the on-device ASR and LLM models used for voice chat."
+  },
+  "about": {
+    "version": "Version",
+    "build": "Build"
+  }
+}

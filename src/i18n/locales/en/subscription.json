@@ -1,1 +1,26 @@
-{}
+{
+  "title": "Subscription",
+  "plans": {
+    "pro": "Pro Plan",
+    "free": "Free Plan"
+  },
+  "descriptions": {
+    "pro": "You have access to all premium features",
+    "free": "Upgrade to unlock cloud inference, verticals, and more"
+  },
+  "features": {
+    "title": "Plan Features",
+    "localInference": "Local Inference",
+    "documentGeneration": "Document Generation",
+    "officeFormatReading": "Office Format Reading",
+    "pushToTalk": "Push-to-Talk",
+    "audioMemos": "Audio Memos",
+    "cloudInference": "Cloud Inference",
+    "verticals": "Verticals",
+    "nerExtraction": "NER Extraction",
+    "loraAdapters": "LoRA Adapters"
+  },
+  "badges": {
+    "comingSoon": "Coming Soon"
+  }
+}

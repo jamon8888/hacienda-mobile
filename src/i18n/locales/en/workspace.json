@@ -1,1 +1,23 @@
-{}
+{
+  "chat": {
+    "placeholder": "Type a message...",
+    "send": "Send",
+    "thinking": "Thinking...",
+    "error": {
+      "loadingLlm": "Error loading LLM provider",
+      "loadingWorkspace": "Error loading workspace thread",
+      "sendingMessage": "Error sending message"
+    }
+  },
+  "history": {
+    "title": "Chat History",
+    "empty": "No messages yet",
+    "deleteConfirm": "Are you sure you want to delete this conversation?"
+  },
+  "attachments": {
+    "title": "Attachments",
+    "add": "Add Attachment",
+    "remove": "Remove",
+    "unsupported": "Unsupported file type"
+  }
+}

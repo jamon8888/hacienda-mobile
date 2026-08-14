@@ -1,1 +1,28 @@
-{}
+{
+  "app": {
+    "name": "AnythingLLM"
+  },
+  "buttons": {
+    "getStarted": "Get Started",
+    "continue": "Continue",
+    "back": "Back",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "retry": "Retry",
+    "loading": "Loading..."
+  },
+  "errors": {
+    "unknown": "Unknown error",
+    "network": "Network error. Please check your connection.",
+    "required": "This field is required",
+    "invalidEmail": "Please enter a valid email address"
+  },
+  "status": {
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "success": "Success!",
+    "error": "Error"
+  }
+}
