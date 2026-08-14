@@ -3,6 +3,12 @@ import { TouchableOpacity } from "react-native";
 import renderer from "react-test-renderer";
 import MemoRow from "./MemoRow";
 import { AudioMemoType } from "@/database/models/AudioMemo";
+import { createMockT } from "@/testUtils/mockUseTranslation";
+
+jest.mock("@/hooks/useTranslation", () => {
+  const { createMockT } = require("@/testUtils/mockUseTranslation");
+  return { useTranslation: () => createMockT() };
+});
 
 const mockMemo: AudioMemoType = {
   uuid: "test-uuid-1",

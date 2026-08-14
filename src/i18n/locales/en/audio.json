@@ -7,6 +7,10 @@
       "confirm": "Are you sure you want to delete this memo?"
     },
     "untitled": "Untitled Memo",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "daysAgo_one": "{{count}} day ago",
+    "daysAgo_other": "{{count}} days ago",
     "tabs": {
       "workspace": "Workspace",
       "global": "Global"
@@ -21,7 +25,8 @@
       "save": "Save",
       "cancel": "Cancel",
       "noTranscript": "No transcript available"
-    }
+    },
+    "deleteFailed": "Failed to delete memo"
   },
   "voiceChat": {
     "title": "Voice Assistant",

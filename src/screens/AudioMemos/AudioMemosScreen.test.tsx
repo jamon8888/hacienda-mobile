@@ -3,6 +3,12 @@ import renderer from "react-test-renderer";
 import AudioMemosScreen from "./AudioMemosScreen";
 import { useAudioMemos } from "@/hooks/useAudioMemos";
 import { AudioMemoType } from "@/database/models/AudioMemo";
+import { createMockT } from "@/testUtils/mockUseTranslation";
+
+jest.mock("@/hooks/useTranslation", () => {
+  const { createMockT } = require("@/testUtils/mockUseTranslation");
+  return { useTranslation: () => createMockT() };
+});
 
 const mockNavigation = {
   goBack: jest.fn(),

@@ -6,7 +6,11 @@
       "title": "Supprimer le mémo",
       "confirm": "Êtes-vous sûr de vouloir supprimer ce mémo ?"
     },
-    "untitled": "Memos sans titre",
+    "untitled": "Mémo sans titre",
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "daysAgo_one": "Il y a {{count}} jour",
+    "daysAgo_other": "Il y a {{count}} jours",
     "tabs": {
       "workspace": "Espace de travail",
       "global": "Global"
@@ -21,7 +25,8 @@
       "save": "Enregistrer",
       "cancel": "Annuler",
       "noTranscript": "Aucune transcription disponible"
-    }
+    },
+    "deleteFailed": "Échec de la suppression du mémo"
   },
   "voiceChat": {
     "title": "Assistant vocal",
