@@ -8,6 +8,7 @@ import DeviceInfo from "react-native-device-info";
 import Blob from "react-native/Libraries/Blob/Blob";
 import * as RNFS from "@dr.pogodin/react-native-fs";
 
+import i18n from "@/i18n";
 import { formatBytes, formatNumber } from "@/utils/formatters";
 import { getHFDefaultSettings } from "@/utils/chat";
 import {
@@ -65,22 +66,21 @@ export const hashCode = (text = "") => {
 export const initLocale = (locale?: any) => {
   const locales: { [key: string]: unknown } = {
     en: require("dayjs/locale/en"),
-    // es: require('dayjs/locale/es'),
-    // ko: require('dayjs/locale/ko'),
-    // pl: require('dayjs/locale/pl'),
-    // pt: require('dayjs/locale/pt'),
-    // ru: require('dayjs/locale/ru'),
-    // tr: require('dayjs/locale/tr'),
-    // uk: require('dayjs/locale/uk'),
-    // ca: require('dayjs/locale/ca'),
-    // de: require('dayjs/locale/de'),
-    // ja: require('dayjs/locale/ja'),
-    // zh: require('dayjs/locale/zh'),
+    fr: require("dayjs/locale/fr"),
+    // Add more as needed
   };
 
-  locale ? locales[locale] : locales.en;
-  dayjs.locale(locale);
+  const language = locale || i18n.language || "en";
+  const localeModule = locales[language] || locales.en;
+
+  if (localeModule) {
+    dayjs.locale(language);
+  }
 };
+
+i18n.on("languageChanged", (lng) => {
+  initLocale(lng);
+});
 
 /** Returns either prop or empty object if null or undefined */
 export const unwrap = <T>(prop: T) => prop ?? {};
