@@ -9,6 +9,9 @@ import {
   type RouteOptions,
 } from "@/utils/Needle";
 
+// Toggle this to true once P0 on-device bundle verification passes.
+export const NEEDLE_ROUTER_ENABLED = false;
+
 export class NeedleStore {
   ready = false;
   busy = false;
