@@ -2,13 +2,11 @@ import * as React from "react";
 import { ColorValue } from "react-native";
 
 import _ from "lodash";
-import dayjs from "dayjs";
 import { MD3Theme } from "react-native-paper";
 import DeviceInfo from "react-native-device-info";
 import Blob from "react-native/Libraries/Blob/Blob";
 import * as RNFS from "@dr.pogodin/react-native-fs";
 
-import i18n from "@/i18n";
 import { formatBytes, formatNumber } from "@/utils/formatters";
 import { getHFDefaultSettings } from "@/utils/chat";
 import {
@@ -61,26 +59,6 @@ export const hashCode = (text = "") => {
   }
   return Math.abs(hash);
 };
-
-/** Inits dayjs locale */
-export const initLocale = (locale?: any) => {
-  const locales: { [key: string]: unknown } = {
-    en: require("dayjs/locale/en"),
-    fr: require("dayjs/locale/fr"),
-    // Add more as needed
-  };
-
-  const language = locale || i18n.language || "en";
-  const localeModule = locales[language] || locales.en;
-
-  if (localeModule) {
-    dayjs.locale(language);
-  }
-};
-
-i18n.on("languageChanged", (lng) => {
-  initLocale(lng);
-});
 
 /** Returns either prop or empty object if null or undefined */
 export const unwrap = <T>(prop: T) => prop ?? {};

@@ -1,6 +1,9 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import * as RNLocalize from "react-native-localize";
+import dayjs from "dayjs";
+import "dayjs/locale/en";
+import "dayjs/locale/fr";
 
 import type { SupportedLanguage } from "./types";
 import en from "./locales/en";
@@ -31,6 +34,14 @@ const getDeviceLanguage = (): SupportedLanguage => {
   return "en";
 };
 
+const applyDayjsLocale = (language: SupportedLanguage): void => {
+  dayjs.locale(language);
+};
+
+i18n.on("languageChanged", (lng: string) => {
+  applyDayjsLocale(normalizeLanguage(lng));
+});
+
 export const initI18n = (): Promise<void> => {
   if (i18n.isInitialized) {
     return Promise.resolve();
@@ -51,7 +62,10 @@ export const initI18n = (): Promise<void> => {
           useSuspense: false,
         },
       })
-      .then(() => undefined)
+      .then(() => {
+        applyDayjsLocale(normalizeLanguage(i18n.language));
+        return undefined;
+      })
       .catch((error: unknown) => {
         initializationPromise = undefined;
         throw error;
