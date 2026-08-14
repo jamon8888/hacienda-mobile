@@ -34,10 +34,23 @@
     }
   },
   "dataHandling": {
-    "title": "Data Handling",
-    "subtitle": "Your privacy matters",
-    "localProcessing": "All processing happens on your device",
-    "noDataCollection": "We don't collect any personal data",
-    "getStarted": "Get Started"
+    "title": "Data Handling & Privacy",
+    "subtitle": "With AnythingLLM, all chats, documents, and other data is processed and stored on your device.",
+    "items": {
+      "localChats": {
+        "name": "Fully Local Chats",
+        "description": "All chats are stored on your device."
+      },
+      "documentEmbedding": {
+        "name": "Document Embedding",
+        "description": "All documents and processing are done on your device."
+      },
+      "aiAgents": {
+        "name": "AI Agents",
+        "description": "All agents are run on your device and only use the internet when required (eg: Web search)"
+      }
+    },
+    "settingUpWorkspace": "Setting up your first workspace",
+    "getStarted": "Experience AnythingLLM"
   }
 }

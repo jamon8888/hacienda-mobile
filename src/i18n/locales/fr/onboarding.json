@@ -34,10 +34,23 @@
     }
   },
   "dataHandling": {
-    "title": "Gestion des données",
-    "subtitle": "Votre vie privée compte",
-    "localProcessing": "Tout le traitement se fait sur votre appareil",
-    "noDataCollection": "Nous ne collectons aucune donnée personnelle",
-    "getStarted": "Commencer"
+    "title": "Gestion des données et confidentialité",
+    "subtitle": "Avec AnythingLLM, toutes les conversations, documents et autres données sont traités et stockés sur votre appareil.",
+    "items": {
+      "localChats": {
+        "name": "Conversations 100 % locales",
+        "description": "Toutes les conversations sont stockées sur votre appareil."
+      },
+      "documentEmbedding": {
+        "name": "Intégration de documents",
+        "description": "Tous les documents et traitements sont effectués sur votre appareil."
+      },
+      "aiAgents": {
+        "name": "Agents IA",
+        "description": "Tous les agents s'exécutent sur votre appareil et n'utilisent Internet que lorsque c'est nécessaire (ex. : recherche Web)"
+      }
+    },
+    "settingUpWorkspace": "Configuration de votre premier espace de travail",
+    "getStarted": "Découvrez AnythingLLM"
   }
 }
