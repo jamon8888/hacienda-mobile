@@ -1,0 +1,136 @@
+import * as RNFS from "@dr.pogodin/react-native-fs";
+import JSZip from "jszip";
+
+import { NeedleBundleDownloader } from "../NeedleBundleDownloader";
+
+jest.mock("@dr.pogodin/react-native-fs", () => ({
+  DocumentDirectoryPath: "/mock/Documents",
+  exists: jest.fn(),
+  mkdir: jest.fn().mockResolvedValue(undefined),
+  downloadFile: jest.fn(),
+  readFile: jest.fn(),
+  writeFile: jest.fn().mockResolvedValue(undefined),
+  unlink: jest.fn().mockResolvedValue(undefined),
+}));
+
+const mockZipFiles = {
+  "config.txt": "model_type=needle",
+  "token_embeddings.weights": "fake-weights",
+  "components/nested.txt": "nested-content",
+};
+
+function makeMockZip() {
+  const zip = new JSZip();
+  Object.entries(mockZipFiles).forEach(([path, content]) => {
+    zip.file(path, content);
+  });
+  return zip.generateAsync({ type: "base64" });
+}
+
+describe("NeedleBundleDownloader", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (RNFS.exists as jest.Mock).mockResolvedValue(false);
+    (RNFS.downloadFile as jest.Mock).mockReturnValue({
+      promise: Promise.resolve({ statusCode: 200 }),
+    });
+    (RNFS.readFile as jest.Mock).mockImplementation(() => makeMockZip());
+  });
+
+  it("returns existing extract dir if config.txt is already present", async () => {
+    (RNFS.exists as jest.Mock).mockImplementation(async (path: string) =>
+      path.endsWith("/needle/config.txt"),
+    );
+
+    const downloader = new NeedleBundleDownloader();
+    const path = await downloader.ensureDownloaded();
+
+    expect(path).toBe("/mock/Documents/models/needle");
+    expect(RNFS.downloadFile).not.toHaveBeenCalled();
+  });
+
+  it("downloads, extracts, and returns the bundle path", async () => {
+    const downloader = new NeedleBundleDownloader();
+    const onProgress = jest.fn();
+    const path = await downloader.ensureDownloaded(onProgress);
+
+    expect(path).toBe("/mock/Documents/models/needle");
+    expect(RNFS.downloadFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fromUrl:
+          "https://huggingface.co/Cactus-Compute/needle/resolve/main/needle-cq4.zip",
+        toFile: "/mock/Documents/models/needle.zip",
+      }),
+    );
+    expect(RNFS.writeFile).toHaveBeenCalledWith(
+      "/mock/Documents/models/needle/config.txt",
+      expect.any(String),
+      "base64",
+    );
+    expect(RNFS.writeFile).toHaveBeenCalledWith(
+      "/mock/Documents/models/needle/token_embeddings.weights",
+      expect.any(String),
+      "base64",
+    );
+    expect(RNFS.unlink).toHaveBeenCalledWith(
+      "/mock/Documents/models/needle.zip",
+    );
+  });
+
+  it("creates nested directories before writing nested files", async () => {
+    const downloader = new NeedleBundleDownloader();
+    await downloader.ensureDownloaded();
+
+    expect(RNFS.mkdir).toHaveBeenCalledWith(
+      "/mock/Documents/models/needle/components",
+    );
+    expect(RNFS.writeFile).toHaveBeenCalledWith(
+      "/mock/Documents/models/needle/components/nested.txt",
+      expect.any(String),
+      "base64",
+    );
+  });
+
+  it("reports download progress", async () => {
+    (RNFS.downloadFile as jest.Mock).mockReturnValue({
+      promise: Promise.resolve({ statusCode: 200 }),
+    });
+
+    const downloader = new NeedleBundleDownloader();
+    const onProgress = jest.fn();
+    await downloader.ensureDownloaded(onProgress);
+
+    const progressCallback = (RNFS.downloadFile as jest.Mock).mock.calls[0][0]
+      .progress;
+    progressCallback({ bytesWritten: 500, contentLength: 1000 });
+
+    expect(onProgress).toHaveBeenCalledWith(0.5);
+  });
+
+  it("throws when the download returns a non-200 status", async () => {
+    (RNFS.downloadFile as jest.Mock).mockReturnValue({
+      promise: Promise.resolve({ statusCode: 404 }),
+    });
+
+    const downloader = new NeedleBundleDownloader();
+    await expect(downloader.ensureDownloaded()).rejects.toThrow(
+      "Needle bundle download failed with status 404",
+    );
+  });
+
+  it("uses custom bundle name and URL when provided", async () => {
+    const downloader = new NeedleBundleDownloader(
+      "custom",
+      "https://example.com/bundle.zip",
+    );
+    const path = await downloader.ensureDownloaded();
+
+    expect(path).toBe("/mock/Documents/models/custom");
+    expect(RNFS.downloadFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fromUrl: "https://example.com/bundle.zip",
+        toFile: "/mock/Documents/models/custom.zip",
+      }),
+    );
+  });
+});
