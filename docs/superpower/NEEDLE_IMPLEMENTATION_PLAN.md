@@ -171,10 +171,40 @@ This replaces the generic `toolRagTopK` engine heuristic with the dedicated Need
 
 ## P6 — Tests & quality
 
-- Unit: `routeRag` mapping / clamp / fallback cases (`src/utils/Needle/__tests__/routeRag.test.ts`).
-- Unit: `selectTools` fallback when router unavailable.
-- Integration on device: RAG-answer vs general-knowledge questions only when correctly routed.
-- `yarn typecheck`, `yarn lint`, `yarn test`.
+### Automated tests
+
+Run the full Needle test subset:
+
+```bash
+yarn test src/utils/Needle \
+          src/store/__tests__/NeedleStore.test.ts \
+          src/services/downloads/__tests__/NeedleBundleDownloader.test.ts \
+          src/utils/AiProviders/baseOpenAILikeProvider/__tests__/needleIntegration.test.ts \
+          src/utils/AiProviders/onDevice/cactus/__tests__/needleToolRanking.test.ts
+```
+
+Expect 30 tests covering:
+
+| File | What it tests |
+| ---- | ------------- |
+| `src/utils/Needle/__tests__/routeRag.test.ts` | `routeRag` mapping, `topK` clamping, confidence gating, malformed responses, and fallback behavior. |
+| `src/store/__tests__/NeedleStore.test.ts` | Store init success/failure, `routeRag` / `selectTools` fallbacks, concurrent-call serialization, and destroy lifecycle. |
+| `src/services/downloads/__tests__/NeedleBundleDownloader.test.ts` | Cache hit, download/extract, nested directories, progress reporting, HTTP failure, and custom bundle URLs. |
+| `src/utils/AiProviders/baseOpenAILikeProvider/__tests__/needleIntegration.test.ts` | `getContextTexts` honors Needle `skip`, `expand`, and `fallback` decisions (uses mocked VectorDB + embedder). |
+| `src/utils/AiProviders/onDevice/cactus/__tests__/needleToolRanking.test.ts` | `streamGetChatCompletion` ranks tool lists > 5 and falls back when Needle is unavailable. |
+
+Also run:
+
+```bash
+yarn typecheck
+yarn eslint src/services/downloads src/utils/Needle src/store/NeedleStore.ts \
+            src/utils/AiProviders/baseOpenAILikeProvider/index.ts \
+            src/utils/AiProviders/onDevice/cactus/index.ts
+```
+
+### Manual / on-device verification
+
+See the P0 checklist below. The `NeedleSpikeView` in DevTools is the manual test harness.
 
 ---
 
