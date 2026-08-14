@@ -29,6 +29,7 @@ import { BottomSheetProvider } from "@/contexts/BottomSheetContext";
 import { LLMPreferenceProvider } from "@/contexts/LLMPreferenceContext";
 import { useEnablePushNotifications } from "@/utils/PushNotifications";
 import { useOnboardingCompleted } from "@/hooks/useOnboardingHook";
+import "./src/i18n";
 
 const Drawer = createDrawerNavigator();
 const App = observer(() => {
