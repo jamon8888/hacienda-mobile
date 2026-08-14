@@ -7,8 +7,8 @@ import en from "./locales/en";
 import fr from "./locales/fr";
 
 const resources = {
-  en: { translation: en },
-  fr: { translation: fr },
+  en: { ...en },
+  fr: { ...fr },
 };
 
 let initializationPromise: Promise<void> | undefined;

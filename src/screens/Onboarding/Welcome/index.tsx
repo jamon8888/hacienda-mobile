@@ -10,6 +10,7 @@ import uiStore from "@/store/UIStore";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import useHighjackBackButtonPress from "@/hooks/useHighjackBackButtonPress";
+import { useTranslation } from "@/hooks/useTranslation";
 import { PATHS } from "@/utils/paths";
 import React from "react";
 import { showToast } from "@/utils/Notification";
@@ -17,15 +18,13 @@ import { showToast } from "@/utils/Notification";
 export default function OnboardingWelcome() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation("onboarding");
   const handleGetStarted = () => {
     uiStore.setToStorage("onboarding_welcome_completed", true);
     navigation.navigate(PATHS.onboarding.model_selection as never);
   };
   useHighjackBackButtonPress(() => {
-    showToast(
-      "Please proceed through the onboarding flow to continue.",
-      "short",
-    );
+    showToast(t("welcome.backButtonWarning"), "short");
     return true;
   });
 
@@ -52,8 +51,8 @@ export default function OnboardingWelcome() {
         }}>
         <View className="flex flex-col h-full justify-between py-4">
           <View className="flex flex-col justify-center items-center gap-y-2">
-            <Text className="text-[#B2DDFF] text-xl">Welcome</Text>
-            <Text className="text-white text-3xl">AnythingLLM</Text>
+            <Text className="text-[#B2DDFF] text-xl">{t("welcome.title")}</Text>
+            <Text className="text-white text-3xl">{t("common:app.name")}</Text>
           </View>
           <Image
             source={require("@/assets/onboarding/welcome.png")}
@@ -62,8 +61,7 @@ export default function OnboardingWelcome() {
           />
           <View className="flex max-w-[75%] mx-auto">
             <Text className="text-white text-regular text-center">
-              Transform your phone into a personal AI assistant to chat with
-              documents, AI agents, and more - all private and on-device.
+              {t("welcome.subtitle")}
             </Text>
           </View>
 
@@ -71,7 +69,7 @@ export default function OnboardingWelcome() {
             onPress={handleGetStarted}
             className="flex w-full bg-[--cta-light-blue] rounded-md p-4 text-center max-w-[85%] mx-auto">
             <Text className="text-[--dark] font-bold text-center">
-              Get Started
+              {t("common:buttons.getStarted")}
             </Text>
           </TouchableOpacity>
         </View>
