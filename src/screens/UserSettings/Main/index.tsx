@@ -13,6 +13,7 @@ import {
   MoneyWavy,
   Crown,
   MusicNotes,
+  Translate,
 } from "phosphor-react-native";
 import { IWorkspacePageKey } from "../index";
 import uiStore from "@/store/UIStore";
@@ -31,6 +32,7 @@ import uninstallAllModels from "@/utils/models/manager";
 import { deleteProcessedFiles } from "@/utils/fs";
 import { showToast } from "@/utils/Notification";
 import ApkVersion from "./ApkVersion";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface MainViewProps {
   goToPage: (page: IWorkspacePageKey) => void;
@@ -99,6 +101,7 @@ const LEGAL_LINKS: SupportLink[] = [
 export function MainView({ goToPage }: MainViewProps) {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation("settings");
   const { llmPreferences, providerToName } = useLLMPreference();
   const scrollViewRef = useRef<ScrollView>(null);
   function goBack() {
@@ -231,6 +234,17 @@ export function MainView({ goToPage }: MainViewProps) {
             <View className="flex flex-row gap-2 items-center">
               <MusicNotes size={18} color="#FFF" />
               <Text className="text-white text-lg">Audio Memos</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Language */}
+          <TouchableOpacity
+            onPress={() => goToPage("language_settings")}
+            style={{ backgroundColor: "#27282A", padding: 14, gap: 20 }}
+            className="w-full flex flex-row items-center rounded-lg">
+            <View className="flex flex-row gap-2 items-center">
+              <Translate size={18} color="#FFF" />
+              <Text className="text-white text-lg">{t("language.title")}</Text>
             </View>
           </TouchableOpacity>
 
