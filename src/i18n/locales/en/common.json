@@ -29,5 +29,9 @@
     "openMenu": "Open menu",
     "newThread": "New thread",
     "voiceChat": "Voice chat"
+  },
+  "nav": {
+    "workspaces": "Workspaces",
+    "newWorkspace": "New Workspace"
   }
 }
