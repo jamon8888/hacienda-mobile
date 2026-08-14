@@ -33,5 +33,11 @@
   "nav": {
     "workspaces": "Espaces de travail",
     "newWorkspace": "Nouvel espace de travail"
+  },
+  "home": {
+    "welcomeTitle": "Bienvenue sur {{appName}}",
+    "getStartedSubtitle": "Commencez en créant un nouvel espace de travail.",
+    "createWorkspace": "Créer un espace de travail",
+    "defaultWorkspaceName": "Mon espace de travail"
   }
 }

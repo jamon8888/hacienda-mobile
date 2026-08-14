@@ -33,5 +33,11 @@
   "nav": {
     "workspaces": "Workspaces",
     "newWorkspace": "New Workspace"
+  },
+  "home": {
+    "welcomeTitle": "Welcome to {{appName}}",
+    "getStartedSubtitle": "Get started by creating a new workspace.",
+    "createWorkspace": "Create Workspace",
+    "defaultWorkspaceName": "My Workspace"
   }
 }
