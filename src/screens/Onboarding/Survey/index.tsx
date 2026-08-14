@@ -7,27 +7,28 @@ import { PATHS } from "@/utils/paths";
 import uiStore from "@/store/UIStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Telemetry from "@/utils/Telemetry";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const options = [
   {
     id: "productivity",
-    title: "Increase Productivity",
+    titleKey: "survey.options.productivity",
   },
   {
     id: "privacy",
-    title: "Privacy Focused chats",
+    titleKey: "survey.options.privacy",
   },
   {
     id: "custom-ai",
-    title: "Custom AI Agents",
+    titleKey: "survey.options.customAi",
   },
   {
     id: "automation",
-    title: "AI Automation",
+    titleKey: "survey.options.automation",
   },
   {
     id: "other",
-    title: "Other",
+    titleKey: "survey.options.other",
   },
 ];
 
@@ -35,6 +36,7 @@ export default function Survey() {
   const [selection, setSelection] = useState<string | null>(null);
   const navigation = useNavigation<NavigationProp<any>>();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation("onboarding");
 
   const onContinue = async () => {
     console.log("Stubbed: Sending survey data to server");
@@ -78,10 +80,10 @@ export default function Survey() {
           <React.Fragment>
             <View className="flex flex-col gap-y-4 justify-center items-center">
               <Text className="text-white text-4xl font-bold text-center">
-                What can AnythingLLM help you with?
+                {t("survey.title")}
               </Text>
               <Text className="text-white/60 text-xl text-center">
-                Select the one that most applies to you.
+                {t("survey.subtitle")}
               </Text>
             </View>
 
@@ -89,7 +91,7 @@ export default function Survey() {
               {options.map((option, index) => (
                 <SurveyOption
                   key={index}
-                  title={option.title}
+                  title={t(option.titleKey)}
                   onPress={() => setSelection(option.id)}
                   disabled={false}
                   isActive={selection === option.id}
@@ -100,14 +102,16 @@ export default function Survey() {
             <View className="flex flex-row gap-x-4 items-center justify-between">
               <TouchableOpacity onPress={onBack}>
                 <Text className="text-[--primary-text] text-xl border border-[--primary-text] rounded-lg px-4 py-2">
-                  Back
+                  {t("common:buttons.back")}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 disabled={!selection}
                 onPress={onContinue}
                 className="disabled:opacity-50 bg-[--cta-light-blue] rounded-lg px-4 py-2 flex flex-row items-center justify-center">
-                <Text className="text-black text-xl">Continue</Text>
+                <Text className="text-black text-xl">
+                  {t("common:buttons.continue")}
+                </Text>
               </TouchableOpacity>
             </View>
           </React.Fragment>

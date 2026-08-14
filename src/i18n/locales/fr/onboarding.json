@@ -23,10 +23,15 @@
     "llmAsr": "{{llm}} LLM / {{asr}} ASR"
   },
   "survey": {
-    "title": "Parlez-nous de vous",
-    "subtitle": "Aidez-nous à personnaliser votre expérience",
-    "useCase": "À quoi utiliserez-vous AnythingLLM ?",
-    "experience": "Votre niveau d'expérience avec l'IA"
+    "title": "En quoi AnythingLLM peut-il vous aider ?",
+    "subtitle": "Sélectionnez l'option qui vous correspond le mieux.",
+    "options": {
+      "productivity": "Augmenter la productivité",
+      "privacy": "Conversations axées sur la confidentialité",
+      "customAi": "Agents IA personnalisés",
+      "automation": "Automatisation IA",
+      "other": "Autre"
+    }
   },
   "dataHandling": {
     "title": "Gestion des données",

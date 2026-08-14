@@ -23,10 +23,15 @@
     "llmAsr": "{{llm}} LLM / {{asr}} ASR"
   },
   "survey": {
-    "title": "Tell us about yourself",
-    "subtitle": "Help us personalize your experience",
-    "useCase": "What will you use AnythingLLM for?",
-    "experience": "Your AI experience level"
+    "title": "What can AnythingLLM help you with?",
+    "subtitle": "Select the one that most applies to you.",
+    "options": {
+      "productivity": "Increase Productivity",
+      "privacy": "Privacy Focused chats",
+      "customAi": "Custom AI Agents",
+      "automation": "AI Automation",
+      "other": "Other"
+    }
   },
   "dataHandling": {
     "title": "Data Handling",
