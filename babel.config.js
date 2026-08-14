@@ -1,5 +1,10 @@
+const isTest = process.env.BABEL_ENV === "test" || process.env.NODE_ENV === "test";
+
 module.exports = {
-  presets: ["module:@react-native/babel-preset", "nativewind/babel"],
+  presets: [
+    "module:@react-native/babel-preset",
+    ...(isTest ? [] : ["nativewind/babel"]),
+  ],
   plugins: [
     ["module:react-native-dotenv", { moduleName: "@env" }],
     ["@babel/plugin-proposal-decorators", { legacy: true }],

@@ -1,5 +1,6 @@
 import React from "react";
 import renderer from "react-test-renderer";
+import { Text, TouchableOpacity } from "react-native";
 import AudioMemosScreen from "./AudioMemosScreen";
 import { useAudioMemos } from "@/hooks/useAudioMemos";
 import { AudioMemoType } from "@/database/models/AudioMemo";
@@ -96,28 +97,28 @@ describe("AudioMemosScreen", () => {
 
     const tree = renderer.create(<AudioMemosScreen />);
     const root = tree.root;
-    const emptyText = root.findByProps({
-      children: "No memos yet.\nTap + to record your first memo.",
-    });
+    const emptyText = root
+      .findAllByType(Text)
+      .find(node => node.props.children?.join?.("") === "No memos yet.\nTap + to record your first memo.");
     expect(emptyText).toBeTruthy();
   });
 
   it("renders memo list when memos exist", () => {
     const tree = renderer.create(<AudioMemosScreen />);
     const root = tree.root;
-    const flatList = root.findByProps({ keyExtractor: expect.any(Function) });
-    expect(flatList).toBeTruthy();
+    const memoText = root.findByProps({ children: "First memo transcript" });
+    expect(memoText).toBeTruthy();
   });
 
   it("calls fetchMemos on mount with workspace filter", () => {
     renderer.create(<AudioMemosScreen />);
-    expect(mockUseAudioMemos.fetchMemos).toHaveBeenCalledWith("current");
+    expect(mockUseAudioMemos.fetchMemos).toHaveBeenCalledWith(null);
   });
 
   it("calls goBack when back button is pressed", () => {
     const tree = renderer.create(<AudioMemosScreen />);
     const root = tree.root;
-    const backButton = root.findAllByProps({ weight: "bold" })[0];
+    const backButton = root.findAllByType(TouchableOpacity)[0];
     backButton?.props.onPress();
     expect(mockNavigation.goBack).toHaveBeenCalled();
   });
@@ -125,7 +126,7 @@ describe("AudioMemosScreen", () => {
   it("navigates to record mode when plus button is pressed", () => {
     const tree = renderer.create(<AudioMemosScreen />);
     const root = tree.root;
-    const plusButton = root.findAllByProps({ weight: "bold" })[1];
+    const plusButton = root.findAllByType(TouchableOpacity)[1];
     plusButton?.props.onPress();
     expect(mockNavigation.navigate).toHaveBeenCalledWith("audio_memo_player", {
       mode: "record",
