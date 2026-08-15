@@ -158,4 +158,44 @@ describe("getContextTexts Needle integration", () => {
       6,
     );
   });
+
+  it("does not serve a cached fallback result to a later expand route for the same prompt", async () => {
+    // Same userPrompt both times -- only the route differs. A cache keyed on the raw
+    // userPrompt would incorrectly serve the first (fallback) search's cached results
+    // to the second (expand) call instead of running the routed search.
+    const prompt = "What does the budget say about travel?";
+
+    mockStore.routeRag.mockResolvedValueOnce({ type: "fallback" });
+
+    const provider = new TestProvider({ provider: "test", config: {} });
+    provider.attachWorkspaceToProvider({
+      slug: "test-ws",
+      embeddingConfig: null,
+    } as any);
+
+    await provider.getContextTexts(prompt);
+    expect(vectorDbMocks.runSemanticSearch).toHaveBeenCalledWith(
+      "test-ws",
+      [0.1, 0.2, 0.3],
+      6,
+    );
+
+    mockStore.routeRag.mockResolvedValueOnce({
+      type: "expand",
+      query: "travel budget policy expanded",
+      topK: 3,
+    });
+    await provider.getContextTexts(prompt);
+
+    expect(mockEmbed).toHaveBeenLastCalledWith(
+      "travel budget policy expanded",
+      "query",
+      undefined,
+    );
+    expect(vectorDbMocks.runSemanticSearch).toHaveBeenLastCalledWith(
+      "test-ws",
+      [0.1, 0.2, 0.3],
+      3,
+    );
+  });
 });

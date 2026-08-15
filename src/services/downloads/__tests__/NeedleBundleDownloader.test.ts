@@ -11,6 +11,7 @@ jest.mock("@dr.pogodin/react-native-fs", () => ({
   readFile: jest.fn(),
   writeFile: jest.fn().mockResolvedValue(undefined),
   unlink: jest.fn().mockResolvedValue(undefined),
+  moveFile: jest.fn().mockResolvedValue(undefined),
 }));
 
 const mockZipFiles = {
@@ -37,9 +38,9 @@ describe("NeedleBundleDownloader", () => {
     (RNFS.readFile as jest.Mock).mockImplementation(() => makeMockZip());
   });
 
-  it("returns existing extract dir if config.txt is already present", async () => {
+  it("returns existing extract dir without re-downloading if already promoted", async () => {
     (RNFS.exists as jest.Mock).mockImplementation(async (path: string) =>
-      path.endsWith("/needle/config.txt"),
+      path === "/mock/Documents/models/needle",
     );
 
     const downloader = new NeedleBundleDownloader();
@@ -47,6 +48,27 @@ describe("NeedleBundleDownloader", () => {
 
     expect(path).toBe("/mock/Documents/models/needle");
     expect(RNFS.downloadFile).not.toHaveBeenCalled();
+  });
+
+  it("re-extracts when the extract dir is missing even if a staging dir was left behind", async () => {
+    // Simulates a previous run that was killed mid-extraction: the final extractDir was
+    // never promoted, but a partial staging dir is still on disk.
+    (RNFS.exists as jest.Mock).mockImplementation(
+      async (path: string) => path === "/mock/Documents/models/needle.staging",
+    );
+
+    const downloader = new NeedleBundleDownloader();
+    const path = await downloader.ensureDownloaded();
+
+    expect(path).toBe("/mock/Documents/models/needle");
+    expect(RNFS.downloadFile).toHaveBeenCalled();
+    expect(RNFS.unlink).toHaveBeenCalledWith(
+      "/mock/Documents/models/needle.staging",
+    );
+    expect(RNFS.moveFile).toHaveBeenCalledWith(
+      "/mock/Documents/models/needle.staging",
+      "/mock/Documents/models/needle",
+    );
   });
 
   it("downloads, extracts, and returns the bundle path", async () => {
@@ -63,17 +85,21 @@ describe("NeedleBundleDownloader", () => {
       }),
     );
     expect(RNFS.writeFile).toHaveBeenCalledWith(
-      "/mock/Documents/models/needle/config.txt",
+      "/mock/Documents/models/needle.staging/config.txt",
       expect.any(String),
       "base64",
     );
     expect(RNFS.writeFile).toHaveBeenCalledWith(
-      "/mock/Documents/models/needle/token_embeddings.weights",
+      "/mock/Documents/models/needle.staging/token_embeddings.weights",
       expect.any(String),
       "base64",
     );
     expect(RNFS.unlink).toHaveBeenCalledWith(
       "/mock/Documents/models/needle.zip",
+    );
+    expect(RNFS.moveFile).toHaveBeenCalledWith(
+      "/mock/Documents/models/needle.staging",
+      "/mock/Documents/models/needle",
     );
   });
 
@@ -82,13 +108,32 @@ describe("NeedleBundleDownloader", () => {
     await downloader.ensureDownloaded();
 
     expect(RNFS.mkdir).toHaveBeenCalledWith(
-      "/mock/Documents/models/needle/components",
+      "/mock/Documents/models/needle.staging/components",
     );
     expect(RNFS.writeFile).toHaveBeenCalledWith(
-      "/mock/Documents/models/needle/components/nested.txt",
+      "/mock/Documents/models/needle.staging/components/nested.txt",
       expect.any(String),
       "base64",
     );
+  });
+
+  it("discards the staging dir and throws when extraction never produces config.txt", async () => {
+    (RNFS.exists as jest.Mock).mockResolvedValue(false);
+    (RNFS.readFile as jest.Mock).mockImplementation(() => {
+      const zip = new JSZip();
+      zip.file("token_embeddings.weights", "fake-weights");
+      return zip.generateAsync({ type: "base64" });
+    });
+
+    const downloader = new NeedleBundleDownloader();
+    await expect(downloader.ensureDownloaded()).rejects.toThrow(
+      "Needle bundle extraction did not produce config.txt",
+    );
+
+    expect(RNFS.unlink).toHaveBeenCalledWith(
+      "/mock/Documents/models/needle.staging",
+    );
+    expect(RNFS.moveFile).not.toHaveBeenCalled();
   });
 
   it("reports download progress", async () => {

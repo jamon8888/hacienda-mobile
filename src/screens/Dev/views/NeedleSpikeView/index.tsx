@@ -92,9 +92,16 @@ export default function NeedleSpikeView() {
   };
 
   const handleDestroy = async () => {
-    await needleStore.destroy();
-    setReady(false);
-    log("Needle destroyed");
+    setBusy(true);
+    try {
+      await needleStore.destroy();
+      setReady(false);
+      log("Needle destroyed");
+    } catch (err) {
+      log(`Destroy error: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (

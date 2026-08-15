@@ -335,7 +335,14 @@ export default abstract class BaseOpenAILikeProvider {
       // retrieval so we never block the chat pipeline. Disabled by default
       // until P0 on-device bundle verification passes.
       if (NEEDLE_ROUTER_ENABLED) {
-        await needleStore.init();
+        // Kick off the (possibly first-ever, download-then-load) init in the background
+        // rather than awaiting it here -- awaiting would block this request on a full
+        // model download/load instead of the router's own 500ms budget. If it's not
+        // ready yet, routeRag() below falls through to normal retrieval this turn, and
+        // a later request benefits once init finishes.
+        if (!needleStore.ready && !needleStore.busy) {
+          needleStore.init().catch(() => {});
+        }
         const route = await needleStore.routeRag(userPrompt, {
           maxTopK: this.SEMANTIC_SEARCH_CANDIDATE_TOP_N,
         });
@@ -353,9 +360,14 @@ export default abstract class BaseOpenAILikeProvider {
       }
 
       const embeddingConfig = this.workspace.embeddingConfig;
+      // Keyed on the effective query and top-N actually searched with (not the raw
+      // userPrompt) -- otherwise a fallback route cached under the prompt's key can be
+      // served back to a later expand/retrieve route for the same prompt, skipping the
+      // routed search entirely.
       const cacheKey = this.queryCacheKey(
-        userPrompt,
+        queryForEmbed,
         embeddingConfig?.dimensions,
+        semanticTopN,
       );
       const cached = this.queryCache.get(cacheKey);
       if (cached) {
@@ -405,9 +417,13 @@ export default abstract class BaseOpenAILikeProvider {
     }
   }
 
-  private queryCacheKey(userPrompt: string, dimensions?: number): string {
-    const normalized = userPrompt.trim().replace(/\s+/g, " ").toLowerCase();
-    return `${this.workspace?.slug || ""}:${dimensions ?? 0}:${normalized}`;
+  private queryCacheKey(
+    query: string,
+    dimensions?: number,
+    topN?: number,
+  ): string {
+    const normalized = query.trim().replace(/\s+/g, " ").toLowerCase();
+    return `${this.workspace?.slug || ""}:${dimensions ?? 0}:${topN ?? 0}:${normalized}`;
   }
 
   private queryCacheSet(key: string, results: SemanticSearchResult[]) {

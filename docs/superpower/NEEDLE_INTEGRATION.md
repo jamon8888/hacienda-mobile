@@ -243,7 +243,7 @@ This gives us a safety margin while the model is being validated in production.
 | Risk | Mitigation |
 | --- | --- |
 | `needle-cq4.zip` format incompatible with runtime 1.13.1 | P0 spike: load the bundle in an RN build. If it fails, try `needle-pebble-ft-cq4.zip` or fall back to `needle-rs`. |
-| `CactusFileSystem.downloadModel` does not extract zips | Use `react-native-zip-archive` after download. |
+| `CactusFileSystem.downloadModel` does not extract zips | Download with RNFS and extract in pure JS with `jszip` (see `NeedleBundleDownloader`). |
 | English-only / greedy limitations | Acceptable for routing; never send freeform chat through Needle. |
 | Concurrent calls to single `CactusLM` instance | Serialize behind `NeedleStore`. |
 | 16 MB download on cellular | Respect user's download preferences; default to Wi-Fi. |

@@ -226,9 +226,14 @@ export default class CactusLmWrapper {
     let cactusTools = this.toCactusTools(availableTools ?? []);
 
     // Rank long tool lists with the on-device Needle router when available.
-    // If ranking fails or Needle is not ready, we keep the original list.
+    // If ranking fails or Needle is not ready, we keep the original list. Init is
+    // kicked off in the background rather than awaited, so a cold Needle (still
+    // downloading/loading its bundle) never blocks this completion -- see the
+    // matching comment in baseOpenAILikeProvider.getContextTexts.
     if (NEEDLE_ROUTER_ENABLED && cactusTools.length > 5) {
-      await needleStore.init();
+      if (!needleStore.ready && !needleStore.busy) {
+        needleStore.init().catch(() => {});
+      }
       const lastUserMessage = messages
         .slice()
         .reverse()

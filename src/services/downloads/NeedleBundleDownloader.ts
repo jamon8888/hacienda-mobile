@@ -23,15 +23,28 @@ export class NeedleBundleDownloader {
   async ensureDownloaded(
     onProgress?: (progress: number) => void,
   ): Promise<string> {
-    const extractDir = `${RNFS.DocumentDirectoryPath}/models/${this.bundleName}`;
+    const modelsDir = `${RNFS.DocumentDirectoryPath}/models`;
+    const extractDir = `${modelsDir}/${this.bundleName}`;
+    // Extraction writes many files over time; if the app is killed mid-extraction, a
+    // completeness check against the *live* extractDir (e.g. "does config.txt exist")
+    // can true-positive on a partial bundle -- config.txt may land before the weight
+    // files finish. Instead, extract into a separate staging directory and only ever
+    // populate extractDir via a single directory move once extraction is fully done,
+    // so extractDir existing at all is itself the completeness signal.
+    const stagingDir = `${modelsDir}/${this.bundleName}.staging`;
 
-    if (await RNFS.exists(`${extractDir}/config.txt`)) {
+    if (await RNFS.exists(extractDir)) {
       return extractDir;
     }
 
-    const zipPath = `${RNFS.DocumentDirectoryPath}/models/${this.bundleName}.zip`;
+    const zipPath = `${modelsDir}/${this.bundleName}.zip`;
 
-    await RNFS.mkdir(`${RNFS.DocumentDirectoryPath}/models`);
+    await RNFS.mkdir(modelsDir);
+
+    // Clear any leftover staging directory from a previously interrupted run.
+    if (await RNFS.exists(stagingDir)) {
+      await RNFS.unlink(stagingDir);
+    }
 
     const result = await RNFS.downloadFile({
       fromUrl: this.bundleUrl,
@@ -56,12 +69,12 @@ export class NeedleBundleDownloader {
 
     for (const [relativePath, entry] of Object.entries(zip.files)) {
       if (entry.dir) {
-        await RNFS.mkdir(`${extractDir}/${relativePath}`);
+        await RNFS.mkdir(`${stagingDir}/${relativePath}`);
         continue;
       }
 
       const fileData = await entry.async("base64");
-      const filePath = `${extractDir}/${relativePath}`;
+      const filePath = `${stagingDir}/${relativePath}`;
       const dir = filePath.split("/").slice(0, -1).join("/");
       if (!(await RNFS.exists(dir))) {
         await RNFS.mkdir(dir);
@@ -70,6 +83,17 @@ export class NeedleBundleDownloader {
     }
 
     await RNFS.unlink(zipPath);
+
+    if (!(await RNFS.exists(`${stagingDir}/config.txt`))) {
+      await RNFS.unlink(stagingDir);
+      throw new Error(
+        "Needle bundle extraction did not produce config.txt; bundle may be corrupt",
+      );
+    }
+
+    // Promote the fully-extracted staging directory into place with a single rename --
+    // extractDir now only ever exists in its complete form.
+    await RNFS.moveFile(stagingDir, extractDir);
 
     return extractDir;
   }
