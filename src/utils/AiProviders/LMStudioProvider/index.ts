@@ -7,7 +7,7 @@ export interface LMStudioProviderConfig {
     baseURL?: string;
     model?: string;
     apiKey?: string;
-  }
+  };
 }
 
 export interface LMStudioModel {
@@ -17,10 +17,10 @@ export interface LMStudioModel {
 }
 
 function lmStudioBaseURLFormatter(baseURL?: string) {
-  if (!baseURL) return '';
+  if (!baseURL) return "";
   try {
     const url = new URL(baseURL);
-    url.pathname = '/v1';
+    url.pathname = "/v1";
     return url.href;
   } catch (error) {
     return baseURL;
@@ -28,7 +28,7 @@ function lmStudioBaseURLFormatter(baseURL?: string) {
 }
 
 class LMStudioProvider extends BaseOpenAILikeProvider {
-  private baseURL: string = '';
+  private baseURL: string = "";
   private apiKey: string | null = null;
   public isExternalProvider: boolean = true;
 
@@ -38,7 +38,7 @@ class LMStudioProvider extends BaseOpenAILikeProvider {
   protected temperature: number = 0.7;
   protected isOTypeModel: boolean = false; // always false for LMStudio
 
-  constructor({ provider = 'lmstudio', config = {} }: LMStudioProviderConfig) {
+  constructor({ provider = "lmstudio", config = {} }: LMStudioProviderConfig) {
     config.baseURL = lmStudioBaseURLFormatter(config.baseURL);
     super({ provider, config });
 
@@ -51,7 +51,7 @@ class LMStudioProvider extends BaseOpenAILikeProvider {
 
     if (config.baseURL) this.baseURL = lmStudioBaseURLFormatter(config.baseURL);
     if (config.apiKey) this.apiKey = config.apiKey;
-    this.model = config.model || 'Unknown Model';
+    this.model = config.model || "Unknown Model";
     this.connectionProvider = provider;
 
     this.client = new OpenAILite({
@@ -63,12 +63,13 @@ class LMStudioProvider extends BaseOpenAILikeProvider {
 
   protected log = (text: string, ...args: any[]) => {
     console.log(`\x1b[36m[${this.constructor.name}]\x1b[0m ${text}`, ...args);
-  }
+  };
 
   override async availableModels(): Promise<LMStudioModel[]> {
-    return await this.client.models.list()
-      .then((models) => models.data.map((model: LMStudioModel) => model))
-      .catch((error) => {
+    return await this.client.models
+      .list()
+      .then(models => models.data.map((model: LMStudioModel) => model))
+      .catch(error => {
         this.log(`Error fetching models: ${error}`);
         return [];
       });

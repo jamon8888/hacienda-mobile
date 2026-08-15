@@ -12,7 +12,11 @@ export interface MonitoredStream {
   start: number;
   duration: number;
   metrics: StreamMetrics;
-  endMeasurement: (reportedUsage: { [key: string]: number, completion_tokens?: any, prompt_tokens?: any }) => StreamMetrics;
+  endMeasurement: (reportedUsage: {
+    [key: string]: number;
+    completion_tokens?: any;
+    prompt_tokens?: any;
+  }) => StreamMetrics;
 }
 
 export default class LLMPerformanceMonitor {
@@ -46,7 +50,7 @@ export default class LLMPerformanceMonitor {
   static async measureStream(
     func: () => Promise<any>,
     messages: string[] = [],
-    runPromptTokenCalculation: boolean = true
+    runPromptTokenCalculation: boolean = true,
   ) {
     const stream: any = await func;
     stream.start = Date.now();

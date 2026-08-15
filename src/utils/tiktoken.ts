@@ -1,5 +1,11 @@
-import 'text-encoding-polyfill';
-import { getEncodingNameForModel, getEncoding, TiktokenEncoding, Tiktoken, TiktokenModel } from "js-tiktoken";
+import "text-encoding-polyfill";
+import {
+  getEncodingNameForModel,
+  getEncoding,
+  TiktokenEncoding,
+  Tiktoken,
+  TiktokenModel,
+} from "js-tiktoken";
 
 /**
  * @class TokenManager
@@ -14,8 +20,8 @@ export default class TokenManager {
   static instance: TokenManager | null = null;
   static currentModel: string | null = null;
 
-  private model: string = '';
-  private encoderName: TiktokenEncoding = 'cl100k_base';
+  private model: string = "";
+  private encoderName: TiktokenEncoding = "cl100k_base";
 
   // @ts-ignore
   private encoder: Tiktoken;
@@ -92,7 +98,7 @@ export default class TokenManager {
       const tokensFromContent = input.reduce(
         // @ts-ignore
         (a, b) => a + this.countFromString(b.content),
-        0
+        0,
       );
       const diffCoefficient = 5;
       return perMessageFactorTokens + tokensFromContent + diffCoefficient;

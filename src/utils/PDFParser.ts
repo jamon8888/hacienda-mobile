@@ -1,22 +1,22 @@
-import { NativeModules } from 'react-native';
+import { NativeModules } from "react-native";
 const { PdfParserModule } = NativeModules;
 
 export interface PdfPageResult {
-    pageNumber: number;
-    text: string;
-    error?: string;
+  pageNumber: number;
+  text: string;
+  error?: string;
 }
 
 export interface PdfParseResult {
-    textContent: string;
-    totalPages: number;
-    filePath: string;
-    fileName: string;
-    fileSize: number;
+  textContent: string;
+  totalPages: number;
+  filePath: string;
+  fileName: string;
+  fileSize: number;
 }
 
 interface PdfParserModuleInterface {
-    extract(pdfPath: string): Promise<PdfParseResult>;
+  extract(pdfPath: string): Promise<PdfParseResult>;
 }
 
 /**
@@ -26,29 +26,29 @@ interface PdfParserModuleInterface {
  * @see android/app/src/main/java/com/anythingllm/pdfparser/PdfParserModule.kt
  */
 class PDFParser {
-    private static instance: PDFParser;
-    // @ts-ignore-next-line
-    private pdfParser: PdfParserModuleInterface;
+  private static instance: PDFParser;
+  // @ts-ignore-next-line
+  private pdfParser: PdfParserModuleInterface;
 
-    constructor() {
-        if (PDFParser.instance) return PDFParser.instance;
-        this.pdfParser = PdfParserModule;
-        PDFParser.instance = this;
-    }
+  constructor() {
+    if (PDFParser.instance) return PDFParser.instance;
+    this.pdfParser = PdfParserModule;
+    PDFParser.instance = this;
+  }
 
-    /**
-     * Extract text from all pages of a PDF file.
-     * @param pdfPath The local file path to the PDF (from device file picker).
-     * @returns An object containing an array of page results and PDF metadata.
-     */
-    async extract(pdfPath: string): Promise<PdfParseResult | null> {
-        try {
-            return await this.pdfParser.extract(pdfPath);
-        } catch (error) {
-            console.error('Error extracting PDF text:', error);
-            return null;
-        }
+  /**
+   * Extract text from all pages of a PDF file.
+   * @param pdfPath The local file path to the PDF (from device file picker).
+   * @returns An object containing an array of page results and PDF metadata.
+   */
+  async extract(pdfPath: string): Promise<PdfParseResult | null> {
+    try {
+      return await this.pdfParser.extract(pdfPath);
+    } catch (error) {
+      console.error("Error extracting PDF text:", error);
+      return null;
     }
+  }
 }
 
-export default new PDFParser(); 
+export default new PDFParser();

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Keyboard, KeyboardEvent } from 'react-native';
+import { useEffect, useState } from "react";
+import { Keyboard, KeyboardEvent } from "react-native";
 
 /**
  * Shows height of keyboard when shown
@@ -9,27 +9,27 @@ import { Keyboard, KeyboardEvent } from 'react-native';
  * messes everything up.
  */
 function useKeyboardHeight() {
-    const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
-    function onKeyboardShow(event: KeyboardEvent) {
-        setKeyboardHeight(event.endCoordinates.height);
-    }
+  function onKeyboardShow(event: KeyboardEvent) {
+    setKeyboardHeight(event.endCoordinates.height);
+  }
 
-    function onKeyboardHide() {
-        setKeyboardHeight(0);
-    }
+  function onKeyboardHide() {
+    setKeyboardHeight(0);
+  }
 
-    useEffect(() => {
-        const onShow = Keyboard.addListener('keyboardDidShow', onKeyboardShow);
-        const onHide = Keyboard.addListener('keyboardDidHide', onKeyboardHide);
+  useEffect(() => {
+    const onShow = Keyboard.addListener("keyboardDidShow", onKeyboardShow);
+    const onHide = Keyboard.addListener("keyboardDidHide", onKeyboardHide);
 
-        return () => {
-            onShow.remove();
-            onHide.remove();
-        };
-    }, []);
+    return () => {
+      onShow.remove();
+      onHide.remove();
+    };
+  }, []);
 
-    return keyboardHeight;
+  return keyboardHeight;
 }
 
 export default useKeyboardHeight;

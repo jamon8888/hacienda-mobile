@@ -5,16 +5,16 @@ import {
   View,
   TextInput,
   ScrollView,
-} from 'react-native';
-import { useState, useRef, useCallback, useMemo } from 'react';
-import { ISelection } from '@/screens/Onboarding/ModelSelection';
-import { X, MagnifyingGlass, CaretDown, Circle } from 'phosphor-react-native';
-import { AVAILABLE_LLM_PROVIDERS } from '@/utils/llmproviders';
+} from "react-native";
+import { useState, useRef, useCallback, useMemo } from "react";
+import { ISelection } from "@/screens/Onboarding/ModelSelection";
+import { X, MagnifyingGlass, CaretDown, Circle } from "phosphor-react-native";
+import { AVAILABLE_LLM_PROVIDERS } from "@/utils/llmproviders";
 import {
   BottomSheetModal,
   BottomSheetBackdrop,
   BottomSheetView,
-} from '@gorhom/bottom-sheet';
+} from "@gorhom/bottom-sheet";
 
 export default function ProviderSelection({
   selection,
@@ -23,7 +23,7 @@ export default function ProviderSelection({
   selection: ISelection;
   onChange: (provider: string) => void;
 }) {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef(null);
   const bottomSheetRef = useRef<BottomSheetModal>(null);
 
@@ -41,7 +41,6 @@ export default function ProviderSelection({
   const selectedProviderObject =
     AVAILABLE_LLM_PROVIDERS.find(p => p.value === selection.provider) ??
     AVAILABLE_LLM_PROVIDERS[0];
-
 
   const updateProviderChoice = (value: string) => {
     onChange(value);
@@ -64,7 +63,11 @@ export default function ProviderSelection({
     <View>
       <View className="relative">
         <TouchableOpacity
-          style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', height: 68, width: '100%' }}
+          style={{
+            backgroundColor: "rgba(255, 255, 255, 0.1)",
+            height: 68,
+            width: "100%",
+          }}
           className="flex-row items-center justify-between px-4 py-[14px] rounded-lg"
           onPress={() => bottomSheetRef.current?.present()}>
           <View className="flex-row items-center">
@@ -83,12 +86,12 @@ export default function ProviderSelection({
         <BottomSheetModal
           ref={bottomSheetRef}
           index={0}
-          snapPoints={['60%', '95%']}
+          snapPoints={["60%", "95%"]}
           enableDynamicSizing={false}
           backdropComponent={renderBackdrop}
-          backgroundStyle={{ backgroundColor: '#1B1B1E' }}
+          backgroundStyle={{ backgroundColor: "#1B1B1E" }}
           handleIndicatorStyle={{
-            backgroundColor: '#9F9FA0',
+            backgroundColor: "#9F9FA0",
             width: 45,
             margin: 10,
           }}>
@@ -108,7 +111,7 @@ export default function ProviderSelection({
                 scrollEnabled={false}
               />
               {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <TouchableOpacity onPress={() => setSearchQuery("")}>
                   <X size={20} color="white" />
                 </TouchableOpacity>
               )}
@@ -153,7 +156,7 @@ export default function ProviderSelection({
                           color="#36bffa"
                           weight="fill"
                           style={{
-                            position: 'absolute',
+                            position: "absolute",
                             top: (24 - 16) / 2,
                             left: (24 - 16) / 2,
                           }}

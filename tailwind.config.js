@@ -5,13 +5,13 @@ module.exports = {
   theme: {
     extend: {
       fontWeight: {
-        bold: '700',
-        medium: '500',
-        regular: '400',
-        light: '300',
-        semibold: '600',
+        bold: "700",
+        medium: "500",
+        regular: "400",
+        light: "300",
+        semibold: "600",
       },
     },
   },
   plugins: [],
-}
+};

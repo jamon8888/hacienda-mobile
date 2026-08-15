@@ -1,16 +1,31 @@
-import Workspace from '@/database/models/Workspace';
-import React, { useState } from 'react';
-import { View, TouchableOpacity, Text, NativeEventEmitter, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import Workspace from "@/database/models/Workspace";
+import React, { useState } from "react";
+import {
+  View,
+  TouchableOpacity,
+  Text,
+  NativeEventEmitter,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 
 const eventEmitter = new NativeEventEmitter();
-export default function NewWorkspaceModal({ showing, close }: { showing: boolean, close: () => void }) {
+export default function NewWorkspaceModal({
+  showing,
+  close,
+}: {
+  showing: boolean;
+  close: () => void;
+}) {
   const [name, setName] = useState("");
 
   async function handleCreateWorkspace() {
-    await Workspace.create({ name: name || 'New Workspace' })
-      .then((workspace) => {
-        eventEmitter.emit('workspaceUpdate', {
-          type: 'add-workspace',
+    await Workspace.create({ name: name || "New Workspace" }).then(
+      workspace => {
+        eventEmitter.emit("workspaceUpdate", {
+          type: "add-workspace",
           details: {
             name: workspace.name,
             slug: workspace.slug,
@@ -18,11 +33,12 @@ export default function NewWorkspaceModal({ showing, close }: { showing: boolean
           },
         });
         close();
-        setName('');
+        setName("");
 
         // @ts-ignore
         navigation.navigate(PATHS.workspace_chat, { wsSlug: workspace.slug });
-      });
+      },
+    );
   }
 
   return (
@@ -30,15 +46,15 @@ export default function NewWorkspaceModal({ showing, close }: { showing: boolean
       animationType="slide"
       transparent={true}
       visible={showing}
-      onRequestClose={close}
-    >
+      onRequestClose={close}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
-      >
+        className="flex-1">
         <View className="flex-1 justify-center items-center bg-black/50">
           <View className="bg-[--primary-bg] rounded-lg p-6 w-4/5">
-            <Text className="text-xl font-bold mb-4 text-[--primary-text]">New Workspace</Text>
+            <Text className="text-xl font-bold mb-4 text-[--primary-text]">
+              New Workspace
+            </Text>
             <TextInput
               className="border border-white/20 rounded-lg p-2 mb-4 text-[--secondary-bg] !text-white placeholder:text-white/50"
               value={name}
@@ -48,14 +64,12 @@ export default function NewWorkspaceModal({ showing, close }: { showing: boolean
             <View className="flex-row justify-between gap-x-2">
               <TouchableOpacity
                 className="px-4 py-2 rounded-lg bg-transparent"
-                onPress={close}
-              >
+                onPress={close}>
                 <Text className="text-white/50">Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 className="px-4 py-2 rounded-lg bg-transparent border border-white"
-                onPress={handleCreateWorkspace}
-              >
+                onPress={handleCreateWorkspace}>
                 <Text className="text-white">Create</Text>
               </TouchableOpacity>
             </View>
@@ -77,5 +91,9 @@ export function useNewWorkspaceModal() {
     setShowNewWorkspaceModal(false);
   }
 
-  return { showNewWorkspaceModal, openNewWorkspaceModal: open, closeNewWorkspaceModal: close };
+  return {
+    showNewWorkspaceModal,
+    openNewWorkspaceModal: open,
+    closeNewWorkspaceModal: close,
+  };
 }

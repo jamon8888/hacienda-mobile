@@ -1,5 +1,5 @@
-import * as React from 'react';
-import {Animated, PanResponder, Platform} from 'react-native';
+import * as React from "react";
+import { Animated, PanResponder, Platform } from "react-native";
 
 /**
  * Returns `panHandlers` used to calculate Y finger position.
@@ -20,7 +20,7 @@ export const usePanResponder = () => {
   /* istanbul ignore next */
   const panResponder = React.useRef(
     PanResponder.create({
-      onPanResponderMove: Animated.event([null, {moveY: positionY}], {
+      onPanResponderMove: Animated.event([null, { moveY: positionY }], {
         useNativeDriver: false,
       }),
       onPanResponderEnd: () => {
@@ -32,7 +32,7 @@ export const usePanResponder = () => {
   ).current;
 
   return {
-    panHandlers: Platform.OS === 'android' ? {} : panResponder.panHandlers,
+    panHandlers: Platform.OS === "android" ? {} : panResponder.panHandlers,
     positionY,
   };
 };

@@ -9,31 +9,31 @@
 
 ### Supported Formats
 
-| MIME Type | Extensions | Notes |
-|-----------|------------|-------|
-| `audio/mpeg` | `.mp3`, `.mpga` | MP3 |
-| `audio/mp4` | `.m4a` | M4A / AAC in MP4 |
-| `audio/wav` | `.wav` | WAV / RIFF |
-| `audio/webm` | `.webm` | WebM audio |
-| `video/mp4` | `.mp4`, `.mpeg` | Video (audio track only) |
-| `video/webm` | `.webm` | Video (audio track only) |
+| MIME Type    | Extensions      | Notes                    |
+| ------------ | --------------- | ------------------------ |
+| `audio/mpeg` | `.mp3`, `.mpga` | MP3                      |
+| `audio/mp4`  | `.m4a`          | M4A / AAC in MP4         |
+| `audio/wav`  | `.wav`          | WAV / RIFF               |
+| `audio/webm` | `.webm`         | WebM audio               |
+| `video/mp4`  | `.mp4`, `.mpeg` | Video (audio track only) |
+| `video/webm` | `.webm`         | Video (audio track only) |
 
 ### Model Sizes
 
-| Variant | Cache Size | RAM Usage | Best For |
-|---------|------------|-----------|----------|
-| **Tiny** | ~10 MB | Low | Mobile (default) |
-| **Base** | ~50 MB | Low | Mobile (better accuracy) |
-| **Small** | ~200 MB | Medium | Tablet |
-| **Medium** | ~500 MB | High | Desktop |
-| **LargeV3** | ~1.5 GB | Very High | Server |
+| Variant     | Cache Size | RAM Usage | Best For                 |
+| ----------- | ---------- | --------- | ------------------------ |
+| **Tiny**    | ~10 MB     | Low       | Mobile (default)         |
+| **Base**    | ~50 MB     | Low       | Mobile (better accuracy) |
+| **Small**   | ~200 MB    | Medium    | Tablet                   |
+| **Medium**  | ~500 MB    | High      | Desktop                  |
+| **LargeV3** | ~1.5 GB    | Very High | Server                   |
 
 ### Configuration
 
 ```typescript
 interface TranscriptionConfig {
   enabled: boolean;
-  model: 'tiny' | 'base' | 'small' | 'medium' | 'large-v3';
+  model: "tiny" | "base" | "small" | "medium" | "large-v3";
   language?: string; // ISO-639-1 code
   timestamps?: boolean;
   maxBytes?: number; // Default: 512MB
@@ -62,18 +62,22 @@ interface TranscriptionConfig {
 ### Proposed: Two-Mode Ingestion
 
 #### Mode 1: Quick Attach (Chat Context)
+
 **Location**: Existing paperclip button in PromptInput
 **Purpose**: Attach files to current chat message
 **Changes**:
+
 - Add multi-file selection
 - Expand file types (add `.docx`, `.pptx`, `.xlsx`, `.mp3`, `.wav`)
 - Show file type icons
 - Keep max 4 for quick attach
 
 #### Mode 2: Workspace Import (Permanent)
+
 **Location**: New "Documents" section in WorkspaceSettings
 **Purpose**: Import files permanently into workspace
 **Changes**:
+
 - Full folder picker
 - Unlimited files
 - Progress tracking
@@ -86,6 +90,7 @@ interface TranscriptionConfig {
 ### Entry Point: WorkspaceSettings
 
 **Add to Main Settings**:
+
 ```
 ┌─────────────────────────────────────────┐
 │  Workspace Settings                     │
@@ -100,17 +105,17 @@ interface TranscriptionConfig {
 ```
 
 **Documents Row**:
+
 ```tsx
-<TouchableOpacity 
-  style={{ backgroundColor: '#27282A', padding: 14, gap: 20 }} 
-  className="w-full flex flex-row items-center rounded-lg"
->
+<TouchableOpacity
+  style={{ backgroundColor: "#27282A", padding: 14, gap: 20 }}
+  className="w-full flex flex-row items-center rounded-lg">
   <View className="flex flex-row gap-2 items-center">
     <Files size={18} color="#FFF" />
     <Text className="text-white text-lg">Documents</Text>
   </View>
   <View className="flex flex-1 flex-row gap-2 items-center justify-between">
-    <Text style={{ color: '#9F9FA0' }} className="text-lg flex-1 text-right">
+    <Text style={{ color: "#9F9FA0" }} className="text-lg flex-1 text-right">
       {documentCount} files
     </Text>
     <CaretRight size={18} color="#FFF" />
@@ -123,6 +128,7 @@ interface TranscriptionConfig {
 ### Document Import Screen
 
 **Layout**:
+
 ```
 ┌─────────────────────────────────────────┐
 │  ← Back        Documents        ⋮      │
@@ -179,6 +185,7 @@ src/screens/WorkspaceSettings/DocumentImport/
 **iOS**: Use `UIDocumentPickerViewController` with directory mode
 
 **UI Flow**:
+
 ```
 1. User taps "Import from folder"
 2. Native folder picker opens
@@ -190,6 +197,7 @@ src/screens/WorkspaceSettings/DocumentImport/
 ```
 
 **Folder Scan Results**:
+
 ```typescript
 interface FolderScanResult {
   folderPath: string;
@@ -207,6 +215,7 @@ interface FolderScanResult {
 ```
 
 **UI for Scan Results**:
+
 ```
 ┌─────────────────────────────────────────┐
 │  📁 My Documents                        │
@@ -234,6 +243,7 @@ interface FolderScanResult {
 ### Import Progress Modal
 
 **Full-screen overlay during import**:
+
 ```
 ┌─────────────────────────────────────────┐
 │                                         │
@@ -258,9 +268,16 @@ interface FolderScanResult {
 ```
 
 **Progress States**:
+
 ```typescript
 interface ImportProgress {
-  status: 'preparing' | 'processing' | 'embedding' | 'storing' | 'completed' | 'error';
+  status:
+    | "preparing"
+    | "processing"
+    | "embedding"
+    | "storing"
+    | "completed"
+    | "error";
   totalFiles: number;
   processedFiles: number;
   currentFile: string;
@@ -274,6 +291,7 @@ interface ImportProgress {
 ### Transcription Options Modal
 
 **Shown when importing audio files**:
+
 ```
 ┌─────────────────────────────────────────┐
 │  🎵 Audio Transcription                 │
@@ -311,6 +329,7 @@ interface ImportProgress {
 **Proposed**: Multi-file picker with type selection
 
 **Long-press menu**:
+
 ```
 ┌─────────────────────────────┐
 │  📄 Document                │
@@ -333,6 +352,7 @@ interface ImportProgress {
 ```
 
 **Type Colors**:
+
 - PDF: `#F97066` (red)
 - DOCX: `#3B82F6` (blue)
 - Audio: `#6ce9a6` (green)
@@ -344,22 +364,24 @@ interface ImportProgress {
 ## File Type Expansion
 
 ### Currently Supported
+
 - `.pdf` - PDF documents
 - `.txt` - Plain text
 - `.markdown` - Markdown
 
 ### Proposed (with Xberg)
-| Category | Types | OCR Required |
-|----------|-------|--------------|
-| **Documents** | `.pdf`, `.docx`, `.doc`, `.pptx`, `.ppt`, `.xlsx`, `.xls`, `.odt`, `.ods`, `.odp` | No |
-| **Text** | `.txt`, `.md`, `.markdown`, `.rst`, `.org`, `.rtf` | No |
-| **Data** | `.csv`, `.tsv`, `.json`, `.yaml`, `.xml` | No |
-| **Web** | `.html`, `.htm` | No |
-| **Email** | `.eml`, `.msg` | No |
-| **Audio** | `.mp3`, `.m4a`, `.wav`, `.webm` | Transcription |
-| **Video** | `.mp4`, `.mpeg`, `.webm` | Transcription |
-| **Images** | `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.bmp`, `.tiff` | OCR |
-| **Code** | `.js`, `.ts`, `.py`, `.java`, `.c`, `.cpp`, `.go`, `.rs` | No |
+
+| Category      | Types                                                                             | OCR Required  |
+| ------------- | --------------------------------------------------------------------------------- | ------------- |
+| **Documents** | `.pdf`, `.docx`, `.doc`, `.pptx`, `.ppt`, `.xlsx`, `.xls`, `.odt`, `.ods`, `.odp` | No            |
+| **Text**      | `.txt`, `.md`, `.markdown`, `.rst`, `.org`, `.rtf`                                | No            |
+| **Data**      | `.csv`, `.tsv`, `.json`, `.yaml`, `.xml`                                          | No            |
+| **Web**       | `.html`, `.htm`                                                                   | No            |
+| **Email**     | `.eml`, `.msg`                                                                    | No            |
+| **Audio**     | `.mp3`, `.m4a`, `.wav`, `.webm`                                                   | Transcription |
+| **Video**     | `.mp4`, `.mpeg`, `.webm`                                                          | Transcription |
+| **Images**    | `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.bmp`, `.tiff`                         | OCR           |
+| **Code**      | `.js`, `.ts`, `.py`, `.java`, `.c`, `.cpp`, `.go`, `.rs`                          | No            |
 
 ---
 
@@ -398,6 +420,7 @@ interface ImportProgress {
 ## Settings: Document Configuration
 
 **Add to WorkspaceSettings**:
+
 ```
 ┌─────────────────────────────────────────┐
 │  ← Back       Documents Settings        │
@@ -438,30 +461,35 @@ interface ImportProgress {
 ## Implementation Plan
 
 ### Phase 1: Basic Import (Week 1)
+
 - [ ] Add Documents page to WorkspaceSettings
 - [ ] Implement single file import with Xberg
 - [ ] Show imported files list
 - [ ] Basic progress indicator
 
 ### Phase 2: Folder Import (Week 2)
+
 - [ ] Add folder picker (Android + iOS)
 - [ ] Implement folder scanning
 - [ ] File selection UI with checkboxes
 - [ ] Batch import with progress
 
 ### Phase 3: Transcription (Week 3)
+
 - [ ] Add audio file detection
 - [ ] Transcription options modal
 - [ ] Whisper model download progress
 - [ ] Transcription progress
 
 ### Phase 4: Enhanced Quick Attach (Week 4)
+
 - [ ] Multi-file selection
 - [ ] File type icons
 - [ ] Long-press menu for type selection
 - [ ] Enhanced attachment chips
 
 ### Phase 5: Polish (Week 5)
+
 - [ ] Error handling
 - [ ] Offline support verification
 - [ ] Performance optimization
@@ -473,24 +501,35 @@ interface ImportProgress {
 
 ### Folder Picker Limitations
 
-| Platform | Native Folder Picker | Workaround |
-|----------|---------------------|------------|
-| Android | ✅ `react-native-document-picker` | None needed |
-| iOS | ⚠️ Limited | Use `UIDocumentPickerViewController` via native module |
+| Platform | Native Folder Picker              | Workaround                                             |
+| -------- | --------------------------------- | ------------------------------------------------------ |
+| Android  | ✅ `react-native-document-picker` | None needed                                            |
+| iOS      | ⚠️ Limited                        | Use `UIDocumentPickerViewController` via native module |
 
 ### File Type Detection
 
 ```typescript
 const SUPPORTED_TYPES = {
-  document: ['.pdf', '.docx', '.doc', '.pptx', '.ppt', '.xlsx', '.xls', '.odt', '.ods', '.odp'],
-  text: ['.txt', '.md', '.markdown', '.rst', '.org', '.rtf'],
-  data: ['.csv', '.tsv', '.json', '.yaml', '.xml'],
-  web: ['.html', '.htm'],
-  email: ['.eml', '.msg'],
-  audio: ['.mp3', '.m4a', '.wav', '.webm'],
-  video: ['.mp4', '.mpeg', '.webm'],
-  image: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.tiff'],
-  code: ['.js', '.ts', '.py', '.java', '.c', '.cpp', '.go', '.rs'],
+  document: [
+    ".pdf",
+    ".docx",
+    ".doc",
+    ".pptx",
+    ".ppt",
+    ".xlsx",
+    ".xls",
+    ".odt",
+    ".ods",
+    ".odp",
+  ],
+  text: [".txt", ".md", ".markdown", ".rst", ".org", ".rtf"],
+  data: [".csv", ".tsv", ".json", ".yaml", ".xml"],
+  web: [".html", ".htm"],
+  email: [".eml", ".msg"],
+  audio: [".mp3", ".m4a", ".wav", ".webm"],
+  video: [".mp4", ".mpeg", ".webm"],
+  image: [".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tiff"],
+  code: [".js", ".ts", ".py", ".java", ".c", ".cpp", ".go", ".rs"],
 };
 ```
 
@@ -499,15 +538,15 @@ const SUPPORTED_TYPES = {
 ```typescript
 // First-use download with progress
 const downloadProgress = {
-  'tiny': { size: 10, unit: 'MB' },
-  'base': { size: 50, unit: 'MB' },
-  'small': { size: 200, unit: 'MB' },
+  tiny: { size: 10, unit: "MB" },
+  base: { size: 50, unit: "MB" },
+  small: { size: 200, unit: "MB" },
 };
 
 // Show download progress in UI
 onProgress: (downloaded, total) => {
   setDownloadProgress((downloaded / total) * 100);
-}
+};
 ```
 
 ---

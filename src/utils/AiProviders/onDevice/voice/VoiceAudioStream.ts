@@ -1,7 +1,13 @@
 // VoiceAudioStream.ts - TypeScript bridge for native audio recording with VAD
 
-import { NativeModules, NativeEventEmitter, Platform, EmitterSubscription } from 'react-native';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import {
+  NativeModules,
+  NativeEventEmitter,
+  PermissionsAndroid,
+  Platform,
+  EmitterSubscription,
+} from "react-native";
+import { useEffect, useState, useCallback, useRef } from "react";
 
 const { VoiceAudioModule } = NativeModules;
 
@@ -45,7 +51,7 @@ class VoiceAudioStream {
       ...config,
     };
 
-    if (Platform.OS === 'ios') {
+    if (Platform.OS === "ios") {
       this.eventEmitter = new NativeEventEmitter(VoiceAudioModule);
     } else {
       this.eventEmitter = new NativeEventEmitter();
@@ -56,12 +62,31 @@ class VoiceAudioStream {
     if (this.isRecording) return;
 
     try {
+      // RECORD_AUDIO is a dangerous permission (API 23+) -- declaring it in the manifest only
+      // makes it requestable, it doesn't grant it. Without this, AudioRecord's native
+      // constructor fails on every device that hasn't had the permission granted some other
+      // way, surfacing as "Failed to initialize AudioRecord" with no indication why.
+      if (Platform.OS === "android") {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+          {
+            title: "Microphone Permission",
+            message:
+              "AnythingLLM needs access to your microphone for voice chat.",
+            buttonPositive: "OK",
+          },
+        );
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          throw new Error("Microphone permission denied");
+        }
+      }
+
       // Configure VAD
       await VoiceAudioModule.setVADThreshold(this.config.vadThreshold ?? 0.5);
       await VoiceAudioModule.setVADConfig(
         this.config.minSpeechDurationMs ?? 300,
         this.config.maxSpeechDurationMs ?? 30000,
-        this.config.silenceDurationMs ?? 800
+        this.config.silenceDurationMs ?? 800,
       );
 
       // Set up event listeners
@@ -72,7 +97,7 @@ class VoiceAudioStream {
       this.isRecording = true;
       this.events.onRecordingStart?.();
     } catch (error) {
-      console.error('Failed to start recording:', error);
+      console.error("Failed to start recording:", error);
       this.events.onError?.(error as Error);
       throw error;
     }
@@ -87,7 +112,7 @@ class VoiceAudioStream {
       this.cleanupEventListeners();
       this.events.onRecordingStop?.();
     } catch (error) {
-      console.error('Failed to stop recording:', error);
+      console.error("Failed to stop recording:", error);
       this.events.onError?.(error as Error);
       throw error;
     }
@@ -97,15 +122,21 @@ class VoiceAudioStream {
     if (!this.eventEmitter) return;
 
     this.subscriptions.push(
-      this.eventEmitter.addListener('onSpeechSegment', (event: SpeechSegment) => {
-        this.events.onSpeechSegment?.(event);
-      })
+      this.eventEmitter.addListener(
+        "onSpeechSegment",
+        (event: SpeechSegment) => {
+          this.events.onSpeechSegment?.(event);
+        },
+      ),
     );
 
     this.subscriptions.push(
-      this.eventEmitter.addListener('onVolumeChange', (event: { volume: number }) => {
-        this.events.onVolumeChange?.(event.volume);
-      })
+      this.eventEmitter.addListener(
+        "onVolumeChange",
+        (event: { volume: number }) => {
+          this.events.onVolumeChange?.(event.volume);
+        },
+      ),
     );
   }
 
@@ -116,7 +147,7 @@ class VoiceAudioStream {
 
   on<Event extends keyof VoiceAudioEvents>(
     event: Event,
-    callback: VoiceAudioEvents[Event]
+    callback: VoiceAudioEvents[Event],
   ): () => void {
     this.events[event] = callback;
     return () => {
@@ -140,24 +171,46 @@ export function useVoiceAudioStream(config: VoiceAudioConfig = {}) {
 
   const streamRef = useRef<VoiceAudioStream | null>(null);
 
+  // Depend on the individual primitive fields, not `config` itself: callers overwhelmingly pass
+  // an inline object literal (e.g. useVoiceAudioStream({ vadThreshold: 0.5, ... })), which is a
+  // new reference every render. Depending on that reference reran this effect -- and therefore
+  // recreated the native stream and called setStream -- on every single render, which triggered
+  // another render, which created another new config object, forever ("Maximum update depth
+  // exceeded").
+  const {
+    sampleRate,
+    channels,
+    vadThreshold,
+    minSpeechDurationMs,
+    maxSpeechDurationMs,
+    silenceDurationMs,
+  } = config;
+
   useEffect(() => {
-    const newStream = new VoiceAudioStream(config);
+    const newStream = new VoiceAudioStream({
+      sampleRate,
+      channels,
+      vadThreshold,
+      minSpeechDurationMs,
+      maxSpeechDurationMs,
+      silenceDurationMs,
+    });
     streamRef.current = newStream;
     setStream(newStream);
 
-    const unsubError = newStream.on('onError', (err) => {
+    const unsubError = newStream.on("onError", err => {
       setError(err);
     });
 
-    const unsubVolume = newStream.on('onVolumeChange', (vol) => {
+    const unsubVolume = newStream.on("onVolumeChange", vol => {
       setVolume(vol);
     });
 
-    const unsubStart = newStream.on('onRecordingStart', () => {
+    const unsubStart = newStream.on("onRecordingStart", () => {
       setIsRecording(true);
     });
 
-    const unsubStop = newStream.on('onRecordingStop', () => {
+    const unsubStop = newStream.on("onRecordingStop", () => {
       setIsRecording(false);
     });
 
@@ -168,17 +221,13 @@ export function useVoiceAudioStream(config: VoiceAudioConfig = {}) {
       unsubStop();
       newStream.stop().catch(console.error);
     };
-    // Depend on primitive config fields rather than the `config` object reference --
-    // callers commonly pass an inline object literal, which is a new reference on
-    // every render and would otherwise tear down/rebuild the native stream every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    config.sampleRate,
-    config.channels,
-    config.vadThreshold,
-    config.minSpeechDurationMs,
-    config.maxSpeechDurationMs,
-    config.silenceDurationMs,
+    sampleRate,
+    channels,
+    vadThreshold,
+    minSpeechDurationMs,
+    maxSpeechDurationMs,
+    silenceDurationMs,
   ]);
 
   const start = useCallback(async () => {
@@ -203,7 +252,5 @@ export function useVoiceAudioStream(config: VoiceAudioConfig = {}) {
     stop,
   };
 }
-
-export { VoiceAudioModule } from 'react-native';
 
 export default VoiceAudioStream;

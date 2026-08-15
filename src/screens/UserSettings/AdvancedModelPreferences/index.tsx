@@ -1,19 +1,19 @@
-import { Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
-import SafeView from '@/components/SafeView';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ScrollView } from 'react-native-gesture-handler';
-import { ArrowLeft } from 'phosphor-react-native';
-import { IWorkspacePageKey } from '../index';
-import useLLMPreference from '@/hooks/useLLMPreference';
-import ProviderSelection from '@/components/LLMSelection/ProviderSelection';
-import { screenDimensions } from '@/utils/constants';
-import Telemetry from '@/utils/Telemetry';
+import { Text, TouchableOpacity, View, ActivityIndicator } from "react-native";
+import SafeView from "@/components/SafeView";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScrollView } from "react-native-gesture-handler";
+import { ArrowLeft } from "phosphor-react-native";
+import { IWorkspacePageKey } from "../index";
+import useLLMPreference from "@/hooks/useLLMPreference";
+import ProviderSelection from "@/components/LLMSelection/ProviderSelection";
+import { screenDimensions } from "@/utils/constants";
+import Telemetry from "@/utils/Telemetry";
 
-import NativeOptions from './providers/nativeOptions';
-import LMStudioOptions from './providers/LMStudioOptions';
-import GenericOpenAiOptions from './providers/genericOpenAiOptions';
-import OllamaOptions from './providers/OllamaOptions';
-import OpenRouterOptions from './providers/OpenRouterOptions';
+import NativeOptions from "./providers/nativeOptions";
+import LMStudioOptions from "./providers/LMStudioOptions";
+import GenericOpenAiOptions from "./providers/genericOpenAiOptions";
+import OllamaOptions from "./providers/OllamaOptions";
+import OpenRouterOptions from "./providers/OpenRouterOptions";
 
 interface AdvancedModelPreferencesProps {
   goToPage: (page: IWorkspacePageKey) => void;
@@ -29,51 +29,57 @@ export default function AdvancedModelPreferences({
     fetchLLMPreference,
     updateLLMPreference,
   } = useLLMPreference();
-  async function updateProviderSettings(provider: string, settings: { apiKey?: string, baseUrl?: string, model?: string }) {
+  async function updateProviderSettings(
+    provider: string,
+    settings: { apiKey?: string; baseUrl?: string; model?: string },
+  ) {
     await updateLLMPreference(provider, {
       ...llmPreferences.config,
       ...settings,
     });
     await fetchLLMPreference();
-    Telemetry.logEvent(Telemetry.CUSTOM_EVENTS.ACTIONS.LLM_SETTINGS_UPDATED, { provider, model: settings?.model ?? '' });
+    Telemetry.logEvent(Telemetry.CUSTOM_EVENTS.ACTIONS.LLM_SETTINGS_UPDATED, {
+      provider,
+      model: settings?.model ?? "",
+    });
   }
 
   async function handleProviderSelection(provider: string) {
     switch (provider) {
-      case 'openai':
-        await updateLLMPreference('openai', {
+      case "openai":
+        await updateLLMPreference("openai", {
           apiKey: llmPreferences.config.apiKey,
-          modelId: 'gpt-3.5-turbo',
-          baseUrl: 'https://api.openai.com/v1',
+          modelId: "gpt-3.5-turbo",
+          baseUrl: "https://api.openai.com/v1",
         });
         break;
-      case 'openrouter':
-        await updateLLMPreference('openrouter', {
+      case "openrouter":
+        await updateLLMPreference("openrouter", {
           apiKey: llmPreferences.config.apiKey,
-          modelId: 'qwen/qwen3-4b:free'
+          modelId: "qwen/qwen3-4b:free",
         });
         break;
-      case 'lmstudio':
-        await updateLLMPreference('lmstudio', {
-          baseUrl: '',
-          modelId: ''
+      case "lmstudio":
+        await updateLLMPreference("lmstudio", {
+          baseUrl: "",
+          modelId: "",
         });
         break;
-      case 'ollama':
-        await updateLLMPreference('ollama', {
-          baseUrl: '',
-          model: '',
+      case "ollama":
+        await updateLLMPreference("ollama", {
+          baseUrl: "",
+          model: "",
         });
         break;
-      case 'generic-openai':
-        await updateLLMPreference('generic-openai', {
-          apiKey: '',
-          baseUrl: '',
-          model: '',
+      case "generic-openai":
+        await updateLLMPreference("generic-openai", {
+          apiKey: "",
+          baseUrl: "",
+          model: "",
         });
         break;
       default:
-        await updateLLMPreference('native', {
+        await updateLLMPreference("native", {
           model: llmPreferences.config.model,
         });
     }
@@ -81,53 +87,61 @@ export default function AdvancedModelPreferences({
 
   const renderProviderOptions = () => {
     switch (llmPreferences.provider) {
-      case 'ollama':
-        return <OllamaOptions
-          provider="ollama"
-          baseUrl={llmPreferences.config.baseUrl || ''}
-          model={llmPreferences.config.model || ''}
-          onBaseUrlChange={updateProviderSettings}
-          onModelChange={updateProviderSettings}
-        />
-      case 'lmstudio':
-        return <LMStudioOptions
-          provider="lmstudio"
-          baseUrl={llmPreferences.config.baseUrl || ''}
-          model={llmPreferences.config.model || ''}
-          onBaseUrlChange={updateProviderSettings}
-          onModelChange={updateProviderSettings}
-        />
-      case 'openai':
-        return <GenericOpenAiOptions
-          provider={llmPreferences.provider}
-          apiKey={llmPreferences.config.apiKey || ''}
-          baseUrl={llmPreferences.config.baseUrl || ''}
-          model={llmPreferences.config.model || ''}
-          onApiKeyChange={updateProviderSettings}
-          onBaseUrlChange={updateProviderSettings}
-          onModelChange={updateProviderSettings}
-        />
-      case 'openrouter':
-        return <OpenRouterOptions
-          provider="openrouter"
-          apiKey={llmPreferences.config.apiKey || ''}
-          model={llmPreferences.config.model || ''}
-          onApiKeyChange={updateProviderSettings}
-          onModelChange={updateProviderSettings}
-        />
-      case 'generic-openai':
+      case "ollama":
+        return (
+          <OllamaOptions
+            provider="ollama"
+            baseUrl={llmPreferences.config.baseUrl || ""}
+            model={llmPreferences.config.model || ""}
+            onBaseUrlChange={updateProviderSettings}
+            onModelChange={updateProviderSettings}
+          />
+        );
+      case "lmstudio":
+        return (
+          <LMStudioOptions
+            provider="lmstudio"
+            baseUrl={llmPreferences.config.baseUrl || ""}
+            model={llmPreferences.config.model || ""}
+            onBaseUrlChange={updateProviderSettings}
+            onModelChange={updateProviderSettings}
+          />
+        );
+      case "openai":
         return (
           <GenericOpenAiOptions
-            provider="generic-openai"
-            apiKey={llmPreferences.config.apiKey || ''}
-            baseUrl={llmPreferences.config.baseUrl || ''}
-            model={llmPreferences.config.model || ''}
+            provider={llmPreferences.provider}
+            apiKey={llmPreferences.config.apiKey || ""}
+            baseUrl={llmPreferences.config.baseUrl || ""}
+            model={llmPreferences.config.model || ""}
             onApiKeyChange={updateProviderSettings}
             onBaseUrlChange={updateProviderSettings}
             onModelChange={updateProviderSettings}
           />
         );
-      case 'native':
+      case "openrouter":
+        return (
+          <OpenRouterOptions
+            provider="openrouter"
+            apiKey={llmPreferences.config.apiKey || ""}
+            model={llmPreferences.config.model || ""}
+            onApiKeyChange={updateProviderSettings}
+            onModelChange={updateProviderSettings}
+          />
+        );
+      case "generic-openai":
+        return (
+          <GenericOpenAiOptions
+            provider="generic-openai"
+            apiKey={llmPreferences.config.apiKey || ""}
+            baseUrl={llmPreferences.config.baseUrl || ""}
+            model={llmPreferences.config.model || ""}
+            onApiKeyChange={updateProviderSettings}
+            onBaseUrlChange={updateProviderSettings}
+            onModelChange={updateProviderSettings}
+          />
+        );
+      case "native":
       default:
         return (
           <NativeOptions
@@ -144,7 +158,7 @@ export default function AdvancedModelPreferences({
       scrollable={false}
       safeAreaClassNames="pt-[21px]"
       containerClassNames="flex flex-col"
-      safeAreaStyle={{ backgroundColor: '#0E0F0F' }}>
+      safeAreaStyle={{ backgroundColor: "#0E0F0F" }}>
       {/* Header */}
       <View
         style={{
@@ -153,13 +167,11 @@ export default function AdvancedModelPreferences({
         }}
         className="w-full flex flex-row items-center justify-center relative">
         <TouchableOpacity
-          onPress={() => goToPage('main')}
+          onPress={() => goToPage("main")}
           className="absolute left-0 flex flex-row items-center gap-2">
           <ArrowLeft size={24} color="#FFF" weight="bold" />
         </TouchableOpacity>
-        <Text className="text-white text-lg font-medium">
-          Model Selection
-        </Text>
+        <Text className="text-white text-lg font-medium">Model Selection</Text>
       </View>
 
       {/* Provider Selection */}
@@ -178,7 +190,9 @@ export default function AdvancedModelPreferences({
 
       <View style={{ gap: 16 }} className="flex flex-col">
         <Text className="text-white font-semibold text-lg">
-          {llmPreferences.provider === 'native' ? 'LLM Model' : 'Provider Settings'}
+          {llmPreferences.provider === "native"
+            ? "LLM Model"
+            : "Provider Settings"}
         </Text>
         <View style={{ height: screenDimensions.height - insets.bottom - 300 }}>
           <ScrollView
@@ -187,8 +201,7 @@ export default function AdvancedModelPreferences({
               paddingBottom: 100,
               gap: 16,
             }}
-            showsVerticalScrollIndicator={true}
-          >
+            showsVerticalScrollIndicator={true}>
             {renderProviderOptions()}
           </ScrollView>
         </View>

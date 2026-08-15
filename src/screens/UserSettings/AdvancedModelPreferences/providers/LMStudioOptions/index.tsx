@@ -1,13 +1,27 @@
-import { View, Text, KeyboardAvoidingView, Platform, TextInput, TouchableOpacity, ScrollView } from 'react-native';
-import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { screenDimensions } from '@/utils/constants';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import useKeyboardHeight from '@/hooks/useKeyboardHeight';
-import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
-import { X, MagnifyingGlass, CaretDown } from 'phosphor-react-native';
-import getLLM from '@/utils/AiProviders';
-import LMStudioProvider, { LMStudioModel } from '@/utils/AiProviders/LMStudioProvider';
-import debounce from 'lodash/debounce';
+import {
+  View,
+  Text,
+  KeyboardAvoidingView,
+  Platform,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+} from "react-native";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import { screenDimensions } from "@/utils/constants";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import useKeyboardHeight from "@/hooks/useKeyboardHeight";
+import {
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetView,
+} from "@gorhom/bottom-sheet";
+import { X, MagnifyingGlass, CaretDown } from "phosphor-react-native";
+import getLLM from "@/utils/AiProviders";
+import LMStudioProvider, {
+  LMStudioModel,
+} from "@/utils/AiProviders/LMStudioProvider";
+import debounce from "lodash/debounce";
 
 export default function LMStudioOptions({
   provider,
@@ -16,27 +30,33 @@ export default function LMStudioOptions({
   onBaseUrlChange,
   onModelChange,
 }: {
-  provider: 'lmstudio';
+  provider: "lmstudio";
   baseUrl: string;
   model: string;
-  onBaseUrlChange?: (provider: string, settings: { baseUrl?: string }) => Promise<void>;
-  onModelChange?: (provider: string, settings: { model?: string }) => Promise<void>;
+  onBaseUrlChange?: (
+    provider: string,
+    settings: { baseUrl?: string },
+  ) => Promise<void>;
+  onModelChange?: (
+    provider: string,
+    settings: { model?: string },
+  ) => Promise<void>;
 }) {
   const insets = useSafeAreaInsets();
   const keyboardHeight = useKeyboardHeight();
-  const [currentBaseUrl, setCurrentBaseUrl] = useState(baseUrl || '');
-  const [currentModelId, setCurrentModelId] = useState(model || '');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [currentBaseUrl, setCurrentBaseUrl] = useState(baseUrl || "");
+  const [currentModelId, setCurrentModelId] = useState(model || "");
+  const [searchQuery, setSearchQuery] = useState("");
   const [availableModels, setAvailableModels] = useState<LMStudioModel[]>([]);
   const bottomSheetRef = useRef<BottomSheetModal>(null);
 
   const handlePropertyChange = async (key: string, value: string) => {
     switch (key) {
-      case 'baseUrl':
+      case "baseUrl":
         setCurrentBaseUrl(value);
         await onBaseUrlChange?.(provider, { baseUrl: value });
         break;
-      case 'model':
+      case "model":
         setCurrentModelId(value);
         await onModelChange?.(provider, { model: value });
         break;
@@ -44,11 +64,13 @@ export default function LMStudioOptions({
   };
 
   const filteredModels = useMemo(() => {
-    return availableModels.filter(model => model.id.toLowerCase().includes(searchQuery.toLowerCase()));
+    return availableModels.filter(model =>
+      model.id.toLowerCase().includes(searchQuery.toLowerCase()),
+    );
   }, [searchQuery, availableModels]);
 
   const handleModelSelect = (modelId: string) => {
-    handlePropertyChange('model', modelId);
+    handlePropertyChange("model", modelId);
     bottomSheetRef.current?.dismiss();
   };
 
@@ -68,25 +90,27 @@ export default function LMStudioOptions({
     debounce(async (url: string) => {
       if (url) {
         try {
-          const models = await (getLLM('lmstudio', { baseUrl: url }) as LMStudioProvider).availableModels();
+          const models = await (
+            getLLM("lmstudio", { baseUrl: url }) as LMStudioProvider
+          ).availableModels();
           setAvailableModels(models.map((model: LMStudioModel) => model));
-          setCurrentModelId(models[0]?.id || '');
+          setCurrentModelId(models[0]?.id || "");
         } catch (error) {
           console.log(`Error fetching models: (${url})`, error);
           setAvailableModels([]);
-          setCurrentModelId('');
+          setCurrentModelId("");
         }
       } else {
         setAvailableModels([]);
-        setCurrentModelId('');
+        setCurrentModelId("");
       }
-    }, 500)
+    }, 500),
   ).current;
 
   const debouncedSaveBaseUrl = useRef(
     debounce(async (url: string) => {
       await onBaseUrlChange?.(provider, { baseUrl: url });
-    }, 500)
+    }, 500),
   ).current;
 
   useEffect(() => {
@@ -102,11 +126,15 @@ export default function LMStudioOptions({
 
   return (
     <View className="flex flex-col">
-      <KeyboardAvoidingView style={{ gap: 8 }} behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1 flex flex-col">
-
+      <KeyboardAvoidingView
+        style={{ gap: 8 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1 flex flex-col">
         <View className="w-full flex flex-col" style={{ gap: 12 }}>
           <View className="flex flex-row items-center justify-between">
-            <Text style={{ color: '#9F9FA0' }} className="text-lg uppercase">Base URL</Text>
+            <Text style={{ color: "#9F9FA0" }} className="text-lg uppercase">
+              Base URL
+            </Text>
           </View>
           <TextInput
             key="baseUrl"
@@ -114,14 +142,19 @@ export default function LMStudioOptions({
             multiline={false}
             numberOfLines={1}
             style={{
-              maxHeight: screenDimensions.height - keyboardHeight - insets.top - insets.bottom - 200,
-              backgroundColor: '#000',
-              textAlignVertical: 'center',
-              padding: 16
+              maxHeight:
+                screenDimensions.height -
+                keyboardHeight -
+                insets.top -
+                insets.bottom -
+                200,
+              backgroundColor: "#000",
+              textAlignVertical: "center",
+              padding: 16,
             }}
             className="rounded-lg text-white placeholder:text-white/50 text-left lowercase"
             value={currentBaseUrl}
-            onChangeText={(value) => {
+            onChangeText={value => {
               const cleanedValue = value.toLowerCase().trim();
               setCurrentBaseUrl(cleanedValue);
               debouncedSaveBaseUrl(cleanedValue);
@@ -132,21 +165,27 @@ export default function LMStudioOptions({
 
         <View className="w-full flex flex-col" style={{ gap: 12 }}>
           <View className="flex flex-row items-center justify-between">
-            <Text style={{ color: '#9F9FA0' }} className="text-lg uppercase">Model Selection</Text>
+            <Text style={{ color: "#9F9FA0" }} className="text-lg uppercase">
+              Model Selection
+            </Text>
           </View>
           <TouchableOpacity
             onPress={() => bottomSheetRef.current?.present()}
             style={{
-              backgroundColor: '#000',
+              backgroundColor: "#000",
               padding: 16,
               borderRadius: 8,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between'
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
             }}>
             <View style={{ flex: 1 }}>
-              <Text style={{ color: currentModelId ? 'white' : '#9F9FA0', fontSize: 16 }}>
-                {currentModelId ? currentModelId : 'Select a model'}
+              <Text
+                style={{
+                  color: currentModelId ? "white" : "#9F9FA0",
+                  fontSize: 16,
+                }}>
+                {currentModelId ? currentModelId : "Select a model"}
               </Text>
             </View>
             <CaretDown size={20} color="#9F9FA0" />
@@ -157,12 +196,12 @@ export default function LMStudioOptions({
       <BottomSheetModal
         ref={bottomSheetRef}
         index={0}
-        snapPoints={['60%', '95%']}
+        snapPoints={["60%", "95%"]}
         enableDynamicSizing={false}
         backdropComponent={renderBackdrop}
-        backgroundStyle={{ backgroundColor: '#1B1B1E' }}
+        backgroundStyle={{ backgroundColor: "#1B1B1E" }}
         handleIndicatorStyle={{
-          backgroundColor: '#9F9FA0',
+          backgroundColor: "#9F9FA0",
           width: 45,
           margin: 10,
         }}>
@@ -181,30 +220,33 @@ export default function LMStudioOptions({
               scrollEnabled={false}
             />
             {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <TouchableOpacity onPress={() => setSearchQuery("")}>
                 <X size={20} color="white" />
               </TouchableOpacity>
             )}
           </View>
 
           <ScrollView className="flex-1 px-4">
-            {filteredModels.map((model) => (
+            {filteredModels.map(model => (
               <TouchableOpacity
                 key={model.id}
                 onPress={() => handleModelSelect(model.id)}
                 style={{
-                  backgroundColor: currentModelId === model.id ? '#2e404b' : 'transparent',
+                  backgroundColor:
+                    currentModelId === model.id ? "#2e404b" : "transparent",
                   padding: 16,
                   borderRadius: 8,
                   marginBottom: 8,
                   borderWidth: 1,
-                  borderColor: currentModelId === model.id ? '#7cd4fd' : '#27282A'
+                  borderColor:
+                    currentModelId === model.id ? "#7cd4fd" : "#27282A",
                 }}>
-                <Text style={{
-                  color: currentModelId === model.id ? 'white' : '#FFFFFF',
-                  fontSize: 16,
-                  fontWeight: '600'
-                }}>
+                <Text
+                  style={{
+                    color: currentModelId === model.id ? "white" : "#FFFFFF",
+                    fontSize: 16,
+                    fontWeight: "600",
+                  }}>
                   {model.id}
                 </Text>
               </TouchableOpacity>

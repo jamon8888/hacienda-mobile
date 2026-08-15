@@ -18,6 +18,17 @@
 		A8894CE22D0E02AF00FA6CAC /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A8894CE12D0E02AF00FA6CAC /* GoogleService-Info.plist */; };
 		A88DF87F2D0B6F7400239E77 /* DeviceInfoModule.h in Sources */ = {isa = PBXBuildFile; fileRef = A88DF87D2D0B6F7400239E77 /* DeviceInfoModule.h */; };
 		A88DF8802D0B6F7400239E77 /* DeviceInfoModule.m in Sources */ = {isa = PBXBuildFile; fileRef = A88DF87E2D0B6F7400239E77 /* DeviceInfoModule.m */; };
+		3EA63FD6620CA8D494D79DCA /* FolderPickerModule.h in Sources */ = {isa = PBXBuildFile; fileRef = E7C1996B72968EECB6D616ED /* FolderPickerModule.h */; };
+		3E66FF09071D388C764EFFDD /* FolderPickerModule.m in Sources */ = {isa = PBXBuildFile; fileRef = AB8A28D8C28275A7D915BA9B /* FolderPickerModule.m */; };
+		FDB19ABFE05B30DCB99835B6 /* XbergModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 938153C466594BAFE347F690 /* XbergModule.swift */; };
+		698545745D7DF627EBD6DAA4 /* XbergModule.m in Sources */ = {isa = PBXBuildFile; fileRef = CE64545F3B8EFF5ECB6B6AF0 /* XbergModule.m */; };
+		E515F82F13E4AB467F635EE9 /* VectorBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC8013D2034C20D05D187C2 /* VectorBox.swift */; };
+		77CB46D71C9184B4F1B98ADC /* VectorBox.m in Sources */ = {isa = PBXBuildFile; fileRef = 909EA51E4A7CA65F5585928D /* VectorBox.m */; };
+		305C159C8359B79C5B110B06 /* VectorEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CE9287757B1EE01B5CCE356 /* VectorEntity.swift */; };
+		85839FE3CBAE0D0164C67873 /* TextToSpeechModule.h in Sources */ = {isa = PBXBuildFile; fileRef = 44914F1EF5E34C6C2482D77A /* TextToSpeechModule.h */; };
+		7343247D2F38758CE7EF57F6 /* TextToSpeechModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 31F7C6B2609A0A02EBFFCADE /* TextToSpeechModule.m */; };
+		0342DE1C1D73C95FD0F54D05 /* VoiceAudioModule.h in Sources */ = {isa = PBXBuildFile; fileRef = A99D1E153FDEA54D9D07110A /* VoiceAudioModule.h */; };
+		BA921ADEAD9F1D03896DC117 /* VoiceAudioModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 03E5353FDFF2D8F489B87E7A /* VoiceAudioModule.m */; };
 		ACB048A1D4B12175111FED89 /* libPods-AnythingLLM-AnythingLLMTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 79A3B9EA89EFE88FA274FD1C /* libPods-AnythingLLM-AnythingLLMTests.a */; };
 		C3B4E5DF753F2A61870BEB67 /* libPods-AnythingLLM.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B2B1B50A483B5EBA13F9E622 /* libPods-AnythingLLM.a */; };
 /* End PBXBuildFile section */
@@ -53,6 +64,17 @@
 		A8894CE12D0E02AF00FA6CAC /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		A88DF87D2D0B6F7400239E77 /* DeviceInfoModule.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = DeviceInfoModule.h; path = AnythingLLM/DeviceInfoModule.h; sourceTree = "<group>"; };
 		A88DF87E2D0B6F7400239E77 /* DeviceInfoModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = DeviceInfoModule.m; path = AnythingLLM/DeviceInfoModule.m; sourceTree = "<group>"; };
+		E7C1996B72968EECB6D616ED /* FolderPickerModule.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = FolderPickerModule.h; path = AnythingLLM/FolderPickerModule.h; sourceTree = "<group>"; };
+		AB8A28D8C28275A7D915BA9B /* FolderPickerModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = FolderPickerModule.m; path = AnythingLLM/FolderPickerModule.m; sourceTree = "<group>"; };
+		938153C466594BAFE347F690 /* XbergModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = XbergModule.swift; path = AnythingLLM/XbergModule.swift; sourceTree = "<group>"; };
+		CE64545F3B8EFF5ECB6B6AF0 /* XbergModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = XbergModule.m; path = AnythingLLM/XbergModule.m; sourceTree = "<group>"; };
+		EAC8013D2034C20D05D187C2 /* VectorBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = VectorBox.swift; path = AnythingLLM/VectorBox.swift; sourceTree = "<group>"; };
+		909EA51E4A7CA65F5585928D /* VectorBox.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = VectorBox.m; path = AnythingLLM/VectorBox.m; sourceTree = "<group>"; };
+		4CE9287757B1EE01B5CCE356 /* VectorEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = VectorEntity.swift; path = AnythingLLM/VectorEntity.swift; sourceTree = "<group>"; };
+		44914F1EF5E34C6C2482D77A /* TextToSpeechModule.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = TextToSpeechModule.h; path = AnythingLLM/TextToSpeechModule.h; sourceTree = "<group>"; };
+		31F7C6B2609A0A02EBFFCADE /* TextToSpeechModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = TextToSpeechModule.m; path = AnythingLLM/TextToSpeechModule.m; sourceTree = "<group>"; };
+		A99D1E153FDEA54D9D07110A /* VoiceAudioModule.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = VoiceAudioModule.h; path = AnythingLLM/VoiceAudioModule.h; sourceTree = "<group>"; };
+		03E5353FDFF2D8F489B87E7A /* VoiceAudioModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = VoiceAudioModule.m; path = AnythingLLM/VoiceAudioModule.m; sourceTree = "<group>"; };
 		B2B1B50A483B5EBA13F9E622 /* libPods-AnythingLLM.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-AnythingLLM.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4FD69AC6EA2DCF5F09D426E /* Pods-AnythingLLM-AnythingLLMTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AnythingLLM-AnythingLLMTests.release.xcconfig"; path = "Target Support Files/Pods-AnythingLLM-AnythingLLMTests/Pods-AnythingLLM-AnythingLLMTests.release.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
@@ -110,6 +132,17 @@
 				56D1BD968C32BD43D7C02874 /* PrivacyInfo.xcprivacy */,
 				A88DF87E2D0B6F7400239E77 /* DeviceInfoModule.m */,
 				A88DF87D2D0B6F7400239E77 /* DeviceInfoModule.h */,
+				AB8A28D8C28275A7D915BA9B /* FolderPickerModule.m */,
+				E7C1996B72968EECB6D616ED /* FolderPickerModule.h */,
+				938153C466594BAFE347F690 /* XbergModule.swift */,
+				CE64545F3B8EFF5ECB6B6AF0 /* XbergModule.m */,
+				EAC8013D2034C20D05D187C2 /* VectorBox.swift */,
+				909EA51E4A7CA65F5585928D /* VectorBox.m */,
+				4CE9287757B1EE01B5CCE356 /* VectorEntity.swift */,
+				44914F1EF5E34C6C2482D77A /* TextToSpeechModule.h */,
+				31F7C6B2609A0A02EBFFCADE /* TextToSpeechModule.m */,
+				A99D1E153FDEA54D9D07110A /* VoiceAudioModule.h */,
+				03E5353FDFF2D8F489B87E7A /* VoiceAudioModule.m */,
 				A8894CE12D0E02AF00FA6CAC /* GoogleService-Info.plist */,
 			);
 			name = AnythingLLM;
@@ -442,6 +475,17 @@
 				A85081992D6255F000BDE4BC /* KeepAwakeModule.m in Sources */,
 				A88DF87F2D0B6F7400239E77 /* DeviceInfoModule.h in Sources */,
 				A88DF8802D0B6F7400239E77 /* DeviceInfoModule.m in Sources */,
+				3EA63FD6620CA8D494D79DCA /* FolderPickerModule.h in Sources */,
+				3E66FF09071D388C764EFFDD /* FolderPickerModule.m in Sources */,
+				FDB19ABFE05B30DCB99835B6 /* XbergModule.swift in Sources */,
+				698545745D7DF627EBD6DAA4 /* XbergModule.m in Sources */,
+				E515F82F13E4AB467F635EE9 /* VectorBox.swift in Sources */,
+				77CB46D71C9184B4F1B98ADC /* VectorBox.m in Sources */,
+				305C159C8359B79C5B110B06 /* VectorEntity.swift in Sources */,
+				85839FE3CBAE0D0164C67873 /* TextToSpeechModule.h in Sources */,
+				7343247D2F38758CE7EF57F6 /* TextToSpeechModule.m in Sources */,
+				0342DE1C1D73C95FD0F54D05 /* VoiceAudioModule.h in Sources */,
+				BA921ADEAD9F1D03896DC117 /* VoiceAudioModule.m in Sources */,
 				13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
 			);
@@ -555,6 +599,7 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_OBJC_BRIDGING_HEADER = "AnythingLLM/AnythingLLM-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -601,6 +646,7 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_OBJC_BRIDGING_HEADER = "AnythingLLM/AnythingLLM-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";

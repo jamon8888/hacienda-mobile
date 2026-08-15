@@ -2,8 +2,16 @@ buildscript {
     ext {
         buildToolsVersion = "36.0.0"
         minSdkVersion = 26
+        // io.xberg:xberg-android's AAR metadata requires compileSdk 36+ of any consumer. AGP
+        // 8.7.3 only supports through API 35 -- AGP 8.10.0 is the first line that supports
+        // compileSdk 36 (paired with a Gradle wrapper bump to 8.11.1, see
+        // gradle/wrapper/gradle-wrapper.properties).
         compileSdkVersion = 36
-        targetSdkVersion = 36
+        // targetSdkVersion stays at 35 deliberately -- only compileSdk (compile-time API
+        // surface) needs to satisfy xberg-android's AAR metadata check. targetSdk opts the app
+        // into new runtime behavior changes for API 36, which is a separate, larger decision
+        // out of scope for unblocking this build.
+        targetSdkVersion = 35
         ndkVersion = "26.1.10909125"
         kotlinVersion = "2.2.20"
         objectboxVersion = "4.3.0"
@@ -13,11 +21,31 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("com.android.tools.build:gradle:8.7.3")
+        classpath("com.android.tools.build:gradle:8.10.0")
         classpath("com.facebook.react:react-native-gradle-plugin")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
+        // Pinned explicitly, overriding the 1.9.24 that React Native 0.76.3's own version catalog
+        // would otherwise supply (node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml).
+        //
+        // Why: io.xberg:xberg-android constrains kotlin-stdlib to 2.2.10 (every published version
+        // 1.0.0..1.0.12 does), so Gradle resolves the stdlib to 2.2.20 project-wide. A 1.9.24
+        // compiler against a 2.2.x stdlib fails every Kotlin module with "Unresolved reference:
+        // mapOf" and metadata-version errors, so the compiler has to track the stdlib.
+        //
+        // React Native's own Gradle plugin (node_modules/@react-native/gradle-plugin) is compiled
+        // from source as part of this build via Gradle's included-build mechanism, using this same
+        // project-wide Kotlin version. Its unpatched build script targets the KGP 1.9 API, where
+        // `kotlinOptions { apiVersion = "1.6" }` was the way to configure the compiler --
+        // `KotlinTopLevelExtension` was a class there. In KGP 2.1+ it became an interface, and the
+        // `kotlinOptions` DSL plus `apiVersion 1.6` are gone entirely by 2.2, so an unpatched
+        // build script fails to compile: "Found interface KotlinTopLevelExtension, but class was
+        // expected". `patches/@react-native+gradle-plugin+0.76.3.patch` migrates that one build
+        // script to the modern `compilerOptions { apiVersion.set(KotlinVersion.KOTLIN_2_0) }` DSL,
+        // which is all Kotlin 2.2.20 needs from it.
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
         classpath("io.objectbox:objectbox-gradle-plugin:$objectboxVersion")
-        classpath("com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin:2.2.20-2.0.4")
+        // KSP replaces kapt for annotation processing -- see the comment in app/build.gradle.
+        // The version's prefix must match kotlinVersion exactly; KSP releases are per-Kotlin.
+        classpath("com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin:$kotlinVersion-2.0.4")
         // Add the Google Services plugin dependency
         // This is used exclusively for Firebase functionality
         classpath 'com.google.gms:google-services:4.4.3'
@@ -25,3 +53,4 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
+
