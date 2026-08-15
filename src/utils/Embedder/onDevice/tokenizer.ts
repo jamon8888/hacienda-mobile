@@ -1,6 +1,6 @@
-import { SentencePieceProcessor } from "@sctg/sentencepiece-js";
 import { NativeModules, Platform } from "react-native";
-import RNFS from "react-native-fs";
+
+type SentencePieceProcessor = import("@sctg/sentencepiece-js").SentencePieceProcessor;
 
 let spmProcessor: SentencePieceProcessor | null = null;
 let isInitialized = false;
@@ -18,6 +18,8 @@ export async function initializeTokenizer(): Promise<void> {
   if (isInitialized && spmProcessor) return;
 
   try {
+    const { SentencePieceProcessor } = require("@sctg/sentencepiece-js");
+    const RNFS = require("react-native-fs");
     let modelData: string;
 
     if (Platform.OS === "android") {
@@ -35,8 +37,9 @@ export async function initializeTokenizer(): Promise<void> {
       modelData = await RNFS.readFile(modelPath, "base64");
     }
 
-    spmProcessor = new SentencePieceProcessor();
-    await spmProcessor.loadFromB64StringModel(modelData);
+    const processor = new SentencePieceProcessor();
+    await processor.loadFromB64StringModel(modelData);
+    spmProcessor = processor;
 
     isInitialized = true;
     console.log("[EmbeddingGemmaTokenizer] Initialized successfully");

@@ -83,20 +83,20 @@ export function migrateCompletionSettings(settings: any): any {
     // cactus-react-native 1.13.1 CompletionParams field names, and
     // drop sampling knobs that no longer exist in the SDK.
     if ("n_predict" in migratedSettings) {
-      migratedSettings.n_predict = migratedSettings.n_predict;
-      delete migratedSettings.maxTokens;
+      migratedSettings.maxTokens = migratedSettings.n_predict;
+      delete migratedSettings.n_predict;
     }
     if ("top_p" in migratedSettings) {
-      migratedSettings.top_p = migratedSettings.top_p;
-      delete migratedSettings.topP;
+      migratedSettings.topP = migratedSettings.top_p;
+      delete migratedSettings.top_p;
     }
     if ("top_k" in migratedSettings) {
-      migratedSettings.top_k = migratedSettings.top_k;
-      delete migratedSettings.topK;
+      migratedSettings.topK = migratedSettings.top_k;
+      delete migratedSettings.top_k;
     }
     if ("stop" in migratedSettings) {
-      migratedSettings.stop = migratedSettings.stop;
-      delete migratedSettings.stopSequences;
+      migratedSettings.stopSequences = migratedSettings.stop;
+      delete migratedSettings.stop;
     }
     for (const key of V1_KEYS_WITHOUT_SDK_EQUIVALENT) {
       delete migratedSettings[key];
