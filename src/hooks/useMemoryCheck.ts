@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import DeviceInfo from 'react-native-device-info';
-import { Model } from '@/utils/types';
+import { useEffect, useState } from "react";
+import DeviceInfo from "react-native-device-info";
+import { Model } from "@/utils/types";
 
 function memoryRequirementEstimate(model: Model) {
   // Model parameters derived by fitting a linear regression to benchmark data
@@ -9,8 +9,8 @@ function memoryRequirementEstimate(model: Model) {
 }
 
 export const useMemoryCheck = (model: Model) => {
-  const [memoryWarning, setMemoryWarning] = useState('');
-  const [shortMemoryWarning, setShortMemoryWarning] = useState('');
+  const [memoryWarning, setMemoryWarning] = useState("");
+  const [shortMemoryWarning, setShortMemoryWarning] = useState("");
 
   useEffect(() => {
     const checkMemory = async () => {
@@ -26,11 +26,13 @@ export const useMemoryCheck = (model: Model) => {
 
         if (memoryRequirement > availableMemory) {
           setShortMemoryWarning("Memory Warning");
-          setMemoryWarning('Warning: Model size may exceed available memory. This could affect performance and stability of your device.');
+          setMemoryWarning(
+            "Warning: Model size may exceed available memory. This could affect performance and stability of your device.",
+          );
         }
       } catch (error) {
         // TODO: Handle error appropriately
-        console.error('Memory check failed:', error);
+        console.error("Memory check failed:", error);
       }
     };
 

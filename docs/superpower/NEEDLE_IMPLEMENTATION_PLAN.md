@@ -8,15 +8,15 @@
 
 ## 0. Phase map
 
-| # | Phase | Deliverable | Done-when |
-|---|---|---|---|
-| P0 | Feasibility spike (native lib loads + routes) | proof run on aarch64 | K0..K5 |
-| P1 | Android native bridge | `libneedle.so` + `NeedleModule.kt` | typecheck + `assembleDebug` |
-| P2 | iOS native bridge | staticlib + `NeedleModule.swift/.m` | `pod install` + build |
-| P3 | TS layer `src/utils/Needle` | `types.ts`/`XbergClient`-style client/`index.ts` | typecheck |
-| P4 | State + hook | `NeedleStore.ts`, `useNeedle.ts` | typecheck |
-| P5 | Router integration into `getContextTexts` | gate before embed | typecheck + unit test |
-| P6 | Bundling weights download | RNFS fetch of 22MB `needle.safetensors` + `vocab.txt` | integration test |
+| #   | Phase                                         | Deliverable                                           | Done-when                   |
+| --- | --------------------------------------------- | ----------------------------------------------------- | --------------------------- |
+| P0  | Feasibility spike (native lib loads + routes) | proof run on aarch64                                  | K0..K5                      |
+| P1  | Android native bridge                         | `libneedle.so` + `NeedleModule.kt`                    | typecheck + `assembleDebug` |
+| P2  | iOS native bridge                             | staticlib + `NeedleModule.swift/.m`                   | `pod install` + build       |
+| P3  | TS layer `src/utils/Needle`                   | `types.ts`/`XbergClient`-style client/`index.ts`      | typecheck                   |
+| P4  | State + hook                                  | `NeedleStore.ts`, `useNeedle.ts`                      | typecheck                   |
+| P5  | Router integration into `getContextTexts`     | gate before embed                                     | typecheck + unit test       |
+| P6  | Bundling weights download                     | RNFS fetch of 22MB `needle.safetensors` + `vocab.txt` | integration test            |
 
 ---
 
@@ -36,7 +36,7 @@ Verifies needle-rs is actually usable on ARM before any RN plumbing.
 
 ## P1 — Android native module
 
-Mirror `com.anythingllm.xberg` exactly. New dir `android/app/src/main/java/com/anythingllm/needle/`.
+Mirror `com.hacienda.xberg` exactly. New dir `android/app/src/main/java/com/hacienda/needle/`.
 
 1. **build files** — add NDK `externalNativeBuild`/CMake block to `android/app/build.gradle` (or a `module.cmake`) that:
    - statically links the Rust-produced `libneedle.a` (ABI per each `abiFilters` — `arm64-v8a`, plus `x86_64`/`armeabi-v7a` if kept);
@@ -57,11 +57,11 @@ Mirror `com.anythingllm.xberg` exactly. New dir `android/app/src/main/java/com/a
 
 ## P2 — iOS native module
 
-Mirror `ios/AnythingLLM/XbergModule.swift` + `.m`.
+Mirror `ios/Hacienda/XbergModule.swift` + `.m`.
 
 - `NeedleModule.swift` — `@objc` exposed methods `init(weights:vocab:resolver:rejecter:)`, `route(_:toolsJson:resolver:rejecter:)`, plus `NeedleModule.m` macro registration (mirror `XbergModule.{swift,m}`, `RCT_EXTERN_MODULE`).
 - Link the Rust staticlib (universal arm64-sim + device) and the `needle.h` C header into the Xcode target via the Podfile/Podspec dependency.
-- `Podfile`: add a local pod that pulls the staticlib (or vendor under `ios/anythingllm/` and reference in `.xcconfig`).
+- `Podfile`: add a local pod that pulls the staticlib (or vendor under `ios/hacienda/` and reference in `.xcconfig`).
 - Keep `cactus.xcframework` path untouched.
 
 **Verify**: `cd ios && pod install`; open Xcode build. (iOS can be validated later — Android is the primary target this session.)
@@ -80,6 +80,7 @@ Mirror `src/utils/Xberg/*`:
   ```
   Add the **250 ms timeout** guard + `''`→`fallback` here.
 - **`index.ts`** — exports `routeRag(userPrompt, opts?: RouteOptions): Promise<NeedleRouterDecision>`:
+
   1. if `!NeedleStore.ready` → `{ type: 'fallback' }`;
   2. `const json = await NeedleClient.route(prompt, stringify(DOCUMENT_TOOLS))`;
   3. parse; if not a one-named call → `{ type: 'fallback' }`; else map to action with `topK` clamped to `[1, min(opts.maxTopK, 5)]` (`maxTopK` is passed by the caller = the provider's `this.topN * 2`).
@@ -100,14 +101,19 @@ Mirror `src/utils/Xberg/*`:
 **File**: `src/utils/AiProviders/baseOpenAILikeProvider/index.ts`, **at top of** `getContextTexts` (line ~272, before the embed).
 
 ```ts
-const route = await NeedleRouter.routeRag(userPrompt, { maxTopK: this.topN * 2 });
-if (route.type === 'skip') return [];                        // no embed, no search
-const topN = route.type === 'expand' || route.type === 'retrieve'
-  ? route.topK
-  : this.topN;                                              // 'fallback' → unchanged
-await ensureVectorCount();                                   // existing pre-embed guard
-const queryVector = await embedder.embed(userPrompt, 'query', dims);
-const results = await VectorDB.runSemanticSearch(this.workspace.slug, queryVector, topN);
+const route = await NeedleRouter.routeRag(userPrompt, {
+  maxTopK: this.topN * 2,
+});
+if (route.type === "skip") return []; // no embed, no search
+const topN =
+  route.type === "expand" || route.type === "retrieve" ? route.topK : this.topN; // 'fallback' → unchanged
+await ensureVectorCount(); // existing pre-embed guard
+const queryVector = await embedder.embed(userPrompt, "query", dims);
+const results = await VectorDB.runSemanticSearch(
+  this.workspace.slug,
+  queryVector,
+  topN,
+);
 ```
 
 - guard upstream so `routeRag` never throws (it returns `fallback`).
@@ -132,24 +138,26 @@ const results = await VectorDB.runSemanticSearch(this.workspace.slug, queryVecto
 ---
 
 ## Files (all new unless noted)
-| Path | Action |
-|---|---|
-| `android/.../com/anythingllm/needle/{NeedleModule.kt, NeedlePackage.kt}` | create |
-| `android/app/build.gradle` (+ prefab or CMake) | add `.so` link (edit) |
-| `ios/AnythingLLM/{NeedleModule.swift, NeedleModule.m, needle.h}` | create |
-| `ios/Podfile` / Podspec | add staticlib pod (edit) |
-| `src/utils/Needle/{types.ts, NeedleClient.ts, index.ts}` | create |
-| `src/store/NeedleStore.ts`, `src/hooks/useNeedle.ts` | create |
-| `src/AiProviders/baseOpenAILikeProvider/index.ts` | edit `getContextTexts` |
-| `src/screens/WorkspaceSettings/index.tsx` (maybe) | settings toggle for router (skip v1) |
+
+| Path                                                                  | Action                               |
+| --------------------------------------------------------------------- | ------------------------------------ |
+| `android/.../com/hacienda/needle/{NeedleModule.kt, NeedlePackage.kt}` | create                               |
+| `android/app/build.gradle` (+ prefab or CMake)                        | add `.so` link (edit)                |
+| `ios/Hacienda/{NeedleModule.swift, NeedleModule.m, needle.h}`         | create                               |
+| `ios/Podfile` / Podspec                                               | add staticlib pod (edit)             |
+| `src/utils/Needle/{types.ts, NeedleClient.ts, index.ts}`              | create                               |
+| `src/store/NeedleStore.ts`, `src/hooks/useNeedle.ts`                  | create                               |
+| `src/AiProviders/baseOpenAILikeProvider/index.ts`                     | edit `getContextTexts`               |
+| `src/screens/WorkspaceSettings/index.tsx` (maybe)                     | settings toggle for router (skip v1) |
 
 ## Rollback / safety
+
 - The needle gate lives in one function with a guaranteed `fallback` return — reverting = revert that single edit. A broken/missing native module can never `throw` into `getContextTexts` (all paths catch to `fallback`).
 - **No public API/UI change in v1.**
 
 ---
 
-*Reviewer: open point — iOS static lib bundling method (vendored pod vs. `.xcconfig`) is undecided and ships after the Android gate.*
+_Reviewer: open point — iOS static lib bundling method (vendored pod vs. `.xcconfig`) is undecided and ships after the Android gate._
 
 ---
 

@@ -7,11 +7,14 @@ export default function useRedirect() {
 
   // Listen for redirect events
   useEffect(() => {
-    const redirectListener = uiStore.emitter.addListener(uiStore.globalEvents.REDIRECT, (event) => {
-      console.log('redirecting to', event.path, event.params);
-      // @ts-ignore
-      navigation.navigate(event.path, event.params as never);
-    });
+    const redirectListener = uiStore.emitter.addListener(
+      uiStore.globalEvents.REDIRECT,
+      event => {
+        console.log("redirecting to", event.path, event.params);
+        // @ts-ignore
+        navigation.navigate(event.path, event.params as never);
+      },
+    );
     return () => redirectListener.remove();
   }, []);
 

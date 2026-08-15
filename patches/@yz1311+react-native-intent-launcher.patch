@@ -1,0 +1,68 @@
+diff --git a/node_modules/@yz1311/react-native-intent-launcher/src/AppStoreUtils.ts b/node_modules/@yz1311/react-native-intent-launcher/src/AppStoreUtils.ts
+index f55986b..7026835 100644
+--- a/node_modules/@yz1311/react-native-intent-launcher/src/AppStoreUtils.ts
++++ b/node_modules/@yz1311/react-native-intent-launcher/src/AppStoreUtils.ts
+@@ -14,7 +14,7 @@ class AppStoreUtils {
+      * @return 跳转到应用商店的 Intent
+      */
+     static async getAppStoreIntent(packageName: string, isIncludeGooglePlayStore?: boolean) {
+-        if(RomUtils.isSamsung()) {// 三星单独处理跳转三星市场
++        if(RomUtils.isSamsung()) { // 三星单独处理跳转三星市场
+             let samsungAppStoreIntent = AppStoreUtils.getSamsungAppStoreIntent(packageName);
+             if (samsungAppStoreIntent != null) return samsungAppStoreIntent;
+         }
+@@ -22,7 +22,7 @@ class AppStoreUtils {
+         if(RomUtils.isLeeco()) {// 乐视单独处理跳转乐视市场
+             let leecoAppStoreIntent = AppStoreUtils.getLeecoAppStoreIntent(packageName);
+             if (leecoAppStoreIntent != null) return leecoAppStoreIntent;
+         }
+-        let uri = "market://details?id=" + packageName;
++        const uri = "market://details?id=" + packageName;
+         let intent = {
+             data: uri,
+             flags: IntentConstant.FLAG_ACTIVITY_NEW_TASK,
+@@ -42,7 +42,7 @@ class AppStoreUtils {
+             } else {
+                 intent.packageName = GOOGLE_PLAY_APP_STORE_PACKAGE_NAME;
+                 googleIntent = intent;
+-            }
++            }
+         }
+         if(isIncludeGooglePlayStore && googleIntent != null) {
+             return googleIntent;
+@@ -49,7 +49,7 @@ class AppStoreUtils {
+         }
+         intent.packageName = resolveInfos[0].activityInfo.packageName;
+         return intent;
+-    };
++    };
+ 
+     private static async getSamsungAppStoreIntent(packageName: string) {
+         let intent = {
+@@ -60,7 +60,7 @@ class AppStoreUtils {
+             data: 'http://www.samsungapps.com/appquery/appDetail.as?appId='+packageName,
+             flags: IntentConstant.FLAG_ACTIVITY_NEW_TASK,
+         } as intent;
+-        if(await IntentLauncherUtils.isIntentAvailable(intent)) {
++        if (await IntentLauncherUtils.isIntentAvailable(intent)) {
+             return intent;
+         }
+         return null;
+@@ -72,7 +72,7 @@ class AppStoreUtils {
+             classPackageName: 'com.letv.app.appstore',
+             className: 'com.letv.app.appstore.appmodule.details.DetailsActivity',
+             action: 'com.letv.app.appstore.appdetailactivity',
+-            packageName: packageName,
++            packageName,
+             flags: IntentConstant.FLAG_ACTIVITY_NEW_TASK,
+         } as intent;
+-        if(await IntentLauncherUtils.isIntentAvailable(intent)) {
++        if (await IntentLauncherUtils.isIntentAvailable(intent)) {
+             return intent;
+         }
+         return null.
+@@ -80,4 +80,3 @@ class AppStoreUtils {
+ 
+ export default AppStoreUtils;
+ 
+-

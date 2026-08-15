@@ -10,42 +10,51 @@
  * 3. Add a migration step in migrateCompletionSettings to handle the new setting
  */
 
-import {CompletionParams} from './completionTypes';
+import { CompletionParams } from "./completionTypes";
 
 // Current version of the completion settings schema
 // Increment this when adding new settings or changing existing ones
-export const CURRENT_COMPLETION_SETTINGS_VERSION = 1;
+export const CURRENT_COMPLETION_SETTINGS_VERSION = 2;
 
 /**
  * Default completion parameters used throughout the app
  */
 export const defaultCompletionParams: CompletionParams = {
   // App-specific properties
-  version: CURRENT_COMPLETION_SETTINGS_VERSION, // Schema version for migrations
-  include_thinking_in_context: true, // Whether to include thinking parts in the context sent to the model
+  version: CURRENT_COMPLETION_SETTINGS_VERSION,
+  include_thinking_in_context: true,
 
-  // llama.rn API properties
-  prompt: '',
-  n_predict: 1024, // The maximum number of tokens to predict when generating text.
-  temperature: 0.7, // The randomness of the generated text.
-  top_k: 40, // Limit the next token selection to the K most probable tokens.
-  top_p: 0.95, // Limit the next token selection to a subset of tokens with a cumulative probability above a threshold P.
-  min_p: 0.05, //The minimum probability for a token to be considered, relative to the probability of the most likely token.
-  xtc_threshold: 0.1, // Sets a minimum probability threshold for tokens to be removed.
-  xtc_probability: 0.0, // Sets the chance for token removal (checked once on sampler start)
-  typical_p: 1.0, // Enable locally typical sampling with parameter p. Default: `1.0`, which is disabled.
-  penalty_last_n: 64, // Last n tokens to consider for penalizing repetition. Default: `64`, where `0` is disabled and `-1` is ctx-size.
-  penalty_repeat: 1.0, // Control the repetition of token sequences in the generated text.
-  penalty_freq: 0.0, // Repeat alpha frequency penalty. Default: `0.0`, which is disabled.
-  penalty_present: 0.0, // Repeat alpha presence penalty. Default: `0.0`, which is disabled.
-  mirostat: 0, //Enable Mirostat sampling, controlling perplexity during text generation. Default: `0`, where `0` is disabled, `1` is Mirostat, and `2` is Mirostat 2.0.
-  mirostat_tau: 5, // Set the Mirostat target entropy, parameter tau. Default: `5.0`
-  mirostat_eta: 0.1, // Set the Mirostat learning rate, parameter eta.  Default: `0.1`
-  seed: -1,
-  n_probs: 0, // If greater than 0, the response also contains the probabilities of top N tokens for each generated token given the sampling settings.
-  stop: ['</s>'],
-  // emit_partial_completion: true, // This is not used in the current version of llama.rn
+  // cactus-react-native 1.13.1 CompletionParams (llama.cpp style)
+  temperature: 0.7,
+  top_k: 40,
+  top_p: 0.95,
+  n_predict: 1024,
+  stop: [""],
+  // forceTools, telemetryEnabled, includeStopSequences, useVad, enableThinking
+  // are not in the native CompletionParams type
 };
+
+// Keys present in version-0/1 (llama.cpp-style) settings that have no equivalent
+// in cactus-react-native 1.13.1's CompletionParams and are dropped on migration.
+const V1_KEYS_WITHOUT_SDK_EQUIVALENT = [
+  "prompt",
+  "min_p",
+  "xtc_threshold",
+  "xtc_probability",
+  "typical_p",
+  "penalty_last_n",
+  "penalty_repeat",
+  "penalty_freq",
+  "penalty_present",
+  "mirostat",
+  "mirostat_tau",
+  "mirostat_eta",
+  "seed",
+  "n_probs",
+  "chat_template",
+  "jinja",
+  "tool_choice",
+];
 
 /**
  * Migrates completion settings to the latest version
@@ -54,7 +63,7 @@ export const defaultCompletionParams: CompletionParams = {
  */
 export function migrateCompletionSettings(settings: any): any {
   // Clone the settings to avoid modifying the original
-  const migratedSettings = {...settings};
+  const migratedSettings = { ...settings };
 
   // If no version is specified, assume it's the initial version (0)
   if (migratedSettings.version === undefined) {
@@ -69,12 +78,31 @@ export function migrateCompletionSettings(settings: any): any {
     migratedSettings.version = 1;
   }
 
-  // Add future migrations here as needed
-  // if (migratedSettings.version < 2) {
-  //   // Migration to version 2
-  //   migratedSettings.new_field = defaultCompletionParams.new_field;
-  //   migratedSettings.version = 2;
-  // }
+  if (migratedSettings.version < 2) {
+    // Migration to version 2: rename llama.cpp-style fields to the
+    // cactus-react-native 1.13.1 CompletionParams field names, and
+    // drop sampling knobs that no longer exist in the SDK.
+    if ("n_predict" in migratedSettings) {
+      migratedSettings.n_predict = migratedSettings.n_predict;
+      delete migratedSettings.maxTokens;
+    }
+    if ("top_p" in migratedSettings) {
+      migratedSettings.top_p = migratedSettings.top_p;
+      delete migratedSettings.topP;
+    }
+    if ("top_k" in migratedSettings) {
+      migratedSettings.top_k = migratedSettings.top_k;
+      delete migratedSettings.topK;
+    }
+    if ("stop" in migratedSettings) {
+      migratedSettings.stop = migratedSettings.stop;
+      delete migratedSettings.stopSequences;
+    }
+    for (const key of V1_KEYS_WITHOUT_SDK_EQUIVALENT) {
+      delete migratedSettings[key];
+    }
+    migratedSettings.version = 2;
+  }
 
   return migratedSettings;
 }

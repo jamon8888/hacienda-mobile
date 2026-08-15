@@ -1,12 +1,12 @@
-import { NativeModules } from 'react-native';
+import { NativeModules } from "react-native";
 const { KeepAwakeModule } = NativeModules;
 
 if (!KeepAwakeModule) {
   console.warn(
-    'KeepAwakeModule is not available. Make sure:\n' +
-    '- You rebuilt the app after adding the native modules\n' +
-    '- The native module is properly linked\n' +
-    '- You are not using Expo managed workflow',
+    "KeepAwakeModule is not available. Make sure:\n" +
+      "- You rebuilt the app after adding the native modules\n" +
+      "- The native module is properly linked\n" +
+      "- You are not using Expo managed workflow",
   );
 }
 
@@ -18,7 +18,7 @@ export const activateKeepAwake = (): void => {
   try {
     KeepAwakeModule.activate();
   } catch (error) {
-    console.error('Failed to activate keep awake:', error);
+    console.error("Failed to activate keep awake:", error);
     throw error;
   }
 };
@@ -31,7 +31,7 @@ export const deactivateKeepAwake = (): void => {
   try {
     KeepAwakeModule.deactivate();
   } catch (error) {
-    console.error('Failed to deactivate keep awake:', error);
+    console.error("Failed to deactivate keep awake:", error);
     throw error;
   }
 };

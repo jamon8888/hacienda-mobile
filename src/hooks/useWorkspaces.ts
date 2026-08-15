@@ -6,7 +6,9 @@ const eventEmitter = new NativeEventEmitter();
 export default function useWorkspaces(withThreads: boolean = false) {
   const [isLoading, setIsLoading] = useState(false);
   const [workspaces, setWorkspaces] = useState<any[]>([]);
-  const [activeWorkspaceSlug, setActiveWorkspaceSlug] = useState<string | null>(null);
+  const [activeWorkspaceSlug, setActiveWorkspaceSlug] = useState<string | null>(
+    null,
+  );
   const [activeThreadSlug, setActiveThreadSlug] = useState<string | null>(null);
 
   async function fetchWorkspaces(withThreads: boolean = false) {
@@ -16,7 +18,7 @@ export default function useWorkspaces(withThreads: boolean = false) {
       setWorkspaces(workspaces);
       return workspaces;
     } catch (error) {
-      console.error('Error fetching workspaces', error);
+      console.error("Error fetching workspaces", error);
       return [];
     } finally {
       setIsLoading(false);
@@ -25,26 +27,25 @@ export default function useWorkspaces(withThreads: boolean = false) {
 
   useEffect(() => {
     const workspaceListener = eventEmitter.addListener(
-      'workspaceChatPageInfo',
-      (event) => {
-        if (event.type === 'update') {
+      "workspaceChatPageInfo",
+      event => {
+        if (event.type === "update") {
           const { wsSlug, threadSlug } = event.details;
           // console.log("Got page update", { wsSlug, threadSlug });
           if (wsSlug) setActiveWorkspaceSlug(wsSlug);
           if (threadSlug) setActiveThreadSlug(threadSlug);
         }
-      }
+      },
     );
 
-    const reloadListener = eventEmitter.addListener(
-      'reloadWorkspaces',
-      () => fetchWorkspaces(withThreads)
+    const reloadListener = eventEmitter.addListener("reloadWorkspaces", () =>
+      fetchWorkspaces(withThreads),
     );
 
     // Emit initial state if we have workspaces
     if (workspaces.length > 0) {
-      eventEmitter.emit('workspaceChatPageInfo', {
-        type: 'update',
+      eventEmitter.emit("workspaceChatPageInfo", {
+        type: "update",
         details: {
           wsSlug: workspaces[0].slug,
           threadSlug: workspaces[0].threads?.[0]?.slug || null,
@@ -61,54 +62,84 @@ export default function useWorkspaces(withThreads: boolean = false) {
   // Listen for workspace updates
   useEffect(() => {
     const workspaceListener = eventEmitter.addListener(
-      'workspaceUpdate',
-      (event) => {
-        if (event.type === 'add-thread') {
+      "workspaceUpdate",
+      event => {
+        if (event.type === "add-thread") {
           const { workspaceSlug, thread } = event.details;
-          setWorkspaces(prev => prev.map(ws => ws.slug === workspaceSlug ? { ...ws, threads: [...(ws?.threads || []), thread] } : ws));
+          setWorkspaces(prev =>
+            prev.map(ws =>
+              ws.slug === workspaceSlug
+                ? { ...ws, threads: [...(ws?.threads || []), thread] }
+                : ws,
+            ),
+          );
           if (workspaceSlug) setActiveWorkspaceSlug(workspaceSlug);
           if (thread.slug) setActiveThreadSlug(thread.slug);
-          eventEmitter.emit('workspaceChatPageInfo', { type: 'update', details: { wsSlug: workspaceSlug, threadSlug: thread.slug } });
+          eventEmitter.emit("workspaceChatPageInfo", {
+            type: "update",
+            details: { wsSlug: workspaceSlug, threadSlug: thread.slug },
+          });
           return;
         }
 
-        if (event.type === 'remove-thread') {
+        if (event.type === "remove-thread") {
           const { workspaceSlug, threadSlug } = event.details;
-          setWorkspaces(prev => prev.map(ws =>
-            ws.slug === workspaceSlug ? { ...ws, threads: ws.threads.filter(t => t.slug !== threadSlug) } : ws
-          ));
+          setWorkspaces(prev =>
+            prev.map(ws =>
+              ws.slug === workspaceSlug
+                ? {
+                    ...ws,
+                    threads: ws.threads.filter(t => t.slug !== threadSlug),
+                  }
+                : ws,
+            ),
+          );
           return;
         }
 
-        if (event.type === 'rename-thread') {
+        if (event.type === "rename-thread") {
           const { workspaceSlug, threadSlug, newName } = event.details;
-          setWorkspaces(prev => prev.map(ws =>
-            ws.slug === workspaceSlug ? { ...ws, threads: ws.threads.map(t => t.slug === threadSlug ? { ...t, name: newName } : t) } : ws
-          ));
+          setWorkspaces(prev =>
+            prev.map(ws =>
+              ws.slug === workspaceSlug
+                ? {
+                    ...ws,
+                    threads: ws.threads.map(t =>
+                      t.slug === threadSlug ? { ...t, name: newName } : t,
+                    ),
+                  }
+                : ws,
+            ),
+          );
           return;
         }
 
-        if (event.type === 'remove-workspace') {
+        if (event.type === "remove-workspace") {
           const { workspaceSlug } = event.details;
           setWorkspaces(prev => prev.filter(ws => ws.slug !== workspaceSlug));
-          fetchWorkspaces(true)
-            .then((workspaces) => {
-              if (workspaces.length === 0) return console.log('no workspaces left - nowhere to go!');
-              eventEmitter.emit('workspaceChatPageInfo', { type: 'update', details: { wsSlug: workspaces[0].slug } });
+          fetchWorkspaces(true).then(workspaces => {
+            if (workspaces.length === 0)
+              return console.log("no workspaces left - nowhere to go!");
+            eventEmitter.emit("workspaceChatPageInfo", {
+              type: "update",
+              details: { wsSlug: workspaces[0].slug },
             });
+          });
           return;
         }
 
-        if (event.type === 'add-workspace') {
+        if (event.type === "add-workspace") {
           const { name, slug } = event.details;
           setWorkspaces(prev => [...prev, { name, slug, threads: [] }]);
-          fetchWorkspaces(true)
-            .then(() => {
-              eventEmitter.emit('workspaceChatPageInfo', { type: 'update', details: { wsSlug: slug } });
+          fetchWorkspaces(true).then(() => {
+            eventEmitter.emit("workspaceChatPageInfo", {
+              type: "update",
+              details: { wsSlug: slug },
             });
+          });
           return;
         }
-      }
+      },
     );
 
     // Cleanup listeners on unmount
@@ -121,5 +152,12 @@ export default function useWorkspaces(withThreads: boolean = false) {
     fetchWorkspaces(withThreads);
   }, []);
 
-  return { loadingWorkspaces: isLoading, workspaces, activeWorkspaceSlug, setActiveWorkspaceSlug, activeThreadSlug, fetchWorkspaces };
+  return {
+    loadingWorkspaces: isLoading,
+    workspaces,
+    activeWorkspaceSlug,
+    setActiveWorkspaceSlug,
+    activeThreadSlug,
+    fetchWorkspaces,
+  };
 }

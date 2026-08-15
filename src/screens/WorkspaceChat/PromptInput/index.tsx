@@ -32,15 +32,20 @@ import useRouteObserver from "@/hooks/useRouteObserver";
 import { useChatHandlerContext } from "@/hooks/useChatHandler/index";
 import useLlmPreference from "@/hooks/useLLMPreference";
 import { touchCurrentEmbeddingProvider } from "@/utils/Embedder";
+import TranscriptionOptionsSheet from "./Actions/TranscriptionOptionsSheet";
 
 const defaultPadding = [0, 0, 32]; // top padding for snap points
 export const snapPointsDefault = ["22%", "60%", "100%"];
 
 interface PromptInputProps {
   attachmentHandler: AttachmentInterface;
+  workspaceSlug: string;
 }
 
-export default function PromptInput({ attachmentHandler }: PromptInputProps) {
+export default function PromptInput({
+  attachmentHandler,
+  workspaceSlug,
+}: PromptInputProps) {
   const chatHandler = useChatHandlerContext();
   const { llmPreferences } = useLlmPreference();
   const insets = useSafeAreaInsets();
@@ -57,6 +62,15 @@ export default function PromptInput({ attachmentHandler }: PromptInputProps) {
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [selection, setSelection] = useState({ start: 0, end: 0 });
+
+  const handleTranscriptReady = useCallback(
+    (text: string) => {
+      const currentPrompt = chatHandler.prompt;
+      const newPrompt = currentPrompt ? `${currentPrompt} ${text}` : text;
+      chatHandler.setPrompt(newPrompt);
+    },
+    [chatHandler],
+  );
 
   const hasModelSelected = useMemo(() => {
     return !!llmPreferences?.config?.model;
@@ -215,6 +229,7 @@ export default function PromptInput({ attachmentHandler }: PromptInputProps) {
       {sheetIndex === 0 && (
         <ChatWindowAttachmentsContainer attachmentHandler={attachmentHandler} />
       )}
+      <TranscriptionOptionsSheet />
       <BottomSheetModal
         ref={bottomSheetRef}
         index={0}
@@ -261,7 +276,9 @@ export default function PromptInput({ attachmentHandler }: PromptInputProps) {
             }}
             defaultValue={chatHandler.prompt}
             onChangeText={handleTextInputChange}
-            onSelectionChange={event => setSelection(event.nativeEvent.selection)}
+            onSelectionChange={event =>
+              setSelection(event.nativeEvent.selection)
+            }
             selection={selection}
             scrollEnabled={true}
             style={{
@@ -278,6 +295,8 @@ export default function PromptInput({ attachmentHandler }: PromptInputProps) {
             sheetIndex={sheetIndex}
             attachmentHandler={attachmentHandler}
             chatHandler={chatHandler}
+            workspaceSlug={workspaceSlug}
+            onTranscriptReady={handleTranscriptReady}
           />
         </Animated.View>
       </BottomSheetModal>

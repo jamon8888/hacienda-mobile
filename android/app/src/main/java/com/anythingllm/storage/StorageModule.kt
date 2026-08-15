@@ -43,9 +43,39 @@ class StorageModule(reactContext: ReactApplicationContext) : ReactContextBaseJav
      * Get a file path from a Uri. This will get the the path for Storage Access
      * Framework Documents, as well as the _data field for the MediaStore and
      * other file-based ContentProviders.
+     *
+     * KNOWN LIMITATION: on scoped-storage devices (Android 10+), the /storage/emulated/0/...
+     * path this resolves to is a SAF/MediaStore *grant*, not a guaranteed filesystem-readable
+     * path -- java.io.File(path)/RNFS reads (see useAttachments.tsx's text fallback) and Xberg's
+     * native extraction both open it by path, which can fail for documents outside the app's
+     * legacy-storage compatibility even though the ContentResolver grant that produced this URI
+     * is still valid. This has not regressed anything that worked before (the prior code paths
+     * for this URI shape returned an unusable content:// string outright, see the "document"
+     * branch below), but it is not a complete fix either. The more correct approaches --
+     * (a) read via ContentResolver.openInputStream(uri) instead of a resolved path, or (b) copy
+     * the SAF grant into app-owned storage on import -- are a larger change across this module,
+     * XbergModule.kt, and useAttachments.tsx's fallback, deferred pending on-device verification
+     * of which document sources actually fail here.
      */
     private fun getPath(context: Context, uri: Uri): String? {
         val isKitKat = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT
+
+        // Tree URI (react-native-document-picker's pickDirectory() returns one of these, e.g.
+        // "content://.../tree/primary%3AMusic%2FMyFolder") -- isDocumentUri() below is false for
+        // these (they identify a whole subtree, not one document), so without this branch every
+        // folder import fell through to the generic ContentResolver query further down, which
+        // can't resolve a tree to anything and returns null. Only the primary external storage
+        // provider has a predictable tree-id -> real-path mapping (same "type:relativePath"
+        // shape as its document IDs); other providers (SD cards, cloud-backed roots) have no
+        // such mapping, so callers must keep treating a still-"content://" result as unresolvable.
+        if (isKitKat && isExternalStorageDocument(uri) && uri.pathSegments.contains("tree") && !uri.pathSegments.contains("document")) {
+            val treeDocId = DocumentsContract.getTreeDocumentId(uri)
+            val split = treeDocId.split(":")
+            val type = split.getOrNull(0)
+            if ("primary".equals(type, ignoreCase = true) && split.size > 1) {
+                return Environment.getExternalStorageDirectory().toString() + "/" + split[1]
+            }
+        }
 
         // DocumentProvider
         if (isKitKat && DocumentsContract.isDocumentUri(context, uri)) {
@@ -81,12 +111,14 @@ class StorageModule(reactContext: ReactApplicationContext) : ReactContextBaseJav
                 val selection = "_id=?"
                 val selectionArgs = arrayOf(split[1])
 
-                // If the type is document and the split size is greater than 1 (document ID is idx 1), return the content URI
-                if(type == "document" && split.size > 1) {
-                    Log.d(TAG, "Document ID: ${split[1]} -> ${contentUri}/${split[1]}")
-                    return "${contentUri}/${split[1]}"
-                }
-
+                // "document" (picked via Android's generic Documents root, e.g. a Music/Downloads
+                // folder browsed through the system file picker) used to short-circuit here and
+                // return "$contentUri/${split[1]}" directly -- a content:// URI, not a real
+                // filesystem path. Every caller of getRealPathFromUri (Xberg extraction,
+                // useAttachments' RNFS-based fallback read) needs an actual path, so that URI
+                // failed downstream with "File not found: content://media/external/file/...".
+                // Querying the _data column below, same as image/video/audio, returns the real
+                // /storage/emulated/0/... path instead.
                 Log.d(TAG, "Querying content URI: $contentUri")
                 Log.d(TAG, "Selection: $selection")
                 Log.d(TAG, "Selection args: ${selectionArgs.joinToString(", ")}")

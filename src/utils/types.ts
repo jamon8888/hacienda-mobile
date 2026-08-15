@@ -1,10 +1,13 @@
-import { CompletionParams } from 'cactus-react-native';
-import { TemplateConfig } from 'chat-formatter';
-import * as React from 'react';
-import { ImageURISource, TextStyle } from 'react-native';
-import { PreviewData } from '@flyerhq/react-native-link-preview';
-import { MD3Theme } from 'react-native-paper';
-import { MD3Colors, MD3Typescale } from 'react-native-paper/lib/typescript/types';
+import { CompletionParams } from "@/utils/chat/completionTypes";
+import { TemplateConfig } from "chat-formatter";
+import * as React from "react";
+import { ImageURISource, TextStyle } from "react-native";
+import { PreviewData } from "@flyerhq/react-native-link-preview";
+import { MD3Theme } from "react-native-paper";
+import {
+  MD3Colors,
+  MD3Typescale,
+} from "react-native-paper/lib/typescript/types";
 
 export interface Size {
   height: number;
@@ -155,7 +158,8 @@ export interface AnythingLLMColorways {
 }
 
 export interface Theme extends MD3Theme {
-  colors: MD3BaseColors & SemanticColors & { anythingllm: AnythingLLMColorways };
+  colors: MD3BaseColors &
+    SemanticColors & { anythingllm: AnythingLLMColorways };
   borders: ThemeBorders;
   spacing: ThemeSpacing;
   fonts: ThemeFonts;
@@ -164,10 +168,10 @@ export interface Theme extends MD3Theme {
 }
 
 export enum ModelOrigin {
-  PRESET = 'preset',
-  LOCAL = 'local',
-  ANYTHINGLLM = 'anythingllm',
-  HF = 'hf',
+  PRESET = "preset",
+  LOCAL = "local",
+  ANYTHINGLLM = "anythingllm",
+  HF = "hf",
 }
 
 export interface ModelFile {
@@ -187,11 +191,11 @@ export interface User {
   createdAt?: number;
   firstName?: string;
   id: string;
-  imageUrl?: ImageURISource['uri'];
+  imageUrl?: ImageURISource["uri"];
   lastName?: string;
   lastSeen?: number;
   metadata?: Record<string, any>;
-  role?: 'admin' | 'agent' | 'moderator' | 'user';
+  role?: "admin" | "agent" | "moderator" | "user";
   updatedAt?: number;
 }
 
@@ -202,7 +206,7 @@ export interface ChatTemplateConfig extends TemplateConfig {
 }
 
 export type ChatMessage = {
-  role: 'system' | 'assistant' | 'user';
+  role: "system" | "assistant" | "user";
   content: string;
 };
 
@@ -260,7 +264,7 @@ export interface Model {
   chatTemplateString?: string;
   imageUrl?: string;
 
-  runtime: 'CPU' | 'NPU';
+  runtime: "CPU" | "NPU";
   author: string;
   name: string;
   type?: string;
@@ -281,8 +285,8 @@ export interface Model {
   origin: ModelOrigin;
   defaultChatTemplate: ChatTemplateConfig;
   chatTemplate: ChatTemplateConfig;
-  defaultStopWords: CompletionParams['stop'];
-  stopWords: CompletionParams['stop'];
+  defaultStopWords: CompletionParams["stopSequences"];
+  stopWords: CompletionParams["stopSequences"];
   defaultCompletionSettings: CompletionParams;
   completionSettings: CompletionParams;
   hfModelFile?: ModelFile;
@@ -292,7 +296,7 @@ export interface Model {
 
 export interface NPUEnabledModel {
   id: string;
-  runtime: 'NPU';
+  runtime: "NPU";
   author: string;
   name: string;
   type?: string;
@@ -334,8 +338,8 @@ export namespace MessageType {
     id: string;
     metadata?: Record<string, any>;
     roomId?: string;
-    status?: 'delivered' | 'error' | 'seen' | 'sending' | 'sent';
-    type: 'custom' | 'file' | 'image' | 'text' | 'unsupported';
+    status?: "delivered" | "error" | "seen" | "sending" | "sent";
+    type: "custom" | "file" | "image" | "text" | "unsupported";
     updatedAt?: number;
   }
 
@@ -348,32 +352,32 @@ export namespace MessageType {
   }
 
   export interface DerivedCustom extends DerivedMessageProps, Custom {
-    type: Custom['type'];
+    type: Custom["type"];
   }
 
   export interface DerivedFile extends DerivedMessageProps, File {
-    type: File['type'];
+    type: File["type"];
   }
 
   export interface DerivedImage extends DerivedMessageProps, Image {
-    type: Image['type'];
+    type: Image["type"];
   }
 
   export interface DerivedText extends DerivedMessageProps, Text {
-    type: Text['type'];
+    type: Text["type"];
   }
 
   export interface DerivedUnsupported extends DerivedMessageProps, Unsupported {
-    type: Unsupported['type'];
+    type: Unsupported["type"];
   }
 
   export interface PartialCustom extends Base {
     metadata?: Record<string, any>;
-    type: 'custom';
+    type: "custom";
   }
 
   export interface Custom extends Base, PartialCustom {
-    type: 'custom';
+    type: "custom";
   }
 
   export interface PartialFile {
@@ -381,12 +385,12 @@ export namespace MessageType {
     mimeType?: string;
     name: string;
     size: number;
-    type: 'file';
+    type: "file";
     uri: string;
   }
 
   export interface File extends Base, PartialFile {
-    type: 'file';
+    type: "file";
   }
 
   export interface PartialImage {
@@ -394,51 +398,51 @@ export namespace MessageType {
     metadata?: Record<string, any>;
     name: string;
     size: number;
-    type: 'image';
+    type: "image";
     uri: string;
     width?: number;
   }
 
   export interface Image extends Base, PartialImage {
-    type: 'image';
+    type: "image";
   }
 
   export interface PartialText {
     metadata?: Record<string, any>;
     previewData?: PreviewData;
     text: string;
-    type: 'text';
+    type: "text";
   }
 
   export interface Text extends Base, PartialText {
-    type: 'text';
+    type: "text";
   }
 
   export interface Unsupported extends Base {
-    type: 'unsupported';
+    type: "unsupported";
   }
 
   export interface DateHeader {
     id: string;
     text: string;
-    type: 'dateHeader';
+    type: "dateHeader";
   }
 }
 
 export interface PreviewImage {
   id: string;
-  uri: ImageURISource['uri'];
+  uri: ImageURISource["uri"];
 }
 
 export enum CacheType {
-  F16 = 'f16',
-  F32 = 'f32',
-  Q8_0 = 'q8_0',
-  Q4_0 = 'q4_0',
-  Q4_1 = 'q4_1',
-  IQ4_NL = 'iq4_nl',
-  Q5_0 = 'q5_0',
-  Q5_1 = 'q5_1',
+  F16 = "f16",
+  F32 = "f32",
+  Q8_0 = "q8_0",
+  Q4_0 = "q4_0",
+  Q4_1 = "q4_1",
+  IQ4_NL = "iq4_nl",
+  Q5_0 = "q5_0",
+  Q5_1 = "q5_1",
 }
 
 export interface HuggingFaceModelsResponse {

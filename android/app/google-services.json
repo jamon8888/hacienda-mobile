@@ -1,8 +1,8 @@
 {
   "project_info": {
     "project_number": "576102610354",
-    "project_id": "anythingllm-mobile",
-    "storage_bucket": "anythingllm-mobile.firebasestorage.app"
+    "project_id": "hacienda-mobile",
+    "storage_bucket": "hacienda-mobile.firebasestorage.app"
   },
   "client": [
     {

@@ -19,42 +19,82 @@ import SettingsActionSheet from "./PromptInput/Actions/Settings";
 import ToolsActionSheet from "./PromptInput/Actions/Settings/Tools";
 import WorkspaceFilesActionSheet from "./PromptInput/Actions/Settings/Files";
 import CitationsActionSheet from "./ChatHistory/CitationsActionSheet";
+import AttachmentActionMenu from "./PromptInput/Actions/AttachmentsButton/AttachmentActionMenu";
 
 export default function WorkspaceChat() {
   useRedirect();
   const { wsSlug, threadSlug } = useChatInfoEmit();
-  const { LLMProvider, isLoading: isLoadingProvider, error, fetchLLMPreference } = useLlmPreference();
-  const { loadingWorkspaceThread, workspace, thread, error: errorWorkspaceThread } = useWorkspaceThread(wsSlug, threadSlug);
-  const attachmentHandler = useAttachments({ wsSlug, embeddingConfig: workspace?.embeddingConfig });
+  const {
+    LLMProvider,
+    isLoading: isLoadingProvider,
+    error,
+    fetchLLMPreference,
+  } = useLlmPreference();
+  const {
+    loadingWorkspaceThread,
+    workspace,
+    thread,
+    error: errorWorkspaceThread,
+  } = useWorkspaceThread(wsSlug, threadSlug);
+  const attachmentHandler = useAttachments({
+    wsSlug,
+    embeddingConfig: workspace?.embeddingConfig,
+  });
 
   useEffect(() => {
     fetchLLMPreference();
   }, [wsSlug, threadSlug]);
 
   if (isLoadingProvider || loadingWorkspaceThread) return <LoadingView />;
-  if (!!error) return <ErrorView title="Error loading LLM provider" error={error} />;
-  if (!!errorWorkspaceThread) return <ErrorView title="Error loading workspace thread" error={errorWorkspaceThread} />;
+  if (!!error)
+    return <ErrorView title="Error loading LLM provider" error={error} />;
+  if (!!errorWorkspaceThread)
+    return (
+      <ErrorView
+        title="Error loading workspace thread"
+        error={errorWorkspaceThread}
+      />
+    );
   return (
-    <SafeView scrollable={false} safeAreaClassNames="pt-[21px]" containerClassNames="flex-1 flex flex-col" applyGradient safeAreaStyle={{ backgroundColor: '#000' }}>
+    <SafeView
+      scrollable={false}
+      safeAreaClassNames="pt-[21px]"
+      containerClassNames="flex-1 flex flex-col"
+      applyGradient
+      safeAreaStyle={{ backgroundColor: "#000" }}>
       <TopBar workspace={workspace} thread={thread} />
 
       {/* Chat Handler Wrapper manage updates to the chat history and prompt input easily*/}
-      <ChatHandlerWrapper workspace={workspace} thread={thread} llmProvider={LLMProvider!}>
+      <ChatHandlerWrapper
+        workspace={workspace}
+        thread={thread}
+        llmProvider={LLMProvider!}>
         <ChatHistory />
-        <PromptInput attachmentHandler={attachmentHandler} />
+        <PromptInput
+          attachmentHandler={attachmentHandler}
+          workspaceSlug={wsSlug}
+        />
       </ChatHandlerWrapper>
 
       <SettingsActionSheet workspace={workspace} thread={thread} />
       <ToolsActionSheet />
       <WorkspaceFilesActionSheet workspace={workspace} />
       <CitationsActionSheet />
-    </SafeView >
+      <AttachmentActionMenu
+        attachmentHandler={attachmentHandler}
+        workspaceSlug={wsSlug}
+      />
+    </SafeView>
   );
 }
 
 function LoadingView() {
   return (
-    <SafeView scrollable={false} safeAreaClassNames="pt-[21px]" applyGradient safeAreaStyle={{ backgroundColor: '#000' }}>
+    <SafeView
+      scrollable={false}
+      safeAreaClassNames="pt-[21px]"
+      applyGradient
+      safeAreaStyle={{ backgroundColor: "#000" }}>
       <TopBar />
       <View className="flex h-[80vh] justify-center items-center">
         <ActivityIndicator size="large" color="#fff" />
@@ -63,13 +103,19 @@ function LoadingView() {
   );
 }
 
-function ErrorView({ title, error }: { title: string, error: any }) {
+function ErrorView({ title, error }: { title: string; error: any }) {
   return (
-    <SafeView scrollable={false} safeAreaClassNames="pt-[21px]" applyGradient safeAreaStyle={{ backgroundColor: '#000' }}>
+    <SafeView
+      scrollable={false}
+      safeAreaClassNames="pt-[21px]"
+      applyGradient
+      safeAreaStyle={{ backgroundColor: "#000" }}>
       <TopBar />
       <View className="flex h-[80vh] justify-center items-center">
         <Text className="text-red-500">{title}</Text>
-        <Text className="text-red-500">{error?.message || 'Unknown error'}</Text>
+        <Text className="text-red-500">
+          {error?.message || "Unknown error"}
+        </Text>
       </View>
     </SafeView>
   );

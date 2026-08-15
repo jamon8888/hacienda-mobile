@@ -1,4 +1,4 @@
-# Agents Reference — AnythingLLM Mobile
+# Agents Reference — Hacienda Mobile
 
 > **Rule**: Use `basemind` for code intelligence BEFORE grep/read/git. It's the default, not a preference.
 
@@ -24,24 +24,25 @@ opencode --agent ui                  # React Native UI
 
 ## Agent Registry (12 Agents)
 
-| Agent | Specialty | Key Context Files |
-|-------|-----------|-------------------|
+| Agent                | Specialty                   | Key Context Files                                    |
+| -------------------- | --------------------------- | ---------------------------------------------------- |
 | **cactus-inference** | llama.cpp/GGUF optimization | ModelStore, CactusLmWrapper, GenieWrapper, NPU/Metal |
-| **embedding** | Multilingual embeddings | E5-small/base, CamemBERT, Nomic v2 MoE, Matryoshka |
-| **vectordb** | ObjectBox/HNSW search | runSemanticSearch, bulkInsert, workspace isolation |
-| **tools-manager** | Agentic tool calling | webSearch, calendar, summarization, recursive loop |
-| **watermelondb** | Schema/migrations | Workspace, Thread, Chat, Document, embeddingConfig |
-| **mobx** | State management | ModelStore, UIStore, persistence, AppState |
-| **react-native** | Navigation/gestures/native | Reanimated, GestureHandler, KeyboardController |
-| **nativewind** | Tailwind/MD3 theming | Dark mode, SafeView, TopBar, ChatHistory |
-| **typescript** | Type safety | Strict mode, NativeEventEmitter, decorators |
-| **database** | WatermelonDB queries | Reactive queries, associations, migrations |
-| **ui** | React Native UI | Paper, Phosphor, navigation, screens |
-| **default** | Generalist | Full codebase knowledge |
+| **embedding**        | Multilingual embeddings     | E5-small/base, CamemBERT, Nomic v2 MoE, Matryoshka   |
+| **vectordb**         | ObjectBox/HNSW search       | runSemanticSearch, bulkInsert, workspace isolation   |
+| **tools-manager**    | Agentic tool calling        | webSearch, calendar, summarization, recursive loop   |
+| **watermelondb**     | Schema/migrations           | Workspace, Thread, Chat, Document, embeddingConfig   |
+| **mobx**             | State management            | ModelStore, UIStore, persistence, AppState           |
+| **react-native**     | Navigation/gestures/native  | Reanimated, GestureHandler, KeyboardController       |
+| **nativewind**       | Tailwind/MD3 theming        | Dark mode, SafeView, TopBar, ChatHistory             |
+| **typescript**       | Type safety                 | Strict mode, NativeEventEmitter, decorators          |
+| **database**         | WatermelonDB queries        | Reactive queries, associations, migrations           |
+| **ui**               | React Native UI             | Paper, Phosphor, navigation, screens                 |
+| **default**          | Generalist                  | Full codebase knowledge                              |
 
 ## Basemind Code Intelligence (Mandatory)
 
 ### Before Any Code Task
+
 ```bash
 # 1. Search symbols (not grep)
 basemind query search "CactusLmWrapper"
@@ -65,15 +66,17 @@ basemind git blame-symbol "MultilingualEmbedderProvider"
 ```
 
 ### Symbol Operations
-| Operation | Command | Use Case |
-|-----------|---------|----------|
-| Search | `basemind query search "EmbeddingProvider"` | Find all embeddings |
-| References | `basemind query references "getEmbeddingProvider"` | Who calls this? |
-| Callers | `basemind query callers "src/utils/Embedder/factory.ts:getEmbeddingProvider"` | Direct callers |
-| Goto Definition | `basemind query goto-definition src/hooks/useAttachments.tsx:52` | Jump to def |
-| Implementations | `basemind query implementations "EmbeddingProvider"` | All implementers |
+
+| Operation       | Command                                                                       | Use Case            |
+| --------------- | ----------------------------------------------------------------------------- | ------------------- |
+| Search          | `basemind query search "EmbeddingProvider"`                                   | Find all embeddings |
+| References      | `basemind query references "getEmbeddingProvider"`                            | Who calls this?     |
+| Callers         | `basemind query callers "src/utils/Embedder/factory.ts:getEmbeddingProvider"` | Direct callers      |
+| Goto Definition | `basemind query goto-definition src/hooks/useAttachments.tsx:52`              | Jump to def         |
+| Implementations | `basemind query implementations "EmbeddingProvider"`                          | All implementers    |
 
 ### Code Search
+
 ```bash
 # Semantic search (needs --features code-search)
 basemind query search-code "multilingual embedding model"
@@ -86,6 +89,7 @@ basemind query search-code "cactus inference optimization"
 ```
 
 ### File Discovery
+
 ```bash
 # List indexed files
 basemind query list-files --filter "src/utils/Embedder/**"
@@ -98,6 +102,7 @@ basemind query dependents "src/utils/Embedder/types.ts"
 ```
 
 ### Git Intelligence
+
 ```bash
 # Hot files (churn)
 basemind git hot-files
@@ -116,6 +121,7 @@ basemind git symbol-history "getEmbeddingProvider"
 ```
 
 ### Real-time
+
 ```bash
 # Watch mode (run in background)
 basemind watch &
@@ -127,12 +133,14 @@ basemind serve
 ## Safety Workflow
 
 ### Before Making Changes
+
 1. **Map the territory** - `basemind query search "symbol"` + `references`
 2. **Understand impact** - `basemind query call-graph "function"` + `architecture-map`
 3. **Check history** - `basemind git commits-touching "file"` + `hot-files`
-3. **Verify types** - Run `yarn typecheck` after changes
+4. **Verify types** - Run `yarn typecheck` after changes
 
 ### Common Patterns
+
 ```bash
 # Adding new embedding model
 basemind query search "MULTILINGUAL_EMBEDDING_MODELS"
@@ -206,22 +214,26 @@ cd ios && pod install && cd .. && npx react-native run-ios
 ## Key Code Areas
 
 ### Embedding System (NEW)
+
 - **Models**: `src/utils/models/defaults.ts` - 4 multilingual + 1 English-only
 - **Providers**: `src/utils/Embedder/` - Factory, OnDevice, Multilingual
 - **Integration**: `useAttachments`, `baseOpenAILikeProvider.getContextTexts`
 - **Workspace Config**: `embeddingConfig` on Workspace model
 
 ### Database
+
 - **Models**: Workspace, WorkspaceThread, WorkspaceChat, Document
 - **VectorDB**: ObjectBox wrapper for semantic search
 - **Migrations**: Version tracking for model list
 
 ### UI
+
 - **Screens**: WorkspaceChat, WorkspaceSettings (with Embedding), Onboarding
 - **Components**: SafeView, TopBar, WorkspaceDrawer
 - **Styling**: NativeWind className, dark mode first
 
 ### State
+
 - **ModelStore**: Llama.cpp contexts, downloads, NPU/Metal
 - **UIStore**: Global UI, toasts, persistence, events
 

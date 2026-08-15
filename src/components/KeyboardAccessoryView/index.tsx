@@ -1,4 +1,4 @@
-import * as React from 'react';
+import * as React from "react";
 import {
   Animated,
   GestureResponderHandlers,
@@ -6,14 +6,14 @@ import {
   StyleSheet,
   View,
   ViewStyle,
-} from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
   useComponentSize,
   useKeyboardDimensions,
   usePanResponder,
-} from './hooks';
+} from "./hooks";
 
 interface Props {
   children?: React.ReactNode;
@@ -41,12 +41,12 @@ export const KeyboardAccessoryView = React.memo(
     style,
     useListenersOnAndroid,
   }: Props) => {
-    const {onLayout, size} = useComponentSize();
-    const {keyboardEndPositionY, keyboardHeight} = useKeyboardDimensions(
+    const { onLayout, size } = useComponentSize();
+    const { keyboardEndPositionY, keyboardHeight } = useKeyboardDimensions(
       useListenersOnAndroid,
     );
-    const {panHandlers, positionY} = usePanResponder();
-    const {bottom, left, right} = useSafeAreaInsets();
+    const { panHandlers, positionY } = usePanResponder();
+    const { bottom, left, right } = useSafeAreaInsets();
 
     const deltaY = Animated.subtract(
       positionY,
@@ -54,7 +54,7 @@ export const KeyboardAccessoryView = React.memo(
     ).interpolate({
       inputRange: [0, Number.MAX_SAFE_INTEGER],
       outputRange: [0, Number.MAX_SAFE_INTEGER],
-      extrapolate: 'clamp',
+      extrapolate: "clamp",
     });
 
     const offset =
@@ -114,7 +114,7 @@ export const KeyboardAccessoryView = React.memo(
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
   },
