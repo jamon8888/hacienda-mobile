@@ -347,16 +347,29 @@ export function useVoicePipeline(config: VoicePipelineConfig = {}) {
     };
   }, []);
 
+  const initialize = useCallback(
+    (...args: Parameters<VoicePipelineProvider['initialize']>) => provider.initialize(...args),
+    [provider]
+  );
+  const startListening = useCallback(
+    (...args: Parameters<VoicePipelineProvider['startListening']>) => provider.startListening(...args),
+    [provider]
+  );
+  const stopListening = useCallback(
+    (...args: Parameters<VoicePipelineProvider['stopListening']>) => provider.stopListening(...args),
+    [provider]
+  );
+
   return {
     provider,
     state,
     lastResponse,
     currentTranscript,
     error,
-    initialize: provider.initialize.bind(provider),
-    startListening: provider.startListening.bind(provider),
-    stopListening: provider.stopListening.bind(provider),
+    initialize,
+    startListening,
+    stopListening,
   };
 }
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';

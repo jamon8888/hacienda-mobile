@@ -168,7 +168,18 @@ export function useVoiceAudioStream(config: VoiceAudioConfig = {}) {
       unsubStop();
       newStream.stop().catch(console.error);
     };
-  }, [config]);
+    // Depend on primitive config fields rather than the `config` object reference --
+    // callers commonly pass an inline object literal, which is a new reference on
+    // every render and would otherwise tear down/rebuild the native stream every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    config.sampleRate,
+    config.channels,
+    config.vadThreshold,
+    config.minSpeechDurationMs,
+    config.maxSpeechDurationMs,
+    config.silenceDurationMs,
+  ]);
 
   const start = useCallback(async () => {
     if (streamRef.current) {

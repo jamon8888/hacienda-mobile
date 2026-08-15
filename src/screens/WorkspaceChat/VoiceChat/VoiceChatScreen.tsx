@@ -58,14 +58,12 @@ export default function VoiceChatScreen() {
   // Update waveform based on volume
   useEffect(() => {
     if (isRecording) {
-      const newData = [...waveformData.slice(1), volume * 50 + Math.random() * 10];
-      setWaveformData(newData);
+      setWaveformData(prev => [...prev.slice(1), volume * 50 + Math.random() * 10]);
     } else {
       // Smooth decay to zero
-      const newData = waveformData.map(v => v * 0.9);
-      setWaveformData(newData);
+      setWaveformData(prev => prev.map(v => v * 0.9));
     }
-  }, [volume, isRecording, waveformData]);
+  }, [volume, isRecording]);
 
   // Pulse animation when recording
   useEffect(() => {
