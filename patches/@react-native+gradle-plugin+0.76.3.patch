@@ -1,0 +1,44 @@
+diff --git a/node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml b/node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml
+index 05a07e8..8d8becb 100644
+--- a/node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml
++++ b/node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml
+@@ -4,7 +4,7 @@ gson = "2.8.9"
+ guava = "31.0.1-jre"
+ javapoet = "1.13.0"
+ junit = "4.13.2"
+-kotlin = "1.9.24"
++kotlin = "2.2.20"
+ assertj = "3.25.1"
+ 
+ [libraries]
+diff --git a/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build.gradle.kts b/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build.gradle.kts
+index 6669e9e..b97c424 100644
+--- a/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build.gradle.kts
++++ b/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build.gradle.kts
+@@ -6,6 +6,8 @@
+  */
+ 
+ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
++import org.jetbrains.kotlin.gradle.dsl.JvmTarget
++import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
+ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+ 
+ plugins {
+@@ -60,12 +62,12 @@ java { targetCompatibility = JavaVersion.VERSION_11 }
+ kotlin { jvmToolchain(17) }
+ 
+ tasks.withType<KotlinCompile>().configureEach {
+-  kotlinOptions {
+-    apiVersion = "1.6"
++  compilerOptions {
++    apiVersion.set(KotlinVersion.KOTLIN_2_0)
+     // See comment above on JDK 11 support
+-    jvmTarget = "11"
+-    allWarningsAsErrors =
+-        project.properties["enableWarningsAsErrors"]?.toString()?.toBoolean() ?: false
++    jvmTarget.set(JvmTarget.JVM_11)
++    allWarningsAsErrors.set(
++        project.properties["enableWarningsAsErrors"]?.toString()?.toBoolean() ?: false)
+   }
+ }
+ 
