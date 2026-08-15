@@ -9,7 +9,7 @@ import { formatChatHistory } from "@/utils/chat/helpers";
 import { StreamMetrics } from "@/utils/chat/LLMPerformanceMonitor";
 import { MonitoredStream } from "@/utils/chat/LLMPerformanceMonitor";
 import LLMPerformanceMonitor from "@/utils/chat/LLMPerformanceMonitor";
-import getEmbedder, {
+import {
   getEmbeddingProvider,
   MultilingualEmbeddingModelId,
 } from "@/utils/Embedder";
@@ -17,6 +17,7 @@ import OpenAILite from "@/utils/openai";
 import VectorDB, { SemanticSearchResult } from "@/utils/VectorDB";
 import { type IAgentAction } from "@/database/models/WorkspaceChat";
 import ToolsManager from "@/utils/ToolsManager";
+import needleStore, { NEEDLE_ROUTER_ENABLED } from "@/store/NeedleStore";
 
 interface BaseLLMProviderConfig {
   provider: string;
@@ -326,10 +327,47 @@ export default abstract class BaseOpenAILikeProvider {
       if ((await VectorDB.getWorkspaceVectorCount(this.workspace.slug)) === 0)
         throw new SilentError("No vectors in vector store");
 
+      let semanticTopN = this.SEMANTIC_SEARCH_CANDIDATE_TOP_N;
+      let queryForEmbed = userPrompt;
+
+      // Optional Needle RAG router: decides whether to skip retrieval, run
+      // it as-is, or expand the query. Failures always fall back to normal
+      // retrieval so we never block the chat pipeline. Disabled by default
+      // until P0 on-device bundle verification passes.
+      if (NEEDLE_ROUTER_ENABLED) {
+        // Kick off the (possibly first-ever, download-then-load) init in the background
+        // rather than awaiting it here -- awaiting would block this request on a full
+        // model download/load instead of the router's own 500ms budget. If it's not
+        // ready yet, routeRag() below falls through to normal retrieval this turn, and
+        // a later request benefits once init finishes.
+        if (!needleStore.ready && !needleStore.busy) {
+          needleStore.init().catch(() => {});
+        }
+        const route = await needleStore.routeRag(userPrompt, {
+          maxTopK: this.SEMANTIC_SEARCH_CANDIDATE_TOP_N,
+        });
+        if (route.type === "skip") {
+          this.log("Needle RAG router: skip retrieval");
+          return [];
+        }
+        if (route.type === "expand" || route.type === "retrieve") {
+          semanticTopN = route.topK;
+          if (route.type === "expand") {
+            this.log("Needle RAG router: expanding query ->", route.query);
+            queryForEmbed = route.query;
+          }
+        }
+      }
+
       const embeddingConfig = this.workspace.embeddingConfig;
+      // Keyed on the effective query and top-N actually searched with (not the raw
+      // userPrompt) -- otherwise a fallback route cached under the prompt's key can be
+      // served back to a later expand/retrieve route for the same prompt, skipping the
+      // routed search entirely.
       const cacheKey = this.queryCacheKey(
-        userPrompt,
+        queryForEmbed,
         embeddingConfig?.dimensions,
+        semanticTopN,
       );
       const cached = this.queryCache.get(cacheKey);
       if (cached) {
@@ -343,14 +381,14 @@ export default abstract class BaseOpenAILikeProvider {
           )
         : getEmbeddingProvider();
       const queryVector = await embedder.embed(
-        userPrompt,
+        queryForEmbed,
         "query",
         embeddingConfig?.dimensions,
       );
       const results = await VectorDB.runSemanticSearch(
         this.workspace.slug,
         queryVector,
-        this.SEMANTIC_SEARCH_CANDIDATE_TOP_N,
+        semanticTopN,
       )
         .then(results => this.filterSemanticSearchResults(results))
         .then(results => this.applyTokenBudget(results));
@@ -361,7 +399,7 @@ export default abstract class BaseOpenAILikeProvider {
         `\nGot ${results.length} contexts:`,
         JSON.stringify(
           {
-            topN: this.SEMANTIC_SEARCH_CANDIDATE_TOP_N,
+            topN: semanticTopN,
             minRelevanceScore: this.minRelevanceScore,
             dimensions: queryVector.length,
             query: `${userPrompt.slice(0, 50)}...`,
@@ -379,9 +417,13 @@ export default abstract class BaseOpenAILikeProvider {
     }
   }
 
-  private queryCacheKey(userPrompt: string, dimensions?: number): string {
-    const normalized = userPrompt.trim().replace(/\s+/g, " ").toLowerCase();
-    return `${this.workspace?.slug || ""}:${dimensions ?? 0}:${normalized}`;
+  private queryCacheKey(
+    query: string,
+    dimensions?: number,
+    topN?: number,
+  ): string {
+    const normalized = query.trim().replace(/\s+/g, " ").toLowerCase();
+    return `${this.workspace?.slug || ""}:${dimensions ?? 0}:${topN ?? 0}:${normalized}`;
   }
 
   private queryCacheSet(key: string, results: SemanticSearchResult[]) {

@@ -11,6 +11,7 @@ import {
 } from "@/utils/chat/completionTypes";
 import { ICompleteResponse } from "@/utils/AiProviders/baseOpenAILikeProvider";
 import type OnDeviceProvider from "@/utils/AiProviders/onDevice/index";
+import needleStore, { NEEDLE_ROUTER_ENABLED } from "@/store/NeedleStore";
 
 export type NativeLlamaChatMessage = {
   role: "user" | "assistant" | "system";
@@ -222,7 +223,32 @@ export default class CactusLmWrapper {
         `CactusLmWrapper::streamGetChatCompletion: Model not initialized`,
       );
 
-    const cactusTools = this.toCactusTools(availableTools ?? []);
+    let cactusTools = this.toCactusTools(availableTools ?? []);
+
+    // Rank long tool lists with the on-device Needle router when available.
+    // If ranking fails or Needle is not ready, we keep the original list. Init is
+    // kicked off in the background rather than awaited, so a cold Needle (still
+    // downloading/loading its bundle) never blocks this completion -- see the
+    // matching comment in baseOpenAILikeProvider.getContextTexts.
+    if (NEEDLE_ROUTER_ENABLED && cactusTools.length > 5) {
+      if (!needleStore.ready && !needleStore.busy) {
+        needleStore.init().catch(() => {});
+      }
+      const lastUserMessage = messages
+        .slice()
+        .reverse()
+        .find(m => m.role === "user");
+      if (lastUserMessage && needleStore.ready) {
+        this.log(`Needle ranking ${cactusTools.length} tools`);
+        cactusTools = await needleStore.selectTools(
+          lastUserMessage.content,
+          cactusTools,
+          5,
+        );
+        this.log(`Needle selected ${cactusTools.length} tools`);
+      }
+    }
+
     const apiParams = toApiCompletionParams(
       this.defaultRuntimeConfig as CompletionParams,
     );
