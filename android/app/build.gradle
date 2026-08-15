@@ -3,7 +3,7 @@ import java.nio.file.Paths
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
-apply plugin: "kotlin-kapt"
+apply plugin: "com.google.devtools.ksp"
 apply plugin: "io.objectbox"
 apply plugin: 'com.google.gms.google-services'
 
@@ -52,7 +52,7 @@ android {
     namespace "com.anythingllm"
     defaultConfig {
         applicationId "com.anythingllm"
-        minSdkVersion 24
+        minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 83
         versionName "1.0.8"
@@ -185,8 +185,8 @@ dependencies {
     
     // for download manager
     implementation "androidx.work:work-runtime-ktx:2.9.0"
-    def room_version = "2.6.1"
-    kapt "androidx.room:room-compiler:$room_version"
+    def room_version = "2.7.1"
+    ksp "androidx.room:room-compiler:$room_version"
     implementation "androidx.room:room-runtime:$room_version"
     implementation "androidx.room:room-ktx:$room_version"
     implementation "com.squareup.okhttp3:okhttp:4.12.0"
