@@ -1,10 +1,13 @@
 package com.anythingllm.voice;
 
+import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
+import android.speech.tts.Voice;
 import android.util.Log;
 
 import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -14,13 +17,13 @@ import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Set;
 
-public class TextToSpeechModule extends ReactContextBaseJavaModule implements TextToSpeech.OnInitListener {
+public class TextToSpeechModule extends ReactContextBaseJavaModule
+        implements TextToSpeech.OnInitListener, LifecycleEventListener {
     private static final String TAG = "TextToSpeechModule";
-    
+
     private TextToSpeech tts;
     private Promise currentPromise;
     private boolean isInitialized = false;
@@ -28,12 +31,15 @@ public class TextToSpeechModule extends ReactContextBaseJavaModule implements Te
 
     public TextToSpeechModule(ReactApplicationContext reactContext) {
         super(reactContext);
+        reactContext.addLifecycleEventListener(this);
         tts = new TextToSpeech(reactContext, this);
         tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
             @Override
             public void onStart(String utteranceId) {
                 currentUtteranceId = utteranceId;
-                emitEvent("onTTSStart", Arguments.createMap().putString("utteranceId", utteranceId));
+                WritableMap params = Arguments.createMap();
+                params.putString("utteranceId", utteranceId);
+                emitEvent("onTTSStart", params);
             }
 
             @Override
@@ -42,18 +48,20 @@ public class TextToSpeechModule extends ReactContextBaseJavaModule implements Te
                     currentPromise.resolve(true);
                     currentPromise = null;
                 }
-                emitEvent("onTTSFinish", Arguments.createMap().putString("utteranceId", utteranceId));
+                WritableMap params = Arguments.createMap();
+                params.putString("utteranceId", utteranceId);
+                emitEvent("onTTSFinish", params);
             }
 
             @Override
-            public void onError(String utteranceId, int error) {
+            public void onError(String utteranceId) {
                 if (currentPromise != null) {
-                    currentPromise.reject("TTS_ERROR", "TTS error: " + error);
+                    currentPromise.reject("TTS_ERROR", "TTS error");
                     currentPromise = null;
                 }
-                emitEvent("onTTSError", Arguments.createMap()
-                    .putString("utteranceId", utteranceId)
-                    .putInt("error", error));
+                WritableMap params = Arguments.createMap();
+                params.putString("utteranceId", utteranceId);
+                emitEvent("onTTSError", params);
             }
         });
     }
@@ -74,7 +82,7 @@ public class TextToSpeechModule extends ReactContextBaseJavaModule implements Te
             promise.reject("TTS_NOT_READY", "TTS not initialized");
             return;
         }
-        
+
         if (text == null || text.isEmpty()) {
             promise.reject("EMPTY_TEXT", "Text cannot be empty");
             return;
@@ -82,21 +90,17 @@ public class TextToSpeechModule extends ReactContextBaseJavaModule implements Te
 
         // Stop any current speech
         tts.stop();
-        
+
         currentPromise = promise;
         currentUtteranceId = "tts_" + System.currentTimeMillis();
-        
-        HashMap<String, String> params = new HashMap<>();
-        params.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, currentUtteranceId);
-        
+
         float rate = options.hasKey("rate") ? (float) options.getDouble("rate") : 1.0f;
         float pitch = options.hasKey("pitch") ? (float) options.getDouble("pitch") : 1.0f;
         float volume = options.hasKey("volume") ? (float) options.getDouble("volume") : 1.0f;
-        
+
         tts.setSpeechRate(rate);
         tts.setPitch(pitch);
-        tts.setVolume(volume);
-        
+
         String language = options.hasKey("language") ? options.getString("language") : "en-US";
         String[] langParts = language.split("-");
         Locale locale;
@@ -105,21 +109,27 @@ public class TextToSpeechModule extends ReactContextBaseJavaModule implements Te
         } else {
             locale = new Locale(language);
         }
-        
+
         String voice = options.hasKey("voice") ? options.getString("voice") : null;
         if (voice != null) {
             // Try to set specific voice
-            Set<TextToSpeech.Voice> voices = tts.getVoices();
-            for (TextToSpeech.Voice v : voices) {
-                if (v.getName().equals(voice)) {
-                    tts.setVoice(v);
-                    break;
+            Set<Voice> voices = tts.getVoices();
+            if (voices != null) {
+                for (Voice v : voices) {
+                    if (v.getName().equals(voice)) {
+                        tts.setVoice(v);
+                        break;
+                    }
                 }
             }
         }
-        
+
         tts.setLanguage(locale);
-        
+
+        Bundle params = new Bundle();
+        params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, currentUtteranceId);
+        params.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, volume);
+
         int result = tts.speak(text, TextToSpeech.QUEUE_FLUSH, params, currentUtteranceId);
         if (result != TextToSpeech.SUCCESS) {
             promise.reject("TTS_SPEAK_ERROR", "Failed to speak: " + result);
@@ -150,19 +160,21 @@ public class TextToSpeechModule extends ReactContextBaseJavaModule implements Te
             promise.reject("TTS_NOT_READY", "TTS not initialized");
             return;
         }
-        
-        Set<TextToSpeech.Voice> voices = tts.getVoices();
+
+        Set<Voice> voices = tts.getVoices();
         WritableArray result = Arguments.createArray();
-        
-        for (TextToSpeech.Voice voice : voices) {
-            WritableMap voiceMap = Arguments.createMap();
-            voiceMap.putString("identifier", voice.getName());
-            voiceMap.putString("name", voice.getName());
-            voiceMap.putString("language", voice.getLocale().toString());
-            voiceMap.putInt("quality", voice.getQuality());
-            result.pushMap(voiceMap);
+
+        if (voices != null) {
+            for (Voice voice : voices) {
+                WritableMap voiceMap = Arguments.createMap();
+                voiceMap.putString("identifier", voice.getName());
+                voiceMap.putString("name", voice.getName());
+                voiceMap.putString("language", voice.getLocale().toString());
+                voiceMap.putInt("quality", voice.getQuality());
+                result.pushMap(voiceMap);
+            }
         }
-        
+
         promise.resolve(result);
     }
 
@@ -179,8 +191,15 @@ public class TextToSpeechModule extends ReactContextBaseJavaModule implements Te
     }
 
     @Override
+    public void onHostResume() {
+    }
+
+    @Override
+    public void onHostPause() {
+    }
+
+    @Override
     public void onHostDestroy() {
-        super.onHostDestroy();
         if (tts != null) {
             tts.shutdown();
         }

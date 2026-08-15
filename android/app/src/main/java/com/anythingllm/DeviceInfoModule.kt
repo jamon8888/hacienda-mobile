@@ -5,10 +5,9 @@ import android.app.ActivityManager
 import android.content.Context
 import android.os.Build
 import android.os.Build.VERSION_CODES
-import android.neuralnetworks.NeuralNetworks
 import java.io.File
 
-class DeviceInfoModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
+class DeviceInfoModule(private val reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
 
     override fun getName(): String = "DeviceInfoModule"
 
@@ -144,14 +143,9 @@ class DeviceInfoModule(reactContext: ReactApplicationContext) : ReactContextBase
             // NPU Backend
             result.putString("npuBackend", detectNPUBackend())
             
-            // NNAPI Support
-            val hasNNAPI = if (Build.VERSION.SDK_INT >= VERSION_CODES.O_MR1) {
-                try {
-                    NeuralNetworks.getDeviceCount() > 0
-                } catch (e: Exception) {
-                    false
-                }
-            } else false
+            // NNAPI Support (no public Java API to query device count; NNAPI is
+            // available at the OS level starting with API 27)
+            val hasNNAPI = Build.VERSION.SDK_INT >= VERSION_CODES.O_MR1
             result.putBoolean("hasNNAPI", hasNNAPI)
             
             // GPU Vendor

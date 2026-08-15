@@ -6,6 +6,7 @@ import android.media.MediaRecorder;
 import android.util.Log;
 
 import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -14,15 +15,22 @@ import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
+import ai.onnxruntime.OnnxTensor;
+import ai.onnxruntime.OnnxValue;
+import ai.onnxruntime.OrtSession;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
+import java.util.Collections;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class VoiceAudioModule extends ReactContextBaseJavaModule {
+public class VoiceAudioModule extends ReactContextBaseJavaModule implements LifecycleEventListener {
     private static final String TAG = "VoiceAudioModule";
     
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -51,6 +59,7 @@ public class VoiceAudioModule extends ReactContextBaseJavaModule {
 
     public VoiceAudioModule(ReactApplicationContext reactContext) {
         super(reactContext);
+        reactContext.addLifecycleEventListener(this);
         bufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat);
         if (bufferSize == AudioRecord.ERROR || bufferSize == AudioRecord.ERROR_BAD_VALUE) {
             bufferSize = sampleRate * 2; // fallback: 1 second buffer
@@ -244,30 +253,42 @@ public class VoiceAudioModule extends ReactContextBaseJavaModule {
             
             // Create input tensor
             long[] shape = new long[]{1, 1, vadInputSize};
-            ai.onnxruntime.OrtValue inputTensor = ai.onnxruntime.OrtValue.createTensor(vadInput, shape);
-            
-            // Run inference
-            String[] inputNames = {"input"};
-            String[] outputNames = {"output"};
-            java.util.Map<String, ai.onnxruntime.OrtValue> outputs = vadSession.run(
-                new java.util.HashMap<String, ai.onnxruntime.OrtValue>() {{
-                    put("input", inputTensor);
-                }},
-                outputNames
-            );
-            
-            // Get output (speech probability)
-            ai.onnxruntime.OrtValue outputTensor = outputs.get("output");
-            if (outputTensor != null) {
-                float[] output = outputTensor.getValue();
-                if (output != null && output.length > 0) {
-                    return output[0];
+            try (OnnxTensor inputTensor = OnnxTensor.createTensor(
+                    ortEnvironment, FloatBuffer.wrap(vadInput), shape)) {
+
+                // Run inference
+                try (OrtSession.Result results =
+                        vadSession.run(Collections.singletonMap("input", inputTensor))) {
+                    Optional<OnnxValue> outputTensor = results.get("output");
+                    if (outputTensor.isPresent()) {
+                        Object output = outputTensor.get().getValue();
+                        Float prob = extractFirstFloat(output);
+                        if (prob != null) {
+                            return prob;
+                        }
+                    }
                 }
             }
         } catch (Exception e) {
             Log.e(TAG, "VAD inference error: " + e.getMessage());
         }
         return 0.5f;
+    }
+
+    // Silero VAD's output tensor shape can vary by export; handle the common cases.
+    private Float extractFirstFloat(Object output) {
+        if (output instanceof float[]) {
+            float[] arr = (float[]) output;
+            return arr.length > 0 ? arr[0] : null;
+        }
+        if (output instanceof float[][]) {
+            float[][] arr = (float[][]) output;
+            return (arr.length > 0 && arr[0].length > 0) ? arr[0][0] : null;
+        }
+        if (output instanceof Float) {
+            return (Float) output;
+        }
+        return null;
     }
 
     private float calculateVolume(short[] buffer, int length) {
@@ -297,15 +318,20 @@ public class VoiceAudioModule extends ReactContextBaseJavaModule {
         // Convert to base64 for React Native
         String base64Audio = android.util.Base64.encodeToString(audioBytes, android.util.Base64.NO_WRAP);
         
+        WritableMap params = Arguments.createMap();
+        params.putString("audioBase64", base64Audio);
+        params.putBoolean("isFinal", isFinal);
         getReactApplicationContext()
             .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-            .emit("onSpeechSegment", Arguments.createMap().putString("audioBase64", base64Audio).putBoolean("isFinal", true));
+            .emit("onSpeechSegment", params);
     }
 
     private void emitVolume(float volume) {
+        WritableMap params = Arguments.createMap();
+        params.putDouble("volume", volume);
         getReactApplicationContext()
             .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-            .emit("onVolumeChange", Arguments.createMap().putDouble("volume", volume));
+            .emit("onVolumeChange", params);
     }
 
     @ReactMethod
@@ -323,8 +349,15 @@ public class VoiceAudioModule extends ReactContextBaseJavaModule {
     }
 
     @Override
+    public void onHostResume() {
+    }
+
+    @Override
+    public void onHostPause() {
+    }
+
+    @Override
     public void onHostDestroy() {
-        super.onHostDestroy();
         isRecording = false;
         if (audioRecord != null) {
             audioRecord.stop();
@@ -332,7 +365,11 @@ public class VoiceAudioModule extends ReactContextBaseJavaModule {
             audioRecord = null;
         }
         if (vadSession != null) {
-            vadSession.close();
+            try {
+                vadSession.close();
+            } catch (Exception e) {
+                Log.e(TAG, "Error closing VAD session: " + e.getMessage());
+            }
         }
         if (ortEnvironment != null) {
             ortEnvironment.close();
