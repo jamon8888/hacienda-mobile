@@ -23,6 +23,7 @@ import useVectorCount from "@/hooks/useVectorCount";
 import AwaitableAlert from "@/components/AwaitableAlert";
 import { useEffect, useRef } from "react";
 import { useNavigation } from "@react-navigation/native";
+import useTranslation from "@/hooks/useTranslation";
 
 interface MainViewProps {
   workspace: WorkspaceType;
@@ -38,6 +39,7 @@ export function MainView({
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const scrollViewRef = useRef<ScrollView>(null);
+  const { t } = useTranslation("settings");
   const { vectorCount, askToResetVectorsForWorkspace, getVectorCount } =
     useVectorCount(workspace.slug);
   function goBackToWorkspaceChat() {
@@ -330,7 +332,7 @@ export function MainView({
         {/* Voice */}
         <View className="w-full flex flex-col" style={{ gap: 12 }}>
           <Text style={{ color: "#9F9FA0" }} className="text-sm uppercase">
-            Voice
+            {t("sections.voice")}
           </Text>
           <TouchableOpacity
             style={{ backgroundColor: "#27282A", padding: 14, gap: 20 }}
@@ -338,14 +340,16 @@ export function MainView({
             onPress={() => goToPage("voice")}>
             <View className="flex flex-row gap-2 items-center">
               <Microphone size={18} color="#FFF" />
-              <Text className="text-white text-lg">Voice Settings</Text>
+              <Text className="text-white text-lg">
+                {t("voice.title")}
+              </Text>
             </View>
             <View className="flex flex-1 flex-row gap-2 items-center justify-end">
               <CaretRight size={18} color="#FFF" />
             </View>
           </TouchableOpacity>
           <Text style={{ color: "#9F9FA0" }} className="text-xs">
-            Configure the on-device ASR and LLM models used for voice chat.
+            {t("voice.description")}
           </Text>
         </View>
 

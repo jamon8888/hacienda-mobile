@@ -1,5 +1,7 @@
 {
   "title": "Subscription",
+  "premiumFeature": "Premium Feature",
+  "requiresPaidSubscription": "{{feature}} requires a paid subscription.",
   "plans": {
     "pro": "Pro Plan",
     "free": "Free Plan"

@@ -1,5 +1,7 @@
 {
   "title": "Abonnement",
+  "premiumFeature": "Fonctionnalité premium",
+  "requiresPaidSubscription": "{{feature}} nécessite un abonnement payant.",
   "plans": {
     "pro": "Plan Pro",
     "free": "Plan Gratuit"
