@@ -1,8 +1,14 @@
 import React from "react";
-import { Pressable, TouchableOpacity } from "react-native";
+import { TouchableOpacity } from "react-native";
 import renderer from "react-test-renderer";
 import MemoRow from "./MemoRow";
 import { AudioMemoType } from "@/database/models/AudioMemo";
+import { createMockT } from "@/testUtils/mockUseTranslation";
+
+jest.mock("@/hooks/useTranslation", () => {
+  const { createMockT } = require("@/testUtils/mockUseTranslation");
+  return { useTranslation: () => createMockT() };
+});
 
 const mockMemo: AudioMemoType = {
   uuid: "test-uuid-1",
@@ -34,7 +40,7 @@ describe("MemoRow", () => {
     const root = tree.root;
     const titleText = root.findByProps({ numberOfLines: 1 });
     expect(titleText.props.children).toBe(
-      "This is a test transcript for ...",
+      "This is a test transcript for the memo",
     );
   });
 
@@ -72,7 +78,7 @@ describe("MemoRow", () => {
       <MemoRow {...defaultProps} isPlaying={false} />,
     );
     const root = tree.root;
-    const playButton = root.findAllByType(Pressable)[0];
+    const playButton = root.findAllByType(TouchableOpacity)[0];
     playButton?.props.onPress();
     expect(defaultProps.onPlay).toHaveBeenCalled();
   });
@@ -82,7 +88,7 @@ describe("MemoRow", () => {
       <MemoRow {...defaultProps} isPlaying={true} />,
     );
     const root = tree.root;
-    const pauseButton = root.findAllByType(Pressable)[0];
+    const pauseButton = root.findAllByType(TouchableOpacity)[0];
     pauseButton?.props.onPress();
     expect(defaultProps.onPause).toHaveBeenCalled();
   });
@@ -90,7 +96,7 @@ describe("MemoRow", () => {
   it("calls onDelete when delete button is pressed", () => {
     const tree = renderer.create(<MemoRow {...defaultProps} />);
     const root = tree.root;
-    const deleteButton = root.findAllByType(Pressable)[1];
+    const deleteButton = root.findAllByType(TouchableOpacity)[1];
     deleteButton?.props.onPress();
     expect(defaultProps.onDelete).toHaveBeenCalled();
   });

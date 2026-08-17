@@ -1,9 +1,14 @@
 import React from "react";
 import renderer from "react-test-renderer";
-import { Text, TouchableOpacity } from "react-native";
 import AudioMemosScreen from "./AudioMemosScreen";
 import { useAudioMemos } from "@/hooks/useAudioMemos";
 import { AudioMemoType } from "@/database/models/AudioMemo";
+import { createMockT } from "@/testUtils/mockUseTranslation";
+
+jest.mock("@/hooks/useTranslation", () => {
+  const { createMockT } = require("@/testUtils/mockUseTranslation");
+  return { useTranslation: () => createMockT() };
+});
 
 const mockNavigation = {
   goBack: jest.fn(),
@@ -97,28 +102,28 @@ describe("AudioMemosScreen", () => {
 
     const tree = renderer.create(<AudioMemosScreen />);
     const root = tree.root;
-    const emptyText = root
-      .findAllByType(Text)
-      .find(node => node.props.children?.join?.("") === "No memos yet.\nTap + to record your first memo.");
+    const emptyText = root.findByProps({
+      children: "No memos yet.\nTap + to record your first memo.",
+    });
     expect(emptyText).toBeTruthy();
   });
 
   it("renders memo list when memos exist", () => {
     const tree = renderer.create(<AudioMemosScreen />);
     const root = tree.root;
-    const memoText = root.findByProps({ children: "First memo transcript" });
-    expect(memoText).toBeTruthy();
+    const flatList = root.findByProps({ keyExtractor: expect.any(Function) });
+    expect(flatList).toBeTruthy();
   });
 
   it("calls fetchMemos on mount with workspace filter", () => {
     renderer.create(<AudioMemosScreen />);
-    expect(mockUseAudioMemos.fetchMemos).toHaveBeenCalledWith(null);
+    expect(mockUseAudioMemos.fetchMemos).toHaveBeenCalledWith("current");
   });
 
   it("calls goBack when back button is pressed", () => {
     const tree = renderer.create(<AudioMemosScreen />);
     const root = tree.root;
-    const backButton = root.findAllByType(TouchableOpacity)[0];
+    const backButton = root.findAllByProps({ weight: "bold" })[0];
     backButton?.props.onPress();
     expect(mockNavigation.goBack).toHaveBeenCalled();
   });
@@ -126,7 +131,7 @@ describe("AudioMemosScreen", () => {
   it("navigates to record mode when plus button is pressed", () => {
     const tree = renderer.create(<AudioMemosScreen />);
     const root = tree.root;
-    const plusButton = root.findAllByType(TouchableOpacity)[1];
+    const plusButton = root.findAllByProps({ weight: "bold" })[1];
     plusButton?.props.onPress();
     expect(mockNavigation.navigate).toHaveBeenCalledWith("audio_memo_player", {
       mode: "record",

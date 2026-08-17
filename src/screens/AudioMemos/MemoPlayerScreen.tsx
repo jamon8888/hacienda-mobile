@@ -8,6 +8,7 @@ import {
   type AudioWaveformViewRef,
 } from "react-native-waveform-player";
 import { useAudioMemos } from "@/hooks/useAudioMemos";
+import { useTranslation } from "@/hooks/useTranslation";
 import { AudioMemoType } from "@/database/models/AudioMemo";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { DrawerNavigationProp } from "@react-navigation/drawer";
@@ -18,6 +19,7 @@ export default function MemoPlayerScreen() {
   const insets = useSafeAreaInsets();
   const route = useRoute();
   const navigation = useNavigation<DrawerNavigationProp<any>>();
+  const { t } = useTranslation("audio");
   const { memoId } = route.params as { memoId: string; mode?: string };
   const {
     memos,
@@ -79,15 +81,15 @@ export default function MemoPlayerScreen() {
     if (success) {
       navigation.goBack();
     } else {
-      Alert.alert("Error", "Failed to delete memo");
+      Alert.alert(t("common:status.error"), t("player.deleteFailed"));
     }
-  }, [memo, deleteMemo, navigation]);
+  }, [memo, deleteMemo, navigation, t]);
 
   if (!memo) {
     return (
       <SafeView safeAreaClassNames="bg-[#1B1B1E]">
         <View className="flex-1 justify-center items-center">
-          <Text className="text-white/60">Memo not found</Text>
+          <Text className="text-white/60">{t("player.notFound")}</Text>
         </View>
       </SafeView>
     );
@@ -108,7 +110,9 @@ export default function MemoPlayerScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft size={24} color="#FFF" weight="bold" />
         </TouchableOpacity>
-        <Text className="text-white text-lg font-medium">Memo</Text>
+        <Text className="text-white text-lg font-medium">
+          {t("player.title")}
+        </Text>
         <View className="flex-row gap-4">
           <TouchableOpacity onPress={handleDelete}>
             <Trash size={22} color="#9F9FA0" />
@@ -191,10 +195,14 @@ export default function MemoPlayerScreen() {
         {/* Transcript */}
         <View className="w-full">
           <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-white/60 text-sm uppercase">Transcript</Text>
+            <Text className="text-white/60 text-sm uppercase">
+              {t("player.transcript.title")}
+            </Text>
             <TouchableOpacity onPress={() => setIsEditing(!isEditing)}>
               <Text className="text-[#3B82F6] text-sm">
-                {isEditing ? "Cancel" : "Edit"}
+                {isEditing
+                  ? t("player.transcript.cancel")
+                  : t("player.transcript.edit")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -210,12 +218,14 @@ export default function MemoPlayerScreen() {
               <TouchableOpacity
                 onPress={handleSaveTranscript}
                 className="bg-[#3B82F6] py-2 rounded-lg mt-2">
-                <Text className="text-white text-center">Save</Text>
+                <Text className="text-white text-center">
+                  {t("player.transcript.save")}
+                </Text>
               </TouchableOpacity>
             </View>
           ) : (
             <Text className="text-white bg-[#27282A] p-3 rounded-lg min-h-[100px]">
-              {memo.transcript || "No transcript available"}
+              {memo.transcript || t("player.transcript.noTranscript")}
             </Text>
           )}
         </View>

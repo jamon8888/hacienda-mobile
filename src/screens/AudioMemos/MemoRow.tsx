@@ -1,7 +1,9 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Pressable } from "react-native";
 import { Play, Pause, Trash } from "phosphor-react-native";
+import dayjs from "dayjs";
 import { AudioMemoType } from "@/database/models/AudioMemo";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface MemoRowProps {
   memo: AudioMemoType;
@@ -19,18 +21,6 @@ function formatDuration(ms: number): string {
   return `${minutes}:${secs.toString().padStart(2, "0")}`;
 }
 
-function formatDate(timestamp: number): string {
-  const date = new Date(timestamp);
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-  if (days === 0) return "Today";
-  if (days === 1) return "Yesterday";
-  if (days < 7) return `${days} days ago`;
-  return date.toLocaleDateString();
-}
-
 export default function MemoRow({
   memo,
   isPlaying,
@@ -39,10 +29,24 @@ export default function MemoRow({
   onDelete,
   onPress,
 }: MemoRowProps) {
+  const { t } = useTranslation("audio");
+
+  const formatDate = (timestamp: number): string => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+    if (days === 0) return t("memos.today");
+    if (days === 1) return t("memos.yesterday");
+    if (days < 7) return t("memos.daysAgo", { count: days });
+    return dayjs(date).format("MMM D, YYYY");
+  };
+
   const title = memo.transcript
     ? memo.transcript.substring(0, 30) +
       (memo.transcript.length > 30 ? "..." : "")
-    : "Untitled Memo";
+    : t("memos.untitled");
 
   return (
     <TouchableOpacity

@@ -13,6 +13,7 @@ import { useNavigation } from "@react-navigation/native";
 import { DrawerNavigationProp } from "@react-navigation/drawer";
 import { ArrowLeft, Plus } from "phosphor-react-native";
 import { useAudioMemos } from "@/hooks/useAudioMemos";
+import { useTranslation } from "@/hooks/useTranslation";
 import MemoRow from "./MemoRow";
 import { PATHS } from "@/utils/paths";
 
@@ -21,6 +22,7 @@ type TabType = "workspace" | "global";
 export default function AudioMemosScreen() {
   const navigation = useNavigation<DrawerNavigationProp<any>>();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation("audio");
   const {
     memos,
     loading,
@@ -40,10 +42,10 @@ export default function AudioMemosScreen() {
 
   const handleDelete = useCallback(
     (uuid: string) => {
-      Alert.alert("Delete Memo", "Are you sure you want to delete this memo?", [
-        { text: "Cancel", style: "cancel" },
+      Alert.alert(t("memos.delete.title"), t("memos.delete.confirm"), [
+        { text: t("common:buttons.cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("common:buttons.delete"),
           style: "destructive",
           onPress: async () => {
             await deleteMemo(uuid);
@@ -51,7 +53,7 @@ export default function AudioMemosScreen() {
         },
       ]);
     },
-    [deleteMemo],
+    [deleteMemo, t],
   );
 
   const handlePlay = useCallback(
@@ -62,8 +64,8 @@ export default function AudioMemosScreen() {
   );
 
   const tabs: { key: TabType; label: string }[] = [
-    { key: "workspace", label: "Workspace" },
-    { key: "global", label: "Global" },
+    { key: "workspace", label: t("memos.tabs.workspace") },
+    { key: "global", label: t("memos.tabs.global") },
   ];
 
   return (
@@ -81,7 +83,9 @@ export default function AudioMemosScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft size={24} color="#FFF" weight="bold" />
         </TouchableOpacity>
-        <Text className="text-white text-lg font-medium">Audio Memos</Text>
+        <Text className="text-white text-lg font-medium">
+          {t("memos.title")}
+        </Text>
         <TouchableOpacity
           onPress={() =>
             navigation.navigate(PATHS.audio_memo_player, { mode: "record" })
@@ -116,9 +120,7 @@ export default function AudioMemosScreen() {
         </View>
       ) : memos.length === 0 ? (
         <View className="flex-1 justify-center items-center px-4">
-          <Text className="text-white/60 text-center">
-            No memos yet.{"\n"}Tap + to record your first memo.
-          </Text>
+          <Text className="text-white/60 text-center">{t("memos.empty")}</Text>
         </View>
       ) : (
         <FlatList
