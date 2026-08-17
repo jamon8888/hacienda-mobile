@@ -6,14 +6,16 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Modal,
 } from "react-native";
 import SafeView from "@/components/SafeView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { DrawerNavigationProp } from "@react-navigation/drawer";
-import { ArrowLeft, Plus } from "phosphor-react-native";
+import { ArrowLeft, Plus, CaretDown, Check } from "phosphor-react-native";
 import { useAudioMemos } from "@/hooks/useAudioMemos";
 import { useTranslation } from "@/hooks/useTranslation";
+import Workspace, { WorkspaceType } from "@/database/models/Workspace";
 import MemoRow from "./MemoRow";
 import { PATHS } from "@/utils/paths";
 
@@ -33,12 +35,31 @@ export default function AudioMemosScreen() {
     pauseMemo,
   } = useAudioMemos();
   const [activeTab, setActiveTab] = useState<TabType>("workspace");
+  const [workspaces, setWorkspaces] = useState<WorkspaceType[]>([]);
+  const [selectedWsSlug, setSelectedWsSlug] = useState<string | null>(null);
+  const [pickerVisible, setPickerVisible] = useState(false);
 
   useEffect(() => {
-    // TODO: Get actual current workspace slug from navigation context
-    // For now, fetch all memos (workspace tab shows all, global shows all)
-    fetchMemos(null);
-  }, [activeTab, fetchMemos]);
+    Workspace.find().then(setWorkspaces);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "workspace" && !selectedWsSlug && workspaces.length > 0) {
+      setSelectedWsSlug(workspaces[0].slug);
+    }
+  }, [activeTab, selectedWsSlug, workspaces]);
+
+  const refetch = useCallback(() => {
+    fetchMemos(activeTab === "workspace" ? selectedWsSlug : null);
+  }, [activeTab, selectedWsSlug, fetchMemos]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  // Screens stay mounted in the drawer navigator, so a plain mount-time
+  // effect won't refresh the list after returning from recording a memo.
+  useFocusEffect(refetch);
 
   const handleDelete = useCallback(
     (uuid: string) => {
@@ -88,7 +109,10 @@ export default function AudioMemosScreen() {
         </Text>
         <TouchableOpacity
           onPress={() =>
-            navigation.navigate(PATHS.audio_memo_player, { mode: "record" })
+            navigation.navigate(PATHS.audio_memo_player, {
+              mode: "record",
+              wsSlug: activeTab === "workspace" ? selectedWsSlug : null,
+            })
           }>
           <Plus size={24} color="#FFF" weight="bold" />
         </TouchableOpacity>
@@ -112,6 +136,55 @@ export default function AudioMemosScreen() {
           </TouchableOpacity>
         ))}
       </View>
+
+      {/* Workspace Picker */}
+      {activeTab === "workspace" && (
+        <TouchableOpacity
+          onPress={() => setPickerVisible(true)}
+          className="flex-row items-center justify-between mx-4 mb-4 bg-[#27282A] rounded-lg px-4 py-3">
+          <Text className="text-white" numberOfLines={1}>
+            {workspaces.find(w => w.slug === selectedWsSlug)?.name ??
+              t("workspacePicker.title")}
+          </Text>
+          <CaretDown size={16} color="#9F9FA0" />
+        </TouchableOpacity>
+      )}
+
+      <Modal
+        visible={pickerVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPickerVisible(false)}>
+        <TouchableOpacity
+          className="flex-1 bg-black/60 justify-end"
+          activeOpacity={1}
+          onPress={() => setPickerVisible(false)}>
+          <View
+            className="bg-[#27282A] rounded-t-2xl pb-6"
+            style={{ paddingBottom: insets.bottom + 16 }}>
+            <Text className="text-white text-lg font-medium px-5 pt-5 pb-2">
+              {t("workspacePicker.title")}
+            </Text>
+            <FlatList
+              data={workspaces}
+              keyExtractor={item => item.slug}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  onPress={() => {
+                    setSelectedWsSlug(item.slug);
+                    setPickerVisible(false);
+                  }}
+                  className="flex-row items-center justify-between px-5 py-3">
+                  <Text className="text-white">{item.name}</Text>
+                  {item.slug === selectedWsSlug && (
+                    <Check size={18} color="#3B82F6" weight="bold" />
+                  )}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Memo List */}
       {loading ? (

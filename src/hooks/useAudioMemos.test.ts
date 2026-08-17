@@ -1,4 +1,5 @@
 import AudioMemo from "@/database/models/AudioMemo";
+import * as RNFS from "@dr.pogodin/react-native-fs";
 
 jest.mock("@/database/models/AudioMemo", () => ({
   __esModule: true,
@@ -145,6 +146,66 @@ describe("useAudioMemos", () => {
       ]);
       expect(result.current.memos).toHaveLength(0);
     });
+
+    it("should unlink the audio file from disk", async () => {
+      const existingMemo = {
+        uuid: "to-delete",
+        audioUri: "file:///del.m4a",
+        durationMs: 1000,
+        waveformPeaks: [],
+        workspaceSlug: null,
+        transcript: null,
+        createdAt: 1000,
+        updatedAt: 1000,
+      };
+
+      (AudioMemo.find as jest.Mock).mockResolvedValue([existingMemo]);
+      (AudioMemo.delete as jest.Mock).mockResolvedValue(true);
+
+      const { result } = renderHook(() => useAudioMemos());
+
+      await act(async () => {
+        await result.current.fetchMemos();
+      });
+
+      await act(async () => {
+        await result.current.deleteMemo("to-delete");
+      });
+
+      expect(RNFS.unlink).toHaveBeenCalledWith("file:///del.m4a");
+    });
+
+    it("should not throw if the file is already gone", async () => {
+      const existingMemo = {
+        uuid: "to-delete",
+        audioUri: "file:///del.m4a",
+        durationMs: 1000,
+        waveformPeaks: [],
+        workspaceSlug: null,
+        transcript: null,
+        createdAt: 1000,
+        updatedAt: 1000,
+      };
+
+      (AudioMemo.find as jest.Mock).mockResolvedValue([existingMemo]);
+      (AudioMemo.delete as jest.Mock).mockResolvedValue(true);
+      (RNFS.unlink as jest.Mock).mockRejectedValueOnce(
+        new Error("file not found"),
+      );
+
+      const { result } = renderHook(() => useAudioMemos());
+
+      await act(async () => {
+        await result.current.fetchMemos();
+      });
+
+      await expect(
+        act(async () => {
+          await result.current.deleteMemo("to-delete");
+        }),
+      ).resolves.not.toThrow();
+      expect(result.current.memos).toHaveLength(0);
+    });
   });
 
   describe("updateMemo", () => {
@@ -226,6 +287,17 @@ describe("useAudioMemos", () => {
       });
 
       expect(result.current.playbackPosition).toBe(5000);
+    });
+
+    it("should update both position and duration on updatePlaybackTime", () => {
+      const { result } = renderHook(() => useAudioMemos());
+
+      act(() => {
+        result.current.updatePlaybackTime(12000, 65000);
+      });
+
+      expect(result.current.playbackPosition).toBe(12000);
+      expect(result.current.playbackDuration).toBe(65000);
     });
   });
 });

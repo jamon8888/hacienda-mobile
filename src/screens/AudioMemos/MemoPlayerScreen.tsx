@@ -12,6 +12,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { AudioMemoType } from "@/database/models/AudioMemo";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { DrawerNavigationProp } from "@react-navigation/drawer";
+import MemoRecorder from "./MemoRecorder";
 
 type SpeedOption = 0.5 | 1 | 1.5 | 2;
 
@@ -20,13 +21,21 @@ export default function MemoPlayerScreen() {
   const route = useRoute();
   const navigation = useNavigation<DrawerNavigationProp<any>>();
   const { t } = useTranslation("audio");
-  const { memoId } = route.params as { memoId: string; mode?: string };
+  const { memoId, mode, wsSlug } = route.params as {
+    memoId?: string;
+    mode?: "record" | "play";
+    wsSlug?: string | null;
+  };
   const {
     memos,
+    fetchMemos,
     playingId,
     playbackPosition,
     playMemo,
     pauseMemo,
+    stopMemo,
+    seekTo,
+    updatePlaybackTime,
     updateMemo,
     deleteMemo,
   } = useAudioMemos();
@@ -36,6 +45,13 @@ export default function MemoPlayerScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTranscript, setEditedTranscript] = useState("");
   const waveformRef = useRef<AudioWaveformViewRef>(null);
+
+  // useAudioMemos holds local component state, not a shared store - this
+  // screen gets its own empty `memos` array on mount and must fetch, or
+  // the lookup below never finds the memo passed via memoId.
+  useEffect(() => {
+    if (mode !== "record") fetchMemos();
+  }, [mode, fetchMemos]);
 
   useEffect(() => {
     const found = memos.find(m => m.uuid === memoId);
@@ -86,6 +102,16 @@ export default function MemoPlayerScreen() {
   }, [memo, deleteMemo, navigation, t]);
 
   if (!memo) {
+    if (mode === "record") {
+      return (
+        <MemoRecorder
+          wsSlug={wsSlug ?? null}
+          onDone={() => navigation.goBack()}
+          onCancel={() => navigation.goBack()}
+        />
+      );
+    }
+
     return (
       <SafeView safeAreaClassNames="bg-[#1B1B1E]">
         <View className="flex-1 justify-center items-center">
@@ -149,6 +175,23 @@ export default function MemoPlayerScreen() {
           onLoadError={() => {
             // Error handling for waveform load failure
             console.warn("Failed to load waveform");
+          }}
+          onEnd={() => {
+            stopMemo();
+          }}
+          onTimeUpdate={({ currentTimeMs, durationMs }) => {
+            updatePlaybackTime(currentTimeMs, durationMs);
+          }}
+          onPlayerStateChange={({ isPlaying }) => {
+            if (!memo) return;
+            if (isPlaying) {
+              if (playingId !== memo.uuid) playMemo(memo.uuid, memo.audioUri);
+            } else if (playingId === memo.uuid) {
+              pauseMemo();
+            }
+          }}
+          onSeek={({ positionMs }) => {
+            seekTo(positionMs);
           }}
         />
 

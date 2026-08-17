@@ -28,6 +28,31 @@
     },
     "deleteFailed": "Échec de la suppression du mémo"
   },
+  "record": {
+    "title": "Nouveau mémo",
+    "recording": "Enregistrement...",
+    "stop": "Arrêter",
+    "discard": "Supprimer",
+    "discardConfirm": {
+      "title": "Abandonner l'enregistrement ?",
+      "message": "Cet enregistrement sera perdu."
+    },
+    "permissionDenied": {
+      "title": "Accès au microphone requis",
+      "message": "Activez l'accès au microphone dans les Réglages pour enregistrer des mémos audio."
+    },
+    "error": "Échec de l'enregistrement. Veuillez réessayer.",
+    "saving": "Enregistrement en cours..."
+  },
+  "transcription": {
+    "inProgress": "Transcription en cours...",
+    "failed": "Impossible de générer une transcription automatiquement. Vous pouvez en ajouter une manuellement."
+  },
+  "workspacePicker": {
+    "title": "Sélectionner l'espace de travail",
+    "allWorkspaces": "Tous les espaces de travail",
+    "global": "Global (aucun espace de travail)"
+  },
   "voiceChat": {
     "title": "Assistant vocal",
     "states": {

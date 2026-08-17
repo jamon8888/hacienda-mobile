@@ -4,6 +4,23 @@
 
 import { NativeModules } from "react-native";
 
+// ── react-native-device-info / uuid ─────────────────────────────
+// Both pulled in transitively by src/utils/constants.ts, which anything
+// importing a database model (e.g. Workspace -> WorkspaceThread) hits.
+// uuid's ESM build isn't transformable under the default transformIgnorePatterns.
+jest.mock("react-native-device-info", () => ({
+  __esModule: true,
+  default: {
+    getSystemName: jest.fn().mockReturnValue("iOS"),
+    getSystemVersion: jest.fn().mockReturnValue("17.0"),
+    getApiLevelSync: jest.fn().mockReturnValue(34),
+  },
+}));
+jest.mock("uuid", () => ({
+  __esModule: true,
+  v4: jest.fn(() => "mock-uuid"),
+}));
+
 // ── NativeWind (Jest bypass) ───────────────────────────────────
 // nativewind/babel is excluded in test env (see babel.config.js).
 // These mocks let `import { useColorScheme } from "nativewind"` resolve

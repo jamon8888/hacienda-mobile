@@ -28,6 +28,31 @@
     },
     "deleteFailed": "Failed to delete memo"
   },
+  "record": {
+    "title": "New Memo",
+    "recording": "Recording...",
+    "stop": "Stop",
+    "discard": "Discard",
+    "discardConfirm": {
+      "title": "Discard Recording?",
+      "message": "This recording will be lost."
+    },
+    "permissionDenied": {
+      "title": "Microphone Access Needed",
+      "message": "Enable microphone access in Settings to record audio memos."
+    },
+    "error": "Recording failed. Please try again.",
+    "saving": "Saving..."
+  },
+  "transcription": {
+    "inProgress": "Transcribing...",
+    "failed": "Couldn't generate a transcript automatically. You can add one manually."
+  },
+  "workspacePicker": {
+    "title": "Select Workspace",
+    "allWorkspaces": "All Workspaces",
+    "global": "Global (no workspace)"
+  },
   "voiceChat": {
     "title": "Voice Assistant",
     "states": {
