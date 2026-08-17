@@ -39,5 +39,25 @@
     "getStartedSubtitle": "Commencez en créant un nouvel espace de travail.",
     "createWorkspace": "Créer un espace de travail",
     "defaultWorkspaceName": "Mon espace de travail"
+  },
+  "components": {
+    "alerts": {
+      "confirm": "Confirmer",
+      "cancel": "Annuler"
+    },
+    "modal": {
+      "createWorkspace": "Créer un espace de travail",
+      "workspaceName": "Nom de l'espace de travail",
+      "create": "Créer",
+      "enterWorkspaceName": "Entrez le nom du nouvel espace de travail"
+    },
+    "provider": {
+      "chooseProvider": "Choisissez votre fournisseur",
+      "search": "Rechercher",
+      "noProvidersFound": "Aucun fournisseur trouvé pour \"{{query}}\""
+    },
+    "modelCard": {
+      "uninstall": "Désinstaller"
+    }
   }
 }

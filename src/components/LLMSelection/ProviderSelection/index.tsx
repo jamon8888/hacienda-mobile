@@ -15,6 +15,7 @@ import {
   BottomSheetBackdrop,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
+import useTranslation from "@/hooks/useTranslation";
 
 export default function ProviderSelection({
   selection,
@@ -23,6 +24,7 @@ export default function ProviderSelection({
   selection: ISelection;
   onChange: (provider: string) => void;
 }) {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef(null);
   const bottomSheetRef = useRef<BottomSheetModal>(null);
@@ -97,7 +99,7 @@ export default function ProviderSelection({
           }}>
           <BottomSheetView className="flex-1 bg-[#1B1B1E]">
             <Text className="text-white text-lg font-semibold py-4 text-center">
-              Choose your provider
+              {t("components.provider.chooseProvider")}
             </Text>
             <View className="flex flex-row items-center mx-4 bg-[#27282A] rounded-lg px-4">
               <MagnifyingGlass size={20} weight="bold" color="white" />
@@ -105,7 +107,7 @@ export default function ProviderSelection({
                 ref={searchInputRef}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
-                placeholder="Search"
+                placeholder={t("components.provider.search")}
                 placeholderTextColor="#9F9FA0"
                 className="flex-1 h-[38px] ml-2 text-white"
                 scrollEnabled={false}
@@ -121,7 +123,7 @@ export default function ProviderSelection({
               contentContainerStyle={{ paddingBottom: 100, gap: 10 }}>
               {filteredProviders.length === 0 && (
                 <Text className="text-white text-center pt-4">
-                  No providers found for "{searchQuery}"
+                  {t("components.provider.noProvidersFound", { query: searchQuery })}
                 </Text>
               )}
               {filteredProviders.map(provider => (

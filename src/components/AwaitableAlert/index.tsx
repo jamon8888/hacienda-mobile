@@ -1,4 +1,5 @@
 import { Alert } from "react-native";
+import useTranslation from "@/hooks/useTranslation";
 
 export interface AwaitableAlertButton {
   text?: string;
@@ -27,9 +28,10 @@ export default async function AwaitableAlert(
   rejectButton: AwaitableAlertButton,
   resolveButton: AwaitableAlertButton,
 ) {
+  const { t } = useTranslation();
   return await new Promise<any>(resolve => {
     const rejectionButton: AwaitableAlertButton = {
-      text: "Cancel",
+      text: t("components.alerts.cancel"),
       style: "cancel",
       onPress: () => {
         resolve(false);
@@ -37,7 +39,7 @@ export default async function AwaitableAlert(
       ...rejectButton,
     };
     const resolutionButton: AwaitableAlertButton = {
-      text: "Continue",
+      text: t("components.alerts.confirm"),
       style: "default",
       onPress: () => {
         resolve(true);
