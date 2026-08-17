@@ -34,7 +34,7 @@ describe("MemoRow", () => {
     const root = tree.root;
     const titleText = root.findByProps({ numberOfLines: 1 });
     expect(titleText.props.children).toBe(
-      "This is a test transcript for ...",
+      "This is a test transcript for...",
     );
   });
 
