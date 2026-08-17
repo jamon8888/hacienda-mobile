@@ -19,5 +19,15 @@
     "add": "Add Attachment",
     "remove": "Remove",
     "unsupported": "Unsupported file type"
-  }
+  },
+  "thread": {
+    "deleteTitle": "Delete thread",
+    "deleteMessage": "Are you sure you want to delete this thread? All chat history will be lost.",
+    "renameTitle": "Rename Thread",
+    "renamePlaceholder": "Enter new thread name",
+    "rename": "Rename"
+  },
+  "deleteTitle": "Delete workspace",
+  "deleteMessage": "Are you sure you want to delete this workspace? All threads will be lost.",
+  "deleteRemoteNote": "This will not delete the workspace in your remote instance."
 }

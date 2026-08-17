@@ -19,5 +19,15 @@
     "add": "Ajouter une pièce jointe",
     "remove": "Supprimer",
     "unsupported": "Type de fichier non pris en charge"
-  }
+  },
+  "thread": {
+    "deleteTitle": "Supprimer le fil",
+    "deleteMessage": "Êtes-vous sûr de vouloir supprimer ce fil ? Tout l'historique des discussions sera perdu.",
+    "renameTitle": "Renommer le fil",
+    "renamePlaceholder": "Entrez le nouveau nom du fil",
+    "rename": "Renommer"
+  },
+  "deleteTitle": "Supprimer l'espace de travail",
+  "deleteMessage": "Êtes-vous sûr de vouloir supprimer cet espace de travail ? Tous les fils seront perdus.",
+  "deleteRemoteNote": "Cela ne supprimera pas l'espace de travail dans votre instance distante."
 }
