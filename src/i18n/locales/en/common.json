@@ -59,5 +59,14 @@
     "modelCard": {
       "uninstall": "Uninstall"
     }
+  },
+  "topbar": {
+    "modelChip": {
+      "noModelLoaded": "No model loaded",
+      "noModelsFound": "No models found for \"{{query}}\"",
+      "additionalLLMs": "Additional LLMs",
+      "externalProviderToast": "Please manage your model preferences in the settings page.",
+      "remoteWorkspaceToast": "This workspace is managed remotely. You cannot change the model here."
+    }
   }
 }

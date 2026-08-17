@@ -59,5 +59,14 @@
     "modelCard": {
       "uninstall": "Désinstaller"
     }
+  },
+  "topbar": {
+    "modelChip": {
+      "noModelLoaded": "Aucun modèle chargé",
+      "noModelsFound": "Aucun modèle trouvé pour \"{{query}}\"",
+      "additionalLLMs": "LLM supplémentaires",
+      "externalProviderToast": "Veuillez gérer vos préférences de modèle dans la page des paramètres.",
+      "remoteWorkspaceToast": "Cet espace de travail est géré à distance. Vous ne pouvez pas changer le modèle ici."
+    }
   }
 }
