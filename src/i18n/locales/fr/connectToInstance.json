@@ -1,0 +1,33 @@
+{
+  "title": "Se connecter à AnythingLLM",
+  "main": {
+    "scanPrompt": "Scannez le code QR de votre instance AnythingLLM ou client pour synchroniser ses données sur cet appareil mobile pour l'IA en déplacement !",
+    "previousConnections": "Connexions précédentes"
+  },
+  "verify": {
+    "title": "Vérifier la connexion",
+    "registering": "Enregistrement de votre appareil...",
+    "seconds": "Cela peut prendre quelques secondes...",
+    "awaitingApproval": "En attente d'approbation...",
+    "approvePrompt": "Veuillez approuver l'appareil dans l'application AnythingLLM...",
+    "error": "Erreur",
+    "goBack": "Retour"
+  },
+  "import": {
+    "expired": "Votre connexion existante à AnythingLLM Desktop a expiré.",
+    "refreshFailed": "Échec de la mise à jour des espaces de travail",
+    "goBackToHome": "Retour à l'accueil"
+  },
+  "register": {
+    "failed": "Échec de l'enregistrement de l'appareil. Veuillez réessayer.",
+    "collectingData": "Collecte des données de l'instance...",
+    "approvalFailed": "Échec de l'enregistrement ou de l'approbation de l'appareil. Veuillez réessayer."
+  },
+  "workspaceItem": {
+    "threads": "Fils de discussion",
+    "chats": "Discussions",
+    "sync": "Synchroniser",
+    "synced": "Synchronisé",
+    "failed": "Échoué"
+  }
+}

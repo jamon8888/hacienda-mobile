@@ -105,6 +105,7 @@ function FeatureRow({
   included: boolean;
   comingSoon?: boolean;
 }) {
+  const { t } = useTranslation("subscription");
   return (
     <View className="flex-row items-center gap-2">
       <Check size={16} color={included ? "#22C55E" : "#9F9FA0"} weight="bold" />
@@ -112,7 +113,7 @@ function FeatureRow({
         {label}
       </Text>
       {comingSoon && (
-        <Text className="text-xs text-[#3B82F6] ml-auto">Coming Soon</Text>
+        <Text className="text-xs text-[#3B82F6] ml-auto">{t("badges.comingSoon")}</Text>
       )}
     </View>
   );
