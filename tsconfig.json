@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "esnext",
-    "module": "es2020",
+    "module": "es2015",
     "types": ["react-native", "jest"],
     "lib": [
       "es2019",
