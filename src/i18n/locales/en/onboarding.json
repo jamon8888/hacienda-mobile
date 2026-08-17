@@ -17,6 +17,13 @@
       "medium": "Medium",
       "low": "Low"
     },
+    "deviceTier": {
+      "optimal": "Optimal",
+      "good": "Good",
+      "acceptable": "Acceptable",
+      "not_recommended": "Not Recommended"
+    },
+    "qualitySuffix": "/100",
     "ramAvailable": "RAM ({{gb}}GB avail)",
     "npu": "NPU: {{backend}}",
     "cpuOnly": "CPU Only",
