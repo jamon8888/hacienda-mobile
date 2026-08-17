@@ -1,0 +1,63 @@
+{
+  "welcome": {
+    "title": "Bienvenue",
+    "subtitle": "Transformez votre téléphone en assistant IA personnel pour discuter avec des documents, des agents IA et plus encore - tout est privé et sur votre appareil.",
+    "backButtonWarning": "Veuillez suivre le flux d'intégration pour continuer."
+  },
+  "modelSelection": {
+    "title": "Quel modèle souhaitez-vous utiliser ?",
+    "subtitle": "Vous pourrez changer cela plus tard, mais choisissez celui qui correspond le mieux à vos besoins.",
+    "recommended": "Recommandé",
+    "download": "Télécharger",
+    "downloading": "Téléchargement...",
+    "insufficientStorage": "Espace de stockage insuffisant",
+    "deviceDetected": "Appareil détecté",
+    "ramTier": {
+      "high": "Élevé",
+      "medium": "Moyen",
+      "low": "Faible"
+    },
+    "deviceTier": {
+      "optimal": "Optimal",
+      "good": "Bon",
+      "acceptable": "Acceptable",
+      "not_recommended": "Non recommandé"
+    },
+    "qualitySuffix": "/100",
+    "ramAvailable": "RAM ({{gb}} Go disponibles)",
+    "npu": "NPU : {{backend}}",
+    "cpuOnly": "CPU uniquement",
+    "llmAsr": "{{llm}} LLM / {{asr}} ASR"
+  },
+  "survey": {
+    "title": "En quoi AnythingLLM peut-il vous aider ?",
+    "subtitle": "Sélectionnez l'option qui vous correspond le mieux.",
+    "options": {
+      "productivity": "Augmenter la productivité",
+      "privacy": "Conversations axées sur la confidentialité",
+      "customAi": "Agents IA personnalisés",
+      "automation": "Automatisation IA",
+      "other": "Autre"
+    }
+  },
+  "dataHandling": {
+    "title": "Gestion des données et confidentialité",
+    "subtitle": "Avec AnythingLLM, toutes les conversations, documents et autres données sont traités et stockés sur votre appareil.",
+    "items": {
+      "localChats": {
+        "name": "Conversations 100 % locales",
+        "description": "Toutes les conversations sont stockées sur votre appareil."
+      },
+      "documentEmbedding": {
+        "name": "Intégration de documents",
+        "description": "Tous les documents et traitements sont effectués sur votre appareil."
+      },
+      "aiAgents": {
+        "name": "Agents IA",
+        "description": "Tous les agents s'exécutent sur votre appareil et n'utilisent Internet que lorsque c'est nécessaire (ex. : recherche Web)"
+      }
+    },
+    "settingUpWorkspace": "Configuration de votre premier espace de travail",
+    "getStarted": "Découvrez AnythingLLM"
+  }
+}

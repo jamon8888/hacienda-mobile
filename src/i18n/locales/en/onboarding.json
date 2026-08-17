@@ -1,0 +1,63 @@
+{
+  "welcome": {
+    "title": "Welcome",
+    "subtitle": "Transform your phone into a personal AI assistant to chat with documents, AI agents, and more - all private and on-device.",
+    "backButtonWarning": "Please proceed through the onboarding flow to continue."
+  },
+  "modelSelection": {
+    "title": "What model would you like to use?",
+    "subtitle": "You can change this later, but pick the one that best suits your needs.",
+    "recommended": "Recommended",
+    "download": "Download",
+    "downloading": "Downloading...",
+    "insufficientStorage": "Insufficient storage space",
+    "deviceDetected": "Device Detected",
+    "ramTier": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "deviceTier": {
+      "optimal": "Optimal",
+      "good": "Good",
+      "acceptable": "Acceptable",
+      "not_recommended": "Not Recommended"
+    },
+    "qualitySuffix": "/100",
+    "ramAvailable": "RAM ({{gb}}GB avail)",
+    "npu": "NPU: {{backend}}",
+    "cpuOnly": "CPU Only",
+    "llmAsr": "{{llm}} LLM / {{asr}} ASR"
+  },
+  "survey": {
+    "title": "What can AnythingLLM help you with?",
+    "subtitle": "Select the one that most applies to you.",
+    "options": {
+      "productivity": "Increase Productivity",
+      "privacy": "Privacy Focused chats",
+      "customAi": "Custom AI Agents",
+      "automation": "AI Automation",
+      "other": "Other"
+    }
+  },
+  "dataHandling": {
+    "title": "Data Handling & Privacy",
+    "subtitle": "With AnythingLLM, all chats, documents, and other data is processed and stored on your device.",
+    "items": {
+      "localChats": {
+        "name": "Fully Local Chats",
+        "description": "All chats are stored on your device."
+      },
+      "documentEmbedding": {
+        "name": "Document Embedding",
+        "description": "All documents and processing are done on your device."
+      },
+      "aiAgents": {
+        "name": "AI Agents",
+        "description": "All agents are run on your device and only use the internet when required (eg: Web search)"
+      }
+    },
+    "settingUpWorkspace": "Setting up your first workspace",
+    "getStarted": "Experience AnythingLLM"
+  }
+}

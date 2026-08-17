@@ -25,6 +25,7 @@ import { Suspense } from "react";
 import SafeView from "@/components/SafeView";
 import useInitialRoute from "@/hooks/useInitialRoute";
 import "./src/utils/polyfills";
+import "@/i18n";
 import { BottomSheetProvider } from "@/contexts/BottomSheetContext";
 import { LLMPreferenceProvider } from "@/contexts/LLMPreferenceContext";
 import { useEnablePushNotifications } from "@/utils/PushNotifications";

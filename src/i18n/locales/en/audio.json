@@ -1,0 +1,91 @@
+{
+  "memos": {
+    "title": "Audio Memos",
+    "empty": "No memos yet.\nTap + to record your first memo.",
+    "delete": {
+      "title": "Delete Memo",
+      "confirm": "Are you sure you want to delete this memo?"
+    },
+    "untitled": "Untitled Memo",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "daysAgo_one": "{{count}} day ago",
+    "daysAgo_other": "{{count}} days ago",
+    "tabs": {
+      "workspace": "Workspace",
+      "global": "Global"
+    }
+  },
+  "player": {
+    "title": "Memo",
+    "notFound": "Memo not found",
+    "transcript": {
+      "title": "Transcript",
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "noTranscript": "No transcript available"
+    },
+    "deleteFailed": "Failed to delete memo"
+  },
+  "voiceChat": {
+    "title": "Voice Assistant",
+    "states": {
+      "tapToStart": "Tap to start",
+      "loadingModels": "Loading models...",
+      "listening": "Listening...",
+      "transcribing": "Transcribing...",
+      "thinking": "Thinking...",
+      "responding": "Responding...",
+      "error": "Error occurred",
+      "unknown": "Unknown"
+    },
+    "sections": {
+      "response": "Response",
+      "thinking": "Thinking"
+    },
+    "confidence": "Confidence:",
+    "holdToSpeak": "Hold to speak · Releases on silence",
+    "processing": "Processing with Gemma 4 E2B Hybrid..."
+  },
+  "voiceSettings": {
+    "title": "Voice Settings",
+    "sections": {
+      "deviceCapabilities": "Device Capabilities",
+      "asr": "Speech Recognition (ASR)",
+      "llm": "Language Model (LLM)",
+      "advanced": "Advanced Settings"
+    },
+    "labels": {
+      "ramTier": "RAM Tier",
+      "npu": "NPU",
+      "availableRam": "Available RAM",
+      "asrModel": "ASR Model",
+      "llmModel": "LLM Model",
+      "confidenceThreshold": "Confidence Threshold",
+      "cloudHandoff": "Cloud Handoff",
+      "processingDelay": "Processing Delay",
+      "vadSensitivity": "VAD Sensitivity",
+      "tts": "Text-to-Speech"
+    },
+    "descriptions": {
+      "cloudHandoff": "Route low-confidence queries to cloud",
+      "vadSensitivity": "Speech detection threshold",
+      "tts": "Speak responses aloud"
+    },
+    "buttons": {
+      "save": "Save Voice Settings"
+    },
+    "toast": {
+      "saved": "Voice settings saved"
+    },
+    "modal": {
+      "selectAsr": "Select ASR Model",
+      "selectLlm": "Select LLM Model",
+      "recommended": "Recommended"
+    }
+  },
+  "micButton": {
+    "accessibility": "Record voice"
+  }
+}

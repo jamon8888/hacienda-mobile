@@ -1,0 +1,72 @@
+{
+  "app": {
+    "name": "AnythingLLM"
+  },
+  "buttons": {
+    "getStarted": "Commencer",
+    "continue": "Continuer",
+    "back": "Retour",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "confirm": "Confirmer",
+    "retry": "Réessayer",
+    "loading": "Chargement..."
+  },
+  "errors": {
+    "unknown": "Erreur inconnue",
+    "network": "Erreur réseau. Veuillez vérifier votre connexion.",
+    "required": "Ce champ est obligatoire",
+    "invalidEmail": "Veuillez entrer une adresse e-mail valide"
+  },
+  "status": {
+    "loading": "Chargement...",
+    "saving": "Enregistrement...",
+    "success": "Succès !",
+    "error": "Erreur"
+  },
+  "accessibility": {
+    "openMenu": "Ouvrir le menu",
+    "newThread": "Nouveau fil",
+    "voiceChat": "Chat vocal"
+  },
+  "nav": {
+    "workspaces": "Espaces de travail",
+    "newWorkspace": "Nouvel espace de travail"
+  },
+  "home": {
+    "welcomeTitle": "Bienvenue sur {{appName}}",
+    "getStartedSubtitle": "Commencez en créant un nouvel espace de travail.",
+    "createWorkspace": "Créer un espace de travail",
+    "defaultWorkspaceName": "Mon espace de travail"
+  },
+  "components": {
+    "alerts": {
+      "confirm": "Confirmer",
+      "cancel": "Annuler"
+    },
+    "modal": {
+      "createWorkspace": "Créer un espace de travail",
+      "workspaceName": "Nom de l'espace de travail",
+      "create": "Créer",
+      "enterWorkspaceName": "Entrez le nom du nouvel espace de travail"
+    },
+    "provider": {
+      "chooseProvider": "Choisissez votre fournisseur",
+      "search": "Rechercher",
+      "noProvidersFound": "Aucun fournisseur trouvé pour \"{{query}}\""
+    },
+    "modelCard": {
+      "uninstall": "Désinstaller"
+    }
+  },
+  "topbar": {
+    "modelChip": {
+      "noModelLoaded": "Aucun modèle chargé",
+      "noModelsFound": "Aucun modèle trouvé pour \"{{query}}\"",
+      "additionalLLMs": "LLM supplémentaires",
+      "externalProviderToast": "Veuillez gérer vos préférences de modèle dans la page des paramètres.",
+      "remoteWorkspaceToast": "Cet espace de travail est géré à distance. Vous ne pouvez pas changer le modèle ici."
+    }
+  }
+}
