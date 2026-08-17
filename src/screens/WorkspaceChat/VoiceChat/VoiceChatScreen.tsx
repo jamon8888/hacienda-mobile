@@ -22,6 +22,7 @@ import {
   DEFAULT_CACTUS_LLM_MODEL,
 } from "@/utils/models/defaults";
 import uiStore from "@/store/UIStore";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface VoiceSettingsStorage {
   asrModel: CactusVoiceModelId;
@@ -125,6 +126,7 @@ export default function VoiceChatScreen() {
 }
 
 function VoiceChatScreenInner({ config }: { config: VoicePipelineConfig }) {
+  const { t } = useTranslation("audio");
   const {
     state,
     lastResponse,
@@ -261,21 +263,21 @@ function VoiceChatScreenInner({ config }: { config: VoicePipelineConfig }) {
   const getStateLabel = () => {
     switch (state) {
       case "idle":
-        return "Tap to start";
+        return t("voiceChat.states.tapToStart");
       case "initializing":
-        return "Loading models...";
+        return t("voiceChat.states.loadingModels");
       case "listening":
-        return "Listening...";
+        return t("voiceChat.states.listening");
       case "transcribing":
-        return "Transcribing...";
+        return t("voiceChat.states.transcribing");
       case "thinking":
-        return "Thinking...";
+        return t("voiceChat.states.thinking");
       case "responding":
-        return "Responding...";
+        return t("voiceChat.states.responding");
       case "error":
-        return "Error occurred";
+        return t("voiceChat.states.error");
       default:
-        return "Unknown";
+        return t("voiceChat.states.unknown");
     }
   };
 
@@ -323,7 +325,7 @@ function VoiceChatScreenInner({ config }: { config: VoicePipelineConfig }) {
     return (
       <View style={styles.responseContainer}>
         <View style={styles.responseHeader}>
-          <Text style={styles.responseLabel}>Response</Text>
+          <Text style={styles.responseLabel}>{t("voiceChat.sections.response")}</Text>
           <View style={styles.responseMeta}>
             <Text style={styles.metaItem}>
               {lastResponse.metrics.asrLatencyMs}ms ASR
@@ -341,7 +343,7 @@ function VoiceChatScreenInner({ config }: { config: VoicePipelineConfig }) {
         <Text style={styles.responseText}>{lastResponse.text}</Text>
         {lastResponse.thinking && (
           <View style={styles.thinkingBlock}>
-            <Text style={styles.thinkingLabel}>Thinking</Text>
+            <Text style={styles.thinkingLabel}>{t("voiceChat.sections.thinking")}</Text>
             <Text style={styles.thinkingText}>{lastResponse.thinking}</Text>
           </View>
         )}
@@ -353,7 +355,7 @@ function VoiceChatScreenInner({ config }: { config: VoicePipelineConfig }) {
             ]}
           />
           <Text style={styles.confidenceLabel}>
-            Confidence: {(lastResponse.confidence * 100).toFixed(0)}%
+            {t("voiceChat.confidence")} {(lastResponse.confidence * 100).toFixed(0)}%
           </Text>
         </View>
       </View>
@@ -366,7 +368,7 @@ function VoiceChatScreenInner({ config }: { config: VoicePipelineConfig }) {
       containerStyle={{ flex: 1, backgroundColor: COLORS.background }}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Voice Assistant</Text>
+        <Text style={styles.title}>{t("voiceChat.title")}</Text>
         <View style={styles.headerActions}>
           <Animated.View
             style={[
@@ -450,12 +452,10 @@ function VoiceChatScreenInner({ config }: { config: VoicePipelineConfig }) {
 
       {/* Help Text */}
       <View style={styles.helpText}>
-        <Text style={styles.helpTextItem}>
-          Hold to speak · Releases on silence
-        </Text>
+        <Text style={styles.helpTextItem}>{t("voiceChat.holdToSpeak")}</Text>
         {state === "thinking" && (
           <Text style={[styles.helpTextItem, { color: COLORS.thinking }]}>
-            Processing with Gemma 4 E2B Hybrid...
+            {t("voiceChat.processing")}
           </Text>
         )}
       </View>

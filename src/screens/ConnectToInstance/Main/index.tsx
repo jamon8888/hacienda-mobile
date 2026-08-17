@@ -21,6 +21,7 @@ import {
 } from "react-native-vision-camera";
 import uiStore from "@/store/UIStore";
 import { IExternalConnection, unregisterConnection } from "../index";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export function MainView() {
   const [existingConnections, setExistingConnections] = useState<
@@ -28,6 +29,7 @@ export function MainView() {
   >([]);
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation("connectToInstance");
   function goHome() {
     navigation.reset({
       index: 0,
@@ -103,7 +105,7 @@ export function MainView() {
           numberOfLines={1}
           ellipsizeMode="middle"
           className="text-white text-lg font-medium">
-          Connect to AnythingLLM
+          {t("title")}
         </Text>
       </View>
 
@@ -114,8 +116,7 @@ export function MainView() {
         <Text
           style={{ textAlign: "center", fontSize: 14, width: "80%" }}
           className="text-white/80">
-          Scan the QR code for your AnythingLLM instance or client to sync it's
-          data to this mobile device for AI on the go!
+          {t("main.scanPrompt")}
         </Text>
       </View>
 
@@ -124,7 +125,7 @@ export function MainView() {
           className="w-full flex flex-col items-center justify-center"
           style={{ paddingTop: 33 }}>
           <Text className="text-white text-lg font-medium">
-            Previous Connections
+            {t("main.previousConnections")}
           </Text>
           <ScrollView
             style={{ maxHeight: 150 }}

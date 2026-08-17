@@ -6,6 +6,7 @@ import { CheckCircle, Cloud, Laptop } from "phosphor-react-native";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import { syncFromRemote } from "./sync";
+import { useTranslation } from "@/hooks/useTranslation";
 
 type IStatus = "idle" | "syncing" | "synced" | "error";
 interface WorkspaceItemProps {
@@ -17,6 +18,7 @@ export default function WorkspaceItem({
   module,
   workspace,
 }: WorkspaceItemProps) {
+  const { t } = useTranslation("connectToInstance");
   return (
     <View
       className="flex flex-row justify-between w-full rounded-lg items-center"
@@ -33,13 +35,13 @@ export default function WorkspaceItem({
         </Text>
         <View className="flex flex-row items-center" style={{ gap: 4 }}>
           <Text className="text-white text-base" style={{ color: "#9F9FA0" }}>
-            {formatNumber(workspace.threadCount + 1)} Threads
+            {formatNumber(workspace.threadCount + 1)} {t("workspaceItem.threads")}
           </Text>
           <Text className="text-white text-base" style={{ color: "#9F9FA0" }}>
             |
           </Text>
           <Text className="text-white text-base" style={{ color: "#9F9FA0" }}>
-            {formatNumber(workspace.chatCount)} Chats
+            {formatNumber(workspace.chatCount)} {t("workspaceItem.chats")}
           </Text>
         </View>
         <View
@@ -69,6 +71,7 @@ function SyncButton({
   workspace: CommandResponses["workspaces"]["workspaces"][number];
 }) {
   const [status, setStatus] = useState<IStatus>("idle");
+  const { t } = useTranslation("connectToInstance");
 
   // Reset status after 5 seconds if there is an error so they can try again
   useEffect(() => {
@@ -99,7 +102,7 @@ function SyncButton({
           paddingVertical: 8,
         }}
         className="flex flex-row items-center justify-center rounded-lg">
-        <Text className="text-red-500 font-medium">Failed</Text>
+        <Text className="text-red-500 font-medium">{t("workspaceItem.failed")}</Text>
       </TouchableOpacity>
     );
   }
@@ -117,7 +120,7 @@ function SyncButton({
         className="flex flex-row items-center justify-center rounded-lg">
         <CheckCircle size={16} color="#32ff75" />
         <Text className="font-medium" style={{ color: "#32ff75" }}>
-          Synced
+          {t("workspaceItem.synced")}
         </Text>
       </TouchableOpacity>
     );
@@ -132,7 +135,7 @@ function SyncButton({
         paddingVertical: 8,
       }}
       className="flex flex-row items-center justify-center rounded-lg">
-      <Text className="text-black font-medium">Sync</Text>
+      <Text className="text-black font-medium">{t("workspaceItem.sync")}</Text>
     </TouchableOpacity>
   );
 }

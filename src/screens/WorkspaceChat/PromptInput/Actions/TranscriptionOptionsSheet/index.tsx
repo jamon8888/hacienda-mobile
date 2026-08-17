@@ -11,8 +11,6 @@ import {
 import { View, Text, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Radio, MusicNotes } from "phosphor-react-native";
-import { xbergStore } from "@/store/XbergStore";
-import { XbergClient } from "@/utils/Xberg";
 
 const MODEL_OPTIONS = [
   { value: "tiny", label: "Tiny", size: "10 MB", description: "Fastest" },
@@ -36,16 +34,18 @@ const LANGUAGE_OPTIONS = [
   { value: "ko", label: "Korean" },
 ];
 
-export default function TranscriptionOptionsSheet() {
+interface TranscriptionOptionsProps {
+  onConfirm: (model: string, language: string) => void;
+}
+
+export default function TranscriptionOptionsSheet({
+  onConfirm,
+}: TranscriptionOptionsProps) {
   const insets = useSafeAreaInsets();
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const { registerSheet, dismissSheet } = useBottomSheet();
-  const [selectedModel, setSelectedModel] = useState(
-    xbergStore.transcriptionModel,
-  );
-  const [selectedLanguage, setSelectedLanguage] = useState(
-    xbergStore.transcriptionLanguage,
-  );
+  const [selectedModel, setSelectedModel] = useState("base");
+  const [selectedLanguage, setSelectedLanguage] = useState("auto");
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -64,7 +64,7 @@ export default function TranscriptionOptionsSheet() {
   }, [registerSheet]);
 
   function handleConfirm() {
-    xbergStore.setTranscriptionOptions(selectedModel, selectedLanguage);
+    onConfirm(selectedModel, selectedLanguage);
     bottomSheetRef.current?.dismiss();
   }
 
@@ -96,124 +96,71 @@ export default function TranscriptionOptionsSheet() {
           </Text>
         </View>
 
-        {XbergClient.getTranscriptionEngine() === "whisper" ? (
-          <View
-            style={{ backgroundColor: "rgba(108,233,166,0.15)", padding: 12 }}
-            className="rounded-lg flex flex-row items-start gap-3 mb-4">
-            <MusicNotes size={18} color="#6CE9A6" style={{ marginTop: 2 }} />
-            <View className="flex-1">
-              <Text style={{ color: "#6CE9A6" }} className="text-sm font-medium">
-                Engine: Xberg Whisper
-              </Text>
-              <Text style={{ color: "#9F9FA0" }} className="text-xs mt-1">
-                Using ONNX Whisper for high-accuracy transcription.
-              </Text>
-            </View>
-          </View>
-        ) : (
-          <View
-            style={{ backgroundColor: "rgba(59,130,246,0.15)", padding: 12 }}
-            className="rounded-lg flex flex-row items-start gap-3 mb-4">
-            <MusicNotes size={18} color="#3B82F6" style={{ marginTop: 2 }} />
-            <View className="flex-1">
-              <Text style={{ color: "#3B82F6" }} className="text-sm font-medium">
-                Engine: Cactus Parakeet
-              </Text>
-              <Text style={{ color: "#9F9FA0" }} className="text-xs mt-1">
-                Using Parakeet TDT 0.6B for on-device transcription. Model is
-                already bundled — no download needed.
-              </Text>
-            </View>
-          </View>
-        )}
+        <Text style={{ color: "#9F9FA0" }} className="text-sm uppercase mb-2">
+          Model Size
+        </Text>
+        <View className="mb-4">
+          {MODEL_OPTIONS.map(model => (
+            <TouchableOpacity
+              key={model.value}
+              onPress={() => setSelectedModel(model.value)}
+              style={{
+                backgroundColor: "#27282A",
+                padding: 12,
+                marginBottom: 8,
+                borderRadius: 8,
+                borderWidth: selectedModel === model.value ? 2 : 0,
+                borderColor:
+                  selectedModel === model.value ? "#3B82F6" : "transparent",
+              }}
+              className="flex flex-row items-center justify-between">
+              <View className="flex-1">
+                <Text className="text-white text-base">{model.label}</Text>
+                <Text style={{ color: "#9F9FA0" }} className="text-xs">
+                  {model.description} | {model.size}
+                </Text>
+              </View>
+              <Radio
+                size={20}
+                color={selectedModel === model.value ? "#3B82F6" : "#9F9FA0"}
+                weight="fill"
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
 
-        {XbergClient.getTranscriptionEngine() === "whisper" ? (
-          <>
-            <Text
-              style={{ color: "#9F9FA0" }}
-              className="text-sm uppercase mb-2">
-              Model Size
-            </Text>
-            <View className="mb-4">
-              {MODEL_OPTIONS.map(model => (
-                <TouchableOpacity
-                  key={model.value}
-                  onPress={() => setSelectedModel(model.value)}
-                  style={{
-                    backgroundColor: "#27282A",
-                    padding: 12,
-                    marginBottom: 8,
-                    borderRadius: 8,
-                    borderWidth: selectedModel === model.value ? 2 : 0,
-                    borderColor:
-                      selectedModel === model.value
-                        ? "#3B82F6"
-                        : "transparent",
-                  }}
-                  className="flex flex-row items-center justify-between">
-                  <View className="flex-1">
-                    <Text className="text-white text-base">{model.label}</Text>
-                    <Text style={{ color: "#9F9FA0" }} className="text-xs">
-                      {model.description} | {model.size}
-                    </Text>
-                  </View>
-                  <Radio
-                    size={20}
-                    color={
-                      selectedModel === model.value ? "#3B82F6" : "#9F9FA0"
-                    }
-                    weight="fill"
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <Text
-              style={{ color: "#9F9FA0" }}
-              className="text-sm uppercase mb-2">
-              Language
-            </Text>
-            <View className="flex flex-row flex-wrap gap-2 mb-6">
-              {LANGUAGE_OPTIONS.map(lang => (
-                <TouchableOpacity
-                  key={lang.value}
-                  onPress={() => setSelectedLanguage(lang.value)}
-                  style={{
-                    backgroundColor:
-                      selectedLanguage === lang.value ? "#3B82F6" : "#27282A",
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 16,
-                  }}>
-                  <Text
-                    style={{
-                      color:
-                        selectedLanguage === lang.value ? "#FFF" : "#9F9FA0",
-                    }}
-                    className="text-sm">
-                    {lang.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </>
-        ) : (
-          <View
-            style={{ backgroundColor: "#27282A", padding: 12 }}
-            className="rounded-lg mb-6">
-            <Text style={{ color: "#9F9FA0" }} className="text-sm">
-              Model size and language are managed automatically by the on-device
-              Cactus Parakeet engine.
-            </Text>
-          </View>
-        )}
+        <Text style={{ color: "#9F9FA0" }} className="text-sm uppercase mb-2">
+          Language
+        </Text>
+        <View className="flex flex-row flex-wrap gap-2 mb-6">
+          {LANGUAGE_OPTIONS.map(lang => (
+            <TouchableOpacity
+              key={lang.value}
+              onPress={() => setSelectedLanguage(lang.value)}
+              style={{
+                backgroundColor:
+                  selectedLanguage === lang.value ? "#3B82F6" : "#27282A",
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 16,
+              }}>
+              <Text
+                style={{
+                  color: selectedLanguage === lang.value ? "#FFF" : "#9F9FA0",
+                }}
+                className="text-sm">
+                {lang.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
         <TouchableOpacity
           onPress={handleConfirm}
           style={{ backgroundColor: "#3B82F6", padding: 14 }}
           className="rounded-lg items-center">
           <Text className="text-white text-base font-medium">
-            Save Settings
+            Transcribe & Import
           </Text>
         </TouchableOpacity>
       </View>
