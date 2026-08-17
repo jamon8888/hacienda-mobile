@@ -16,8 +16,9 @@ const resources = {
 
 let initializationPromise: Promise<void> | undefined;
 
-const isSupportedLanguage = (language: unknown): language is SupportedLanguage =>
-  language === "en" || language === "fr";
+const isSupportedLanguage = (
+  language: unknown,
+): language is SupportedLanguage => language === "en" || language === "fr";
 
 const normalizeLanguage = (language: unknown): SupportedLanguage =>
   isSupportedLanguage(language) ? language : "en";
