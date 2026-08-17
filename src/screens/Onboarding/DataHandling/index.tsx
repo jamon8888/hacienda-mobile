@@ -24,13 +24,14 @@ export default function DataHandling() {
   const navigation = useNavigation();
   const { isLoading } = useLlmPreference();
   const { t } = useTranslation("onboarding");
+  const { t: commonT } = useTranslation("common");
   const [isOnboarding, setIsOnboarding] = useState(false);
   const insets = useSafeAreaInsets();
 
   const onContinue = async () => {
     setIsOnboarding(true);
     async function onboardingTasks() {
-      const workspace = await Workspace.create({ name: "My Workspace" });
+      const workspace = await Workspace.create({ name: commonT("common:home.defaultWorkspaceName") });
       return workspace;
     }
     async function waitAtLeast(ms: number) {
