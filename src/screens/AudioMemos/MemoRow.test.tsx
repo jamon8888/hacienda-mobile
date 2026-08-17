@@ -1,5 +1,5 @@
 import React from "react";
-import { TouchableOpacity } from "react-native";
+import { TouchableOpacity, Pressable } from "react-native";
 import renderer from "react-test-renderer";
 import MemoRow from "./MemoRow";
 import { AudioMemoType } from "@/database/models/AudioMemo";
@@ -36,12 +36,13 @@ describe("MemoRow", () => {
   });
 
   it("renders memo title from transcript", () => {
-    const tree = renderer.create(<MemoRow {...defaultProps} />);
+    const shortMemo = { ...mockMemo, transcript: "Short transcript" };
+    const tree = renderer.create(
+      <MemoRow {...defaultProps} memo={shortMemo} />,
+    );
     const root = tree.root;
     const titleText = root.findByProps({ numberOfLines: 1 });
-    expect(titleText.props.children).toBe(
-      "This is a test transcript for the memo",
-    );
+    expect(titleText.props.children).toBe("Short transcript");
   });
 
   it("renders 'Untitled Memo' when transcript is null", () => {
@@ -65,6 +66,17 @@ describe("MemoRow", () => {
     expect(titleText.props.children).toBe("A".repeat(30) + "...");
   });
 
+  it("trims trailing spaces before ellipsis", () => {
+    const spacedTranscript = "Hello world this is a test transcript  ";
+    const memoWithSpaces = { ...mockMemo, transcript: spacedTranscript };
+    const tree = renderer.create(
+      <MemoRow {...defaultProps} memo={memoWithSpaces} />,
+    );
+    const root = tree.root;
+    const titleText = root.findByProps({ numberOfLines: 1 });
+    expect(titleText.props.children).toBe("Hello world this is a test tra...");
+  });
+
   it("calls onPress when row is pressed", () => {
     const tree = renderer.create(<MemoRow {...defaultProps} />);
     const root = tree.root;
@@ -78,7 +90,7 @@ describe("MemoRow", () => {
       <MemoRow {...defaultProps} isPlaying={false} />,
     );
     const root = tree.root;
-    const playButton = root.findAllByType(TouchableOpacity)[0];
+    const playButton = root.findAllByType(Pressable)[0];
     playButton?.props.onPress();
     expect(defaultProps.onPlay).toHaveBeenCalled();
   });
@@ -88,7 +100,7 @@ describe("MemoRow", () => {
       <MemoRow {...defaultProps} isPlaying={true} />,
     );
     const root = tree.root;
-    const pauseButton = root.findAllByType(TouchableOpacity)[0];
+    const pauseButton = root.findAllByType(Pressable)[0];
     pauseButton?.props.onPress();
     expect(defaultProps.onPause).toHaveBeenCalled();
   });
@@ -96,7 +108,7 @@ describe("MemoRow", () => {
   it("calls onDelete when delete button is pressed", () => {
     const tree = renderer.create(<MemoRow {...defaultProps} />);
     const root = tree.root;
-    const deleteButton = root.findAllByType(TouchableOpacity)[1];
+    const deleteButton = root.findAllByType(Pressable)[1];
     deleteButton?.props.onPress();
     expect(defaultProps.onDelete).toHaveBeenCalled();
   });

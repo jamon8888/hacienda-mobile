@@ -4,6 +4,21 @@
 
 import { NativeModules } from "react-native";
 
+// ── NativeWind (Jest bypass) ───────────────────────────────────
+// nativewind/babel is excluded in test env (see babel.config.js).
+// These mocks let `import { useColorScheme } from "nativewind"` resolve
+// without pulling in the real css-interop runtime.
+jest.mock("nativewind", () => ({
+  useColorScheme: () => "dark",
+  colorScheme: { get: () => "dark", set: jest.fn() },
+}));
+jest.mock("react-native-css-interop", () => ({
+  cssInterop: jest.fn(),
+  remapProps: jest.fn(),
+  InteropProvider: ({ children }) => children,
+  useUnstableNativeVariable: (v) => v,
+}));
+
 // ── AsyncStorage ──────────────────────────────────────────────
 // @react-native-async-storage/async-storage
 const mockStorage = {};

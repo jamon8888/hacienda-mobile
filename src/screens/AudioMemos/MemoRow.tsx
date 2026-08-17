@@ -44,8 +44,9 @@ export default function MemoRow({
   };
 
   const title = memo.transcript
-    ? memo.transcript.substring(0, 30) +
-      (memo.transcript.length > 30 ? "..." : "")
+    ? (memo.transcript.length > 30
+        ? memo.transcript.substring(0, 30).trimEnd() + "..."
+        : memo.transcript)
     : t("memos.untitled");
 
   return (
