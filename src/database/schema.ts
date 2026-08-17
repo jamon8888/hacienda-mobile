@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from "@nozbe/watermelondb";
 
 export default appSchema({
-  version: 5,
+  version: 2,
   tables: [
     tableSchema({
       name: "workspaces",
@@ -13,8 +13,6 @@ export default appSchema({
         { name: "context_length", type: "number", isOptional: true },
         { name: "is_remote", type: "boolean", isOptional: true },
         { name: "remote_config", type: "string", isOptional: true },
-        { name: "embedding_config", type: "string", isOptional: true },
-        { name: "xberg_config", type: "string", isOptional: true },
         { name: "created_at", type: "number" },
       ],
     }),
@@ -53,35 +51,6 @@ export default appSchema({
         { name: "prompt", type: "string" },
         { name: "response", type: "string" },
         { name: "created_at", type: "number" },
-      ],
-    }),
-    tableSchema({
-      name: "audio_memos",
-      columns: [
-        { name: "uuid", type: "string", isIndexed: true },
-        {
-          name: "workspace_slug",
-          type: "string",
-          isIndexed: true,
-          isOptional: true,
-        },
-        { name: "audio_uri", type: "string" },
-        { name: "transcript", type: "string", isOptional: true },
-        { name: "duration_ms", type: "number" },
-        { name: "waveform_peaks", type: "string" },
-        { name: "created_at", type: "number" },
-        { name: "updated_at", type: "number" },
-      ],
-    }),
-    tableSchema({
-      name: "subscriptions",
-      columns: [
-        { name: "user_id", type: "string", isIndexed: true },
-        { name: "tier", type: "string" },
-        { name: "status", type: "string" },
-        { name: "trial_ends_at", type: "number", isOptional: true },
-        { name: "created_at", type: "number" },
-        { name: "updated_at", type: "number" },
       ],
     }),
   ],

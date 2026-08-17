@@ -1,81 +1,42 @@
-import { NativeModules, Platform } from "react-native";
+/**
+ * Simple tokenizer for EmbeddingGemma
+ * This is a placeholder until a proper SentencePiece tokenizer is implemented
+ */
 
-type SentencePieceProcessor = import("@sctg/sentencepiece-js").SentencePieceProcessor;
+const UNK_TOKEN = 0;
+const PAD_TOKEN = 1;
+const CLS_TOKEN = 2;
+const SEP_TOKEN = 3;
+const MASK_TOKEN = 4;
 
-let spmProcessor: SentencePieceProcessor | null = null;
-let isInitialized = false;
+// Simple word-level tokenization
+export function tokenize(text: string, maxLength: number = 256): number[] {
+  const tokens: number[] = [CLS_TOKEN];
 
-export const TOKENIZER_CONSTANTS = {
-  UNK_TOKEN: 0,
-  PAD_TOKEN: 1,
-  CLS_TOKEN: 2,
-  SEP_TOKEN: 3,
-  MASK_TOKEN: 4,
-  MAX_LENGTH: 256,
-};
+  // Split text into words and convert to token IDs
+  const words = text.toLowerCase().split(/\s+/);
 
-export async function initializeTokenizer(): Promise<void> {
-  if (isInitialized && spmProcessor) return;
-
-  try {
-    const { SentencePieceProcessor } = require("@sctg/sentencepiece-js");
-    const RNFS = require("react-native-fs");
-    let modelData: string;
-
-    if (Platform.OS === "android") {
-      // Android assets live inside the APK and must be read via readFileAssets.
-      // MainBundlePath + exists() works on iOS only.
-      modelData = await RNFS.readFileAssets("sentencepiece.model", "base64");
-    } else {
-      const modelPath = `${RNFS.MainBundlePath}/sentencepiece.model`;
-      const modelExists = await RNFS.exists(modelPath);
-      if (!modelExists) {
-        throw new Error(
-          `SentencePiece model not found at ${modelPath}. Run download script.`,
-        );
-      }
-      modelData = await RNFS.readFile(modelPath, "base64");
+  for (const word of words) {
+    if (tokens.length >= maxLength - 1) {
+      break;
     }
 
-    const processor = new SentencePieceProcessor();
-    await processor.loadFromB64StringModel(modelData);
-    spmProcessor = processor;
+    // Simple hash-based tokenization (placeholder)
+    let hash = 0;
+    for (let i = 0; i < word.length; i++) {
+      hash = ((hash << 5) - hash + word.charCodeAt(i)) | 0;
+    }
 
-    isInitialized = true;
-    console.log("[EmbeddingGemmaTokenizer] Initialized successfully");
-  } catch (error) {
-    console.error("[EmbeddingGemmaTokenizer] Failed to initialize:", error);
-    throw error;
-  }
-}
-
-export function isTokenizerReady(): boolean {
-  return isInitialized && spmProcessor !== null;
-}
-
-export function tokenize(
-  text: string,
-  maxLength = TOKENIZER_CONSTANTS.MAX_LENGTH,
-): number[] {
-  if (!spmProcessor) {
-    throw new Error(
-      "Tokenizer not initialized. Call initializeTokenizer() first.",
-    );
+    // Map to vocabulary range (5-30000)
+    const tokenId = (Math.abs(hash) % 29995) + 5;
+    tokens.push(tokenId);
   }
 
-  const ids = spmProcessor.encodeIds(text);
-  const tokens: number[] = [
-    TOKENIZER_CONSTANTS.CLS_TOKEN,
-    ...ids,
-    TOKENIZER_CONSTANTS.SEP_TOKEN,
-  ];
+  tokens.push(SEP_TOKEN);
 
-  if (tokens.length > maxLength) {
-    return tokens.slice(0, maxLength - 1).concat(TOKENIZER_CONSTANTS.SEP_TOKEN);
-  }
-
+  // Pad to max length
   while (tokens.length < maxLength) {
-    tokens.push(TOKENIZER_CONSTANTS.PAD_TOKEN);
+    tokens.push(PAD_TOKEN);
   }
 
   return tokens;
@@ -83,19 +44,17 @@ export function tokenize(
 
 export function tokenizeBatch(
   texts: string[],
-  maxLength = TOKENIZER_CONSTANTS.MAX_LENGTH,
+  maxLength: number = 256,
 ): number[][] {
   return texts.map(text => tokenize(text, maxLength));
 }
 
-export function decode(tokens: number[]): string {
-  if (!spmProcessor) {
-    throw new Error("Tokenizer not initialized");
-  }
-  // Filter out special tokens (below MASK_TOKEN = 4)
-  const filteredTokens = tokens.filter(
-    t => t >= TOKENIZER_CONSTANTS.MASK_TOKEN,
-  );
-  const int32Array = new Int32Array(filteredTokens);
-  return spmProcessor.decodeIds(int32Array);
-}
+// Export constants for use in native modules
+export const TOKENIZER_CONSTANTS = {
+  UNK_TOKEN,
+  PAD_TOKEN,
+  CLS_TOKEN,
+  SEP_TOKEN,
+  MASK_TOKEN,
+  MAX_LENGTH: 256,
+};
