@@ -81,7 +81,8 @@
     },
     "modal": {
       "selectAsr": "Sélectionner le modèle ASR",
-      "selectLlm": "Sélectionner le modèle LLM"
+      "selectLlm": "Sélectionner le modèle LLM",
+      "recommended": "Recommandé"
     }
   },
   "micButton": {

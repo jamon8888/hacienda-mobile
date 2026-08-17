@@ -18,6 +18,7 @@ import {
 } from "@/utils/models/defaults";
 import { useDeviceCapabilities } from "@/hooks/useDeviceCapabilities";
 import { ModelPickerModal } from "./VoiceSettings/ModalPicker";
+import { useTranslation } from "@/hooks/useTranslation";
 
 type VoiceModelCategory = "asr" | "llm";
 
@@ -81,6 +82,7 @@ const DEFAULT_LLM_MODEL: CactusVoiceModelId = DEFAULT_CACTUS_LLM_MODEL;
 export function VoiceSettingsView({ goToPage }: any) {
   const insets = useSafeAreaInsets();
   const deviceCaps = useDeviceCapabilities();
+  const { t } = useTranslation("audio");
 
   const [asrModel, setAsrModel] =
     useState<CactusVoiceModelId>(DEFAULT_ASR_MODEL);
@@ -134,7 +136,7 @@ export function VoiceSettingsView({ goToPage }: any) {
       vadThreshold,
     };
     await uiStore.setToStorage("voiceSettings", settings);
-    uiStore.showError("Voice settings saved");
+    uiStore.showError(t("voiceSettings.toast.saved"));
   };
 
   const getRecommendedBadge = (model: VoiceModelOption) => {
@@ -190,7 +192,7 @@ export function VoiceSettingsView({ goToPage }: any) {
           numberOfLines={1}
           ellipsizeMode="middle"
           className="text-white text-lg font-medium">
-          Voice Settings
+          {t("voiceSettings.title")}
         </Text>
       </View>
 
@@ -206,24 +208,24 @@ export function VoiceSettingsView({ goToPage }: any) {
         {/* Device Info Section */}
         <View className="w-full flex flex-col" style={{ gap: 12 }}>
           <Text style={{ color: "#9F9FA0" }} className="text-sm uppercase">
-            Device Capabilities
+            {t("voiceSettings.sections.deviceCapabilities")}
           </Text>
           <View className="flex flex-row flex-wrap gap-2">
             <View className="bg-[#27282A] px-4 py-2 rounded-lg border border-[#3A3B3D]">
-              <Text className="text-white/60 text-xs uppercase">RAM Tier</Text>
+              <Text className="text-white/60 text-xs uppercase">{t("voiceSettings.labels.ramTier")}</Text>
               <Text className="text-white text-base font-medium">
                 {getRamTierLabel()}
               </Text>
             </View>
             <View className="bg-[#27282A] px-4 py-2 rounded-lg border border-[#3A3B3D]">
-              <Text className="text-white/60 text-xs uppercase">NPU</Text>
+              <Text className="text-white/60 text-xs uppercase">{t("voiceSettings.labels.npu")}</Text>
               <Text className="text-white text-base font-medium">
                 {getNPULabel()}
               </Text>
             </View>
             <View className="bg-[#27282A] px-4 py-2 rounded-lg border border-[#3A3B3D]">
               <Text className="text-white/60 text-xs uppercase">
-                Available RAM
+                {t("voiceSettings.labels.availableRam")}
               </Text>
               <Text className="text-white text-base font-medium">
                 {getAvailableRAMLabel()}
@@ -236,7 +238,7 @@ export function VoiceSettingsView({ goToPage }: any) {
         <View className="w-full flex flex-col" style={{ gap: 12 }}>
           <View className="flex flex-row items-center justify-between">
             <Text style={{ color: "#9F9FA0" }} className="text-sm uppercase">
-              Speech Recognition (ASR)
+              {t("voiceSettings.sections.asr")}
             </Text>
             <Info size={18} color="#6F6F71" />
           </View>
@@ -246,7 +248,7 @@ export function VoiceSettingsView({ goToPage }: any) {
             onPress={() => setShowAsrPicker(true)}>
             <View className="flex flex-row gap-2 items-center">
               <Microphone size={18} color="#FFF" />
-              <Text className="text-white text-lg">ASR Model</Text>
+              <Text className="text-white text-lg">{t("voiceSettings.labels.asrModel")}</Text>
             </View>
             <View className="flex flex-1 flex-row gap-2 items-center justify-between">
               <Text
@@ -265,7 +267,7 @@ export function VoiceSettingsView({ goToPage }: any) {
         <View className="w-full flex flex-col" style={{ gap: 12 }}>
           <View className="flex flex-row items-center justify-between">
             <Text style={{ color: "#9F9FA0" }} className="text-sm uppercase">
-              Language Model (LLM)
+              {t("voiceSettings.sections.llm")}
             </Text>
             <Info size={18} color="#6F6F71" />
           </View>
@@ -275,7 +277,7 @@ export function VoiceSettingsView({ goToPage }: any) {
             onPress={() => setShowLlmPicker(true)}>
             <View className="flex flex-row gap-2 items-center">
               <Cpu size={18} color="#FFF" />
-              <Text className="text-white text-lg">LLM Model</Text>
+              <Text className="text-white text-lg">{t("voiceSettings.labels.llmModel")}</Text>
             </View>
             <View className="flex flex-1 flex-row gap-2 items-center justify-between">
               <Text
@@ -293,13 +295,13 @@ export function VoiceSettingsView({ goToPage }: any) {
         {/* Advanced Settings */}
         <View className="w-full flex flex-col" style={{ gap: 12 }}>
           <Text style={{ color: "#9F9FA0" }} className="text-sm uppercase">
-            Advanced Settings
+            {t("voiceSettings.sections.advanced")}
           </Text>
 
           {/* Confidence Threshold */}
           <View className="w-full flex flex-col" style={{ gap: 8 }}>
             <View className="flex flex-row items-center justify-between">
-              <Text className="text-white text-base">Confidence Threshold</Text>
+              <Text className="text-white text-base">{t("voiceSettings.labels.confidenceThreshold")}</Text>
               <Text className="text-white/60 text-sm">
                 {(confidenceThreshold * 100).toFixed(0)}%
               </Text>
@@ -346,9 +348,9 @@ export function VoiceSettingsView({ goToPage }: any) {
           {/* Auto Handoff */}
           <View className="flex flex-row items-center justify-between">
             <View className="flex flex-col gap-1">
-              <Text className="text-white text-base">Cloud Handoff</Text>
+              <Text className="text-white text-base">{t("voiceSettings.labels.cloudHandoff")}</Text>
               <Text className="text-white/60 text-sm">
-                Route low-confidence queries to cloud
+                {t("voiceSettings.descriptions.cloudHandoff")}
               </Text>
             </View>
             <Switch
@@ -362,7 +364,7 @@ export function VoiceSettingsView({ goToPage }: any) {
           {/* Processing Delay */}
           <View className="flex flex-row items-center justify-between">
             <View className="flex flex-col gap-1">
-              <Text className="text-white text-base">Processing Delay</Text>
+              <Text className="text-white text-base">{t("voiceSettings.labels.processingDelay")}</Text>
               <Text className="text-white/60 text-sm">
                 {processingDelay}ms between turns
               </Text>
@@ -389,9 +391,9 @@ export function VoiceSettingsView({ goToPage }: any) {
           {/* VAD Threshold */}
           <View className="flex flex-row items-center justify-between">
             <View className="flex flex-col gap-1">
-              <Text className="text-white text-base">VAD Sensitivity</Text>
+              <Text className="text-white text-base">{t("voiceSettings.labels.vadSensitivity")}</Text>
               <Text className="text-white/60 text-sm">
-                Speech detection threshold
+                {t("voiceSettings.descriptions.vadSensitivity")}
               </Text>
             </View>
             <Switch
@@ -405,9 +407,9 @@ export function VoiceSettingsView({ goToPage }: any) {
           {/* Enable TTS */}
           <View className="flex flex-row items-center justify-between">
             <View className="flex flex-col gap-1">
-              <Text className="text-white text-base">Text-to-Speech</Text>
+              <Text className="text-white text-base">{t("voiceSettings.labels.tts")}</Text>
               <Text className="text-white/60 text-sm">
-                Speak responses aloud
+                {t("voiceSettings.descriptions.tts")}
               </Text>
             </View>
             <Switch
@@ -425,7 +427,7 @@ export function VoiceSettingsView({ goToPage }: any) {
           style={{ backgroundColor: "#3B82F6", padding: 14 }}
           className="rounded-lg items-center">
           <Text className="text-white text-base font-medium">
-            Save Voice Settings
+            {t("voiceSettings.buttons.save")}
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -433,7 +435,7 @@ export function VoiceSettingsView({ goToPage }: any) {
       {/* ASR Model Picker Modal */}
       {showAsrPicker && (
         <ModelPickerModal
-          title="Select ASR Model"
+          title={t("voiceSettings.modal.selectAsr")}
           models={ASR_MODEL_OPTIONS}
           selectedModel={asrModel}
           onSelect={setAsrModel}
@@ -445,7 +447,7 @@ export function VoiceSettingsView({ goToPage }: any) {
       {/* LLM Model Picker Modal */}
       {showLlmPicker && (
         <ModelPickerModal
-          title="Select LLM Model"
+          title={t("voiceSettings.modal.selectLlm")}
           models={LLM_MODEL_OPTIONS}
           selectedModel={llmModel}
           onSelect={setLlmModel}
