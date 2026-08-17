@@ -211,6 +211,13 @@ jest.mock("react-native-waveform-player", () => ({
   AudioWaveformView: "AudioWaveformView",
 }));
 
+// ── react-native-waveform-recorder ─────────────────────────────
+jest.mock("react-native-waveform-recorder", () => ({
+  __esModule: true,
+  WaveformRecorderView: "WaveformRecorderView",
+  ensureMicrophonePermission: jest.fn().mockResolvedValue(true),
+}));
+
 // ── react-native-nitro-modules ─────────────────────────────────
 jest.mock("react-native-nitro-modules", () => ({
   NitroModules: {

@@ -40,11 +40,13 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@yz1311/react-native-intent-launcher": ["src/types/intent-launcher.d.ts"]
+      "@yz1311/react-native-intent-launcher": ["src/types/intent-launcher.d.ts"],
+      "react-native-waveform-recorder": ["src/types/react-native-waveform-recorder.d.ts"]
     }
   },
   "exclude": [
     "**/Pods/**",
-    "**/node_modules/@yz1311/react-native-intent-launcher/**"
+    "**/node_modules/@yz1311/react-native-intent-launcher/**",
+    "vendor/**"
   ]
 }
