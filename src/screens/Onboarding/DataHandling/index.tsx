@@ -31,7 +31,7 @@ export default function DataHandling() {
   const onContinue = async () => {
     setIsOnboarding(true);
     async function onboardingTasks() {
-      const workspace = await Workspace.create({ name: commonT("common:home.defaultWorkspaceName") });
+      const workspace = await Workspace.create({ name: commonT("home.defaultWorkspaceName") });
       return workspace;
     }
     async function waitAtLeast(ms: number) {
