@@ -98,6 +98,10 @@ export function useAudioMemos(): UseAudioMemosReturn {
       // take a few seconds (model load) and shouldn't block the caller.
       if (updates.transcript !== undefined) {
         embedMemoTranscript(updated).then(async vectorBoxIds => {
+          // undefined means the embed failed/was skipped - leave the memo's
+          // existing vectorBoxIds untouched rather than persisting an empty
+          // array over what could still be a valid, working embedding.
+          if (vectorBoxIds === undefined) return;
           const withVectors = await AudioMemo.update(uuid, { vectorBoxIds });
           if (withVectors) {
             setMemos(prev => prev.map(m => (m.uuid === uuid ? withVectors : m)));

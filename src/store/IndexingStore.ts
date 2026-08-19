@@ -5,6 +5,7 @@ import { getEmbeddingProvider } from "../utils/Embedder";
 import { EmbeddingEngine } from "../utils/Embedder/types";
 import VectorDB from "../utils/VectorDB";
 import Document from "../database/models/Document";
+import { invalidateWorkspaceCache } from "../utils/AiProviders/semanticSearchCache";
 import { storeProcessedFileAsText } from "../utils/fs";
 import { getSHA256Hash } from "../utils/device";
 import { dedupeChunks } from "../utils/chunking";
@@ -297,6 +298,7 @@ export class IndexingStore {
         }
       }
 
+      invalidateWorkspaceCache(workspaceSlug);
       return { imported, unchanged: this.skipped, failed: this.failed };
     } finally {
       this.isIndexing = false;

@@ -18,6 +18,7 @@ import VectorDB, { SemanticSearchResult } from "@/utils/VectorDB";
 import { type IAgentAction } from "@/database/models/WorkspaceChat";
 import ToolsManager from "@/utils/ToolsManager";
 import needleStore, { NEEDLE_ROUTER_ENABLED } from "@/store/NeedleStore";
+import { queryCache, queryCacheSet } from "@/utils/AiProviders/semanticSearchCache";
 
 interface BaseLLMProviderConfig {
   provider: string;
@@ -119,9 +120,7 @@ export default abstract class BaseOpenAILikeProvider {
   private DEFAULT_TOP_N = 2;
   private SEMANTIC_SEARCH_MIN_RELEVANCE_SCORE = 0.45;
   private SEMANTIC_SEARCH_CANDIDATE_TOP_N = 6;
-  private CONTEXT_TOKEN_BUDGET = 1200;
-  private QUERY_CACHE_MAX = 20;
-  private queryCache = new Map<string, SemanticSearchResult[]>();
+  private DEFAULT_CONTEXT_TOKEN_BUDGET = 1200;
 
   constructor({ provider, config }: BaseLLMProviderConfig) {
     this._provider = provider;
@@ -382,7 +381,7 @@ export default abstract class BaseOpenAILikeProvider {
         embeddingConfig?.dimensions,
         semanticTopN,
       );
-      const cached = this.queryCache.get(cacheKey);
+      const cached = queryCache.get(cacheKey);
       if (cached) {
         this.log("Semantic search cache hit");
         return cached;
@@ -407,7 +406,7 @@ export default abstract class BaseOpenAILikeProvider {
         .then(results => this.applyTokenBudget(results));
 
       if (results.length === 0) return [];
-      this.queryCacheSet(cacheKey, results);
+      queryCacheSet(cacheKey, results);
       this.log(
         `\nGot ${results.length} contexts:`,
         JSON.stringify(
@@ -439,17 +438,25 @@ export default abstract class BaseOpenAILikeProvider {
     return `${this.workspace?.slug || ""}:${dimensions ?? 0}:${topN ?? 0}:${normalized}`;
   }
 
-  private queryCacheSet(key: string, results: SemanticSearchResult[]) {
-    this.queryCache.delete(key);
-    this.queryCache.set(key, results);
-    if (this.queryCache.size > this.QUERY_CACHE_MAX) {
-      const oldest = this.queryCache.keys().next().value;
-      if (oldest !== undefined) this.queryCache.delete(oldest);
-    }
-  }
-
   private estimateTokens(text: string): number {
     return Math.ceil(text.trim().length / 4);
+  }
+
+  /**
+   * How many tokens of RAG-injected context to allow. Derived from the
+   * active workspace's model context length where available (roughly half
+   * of it, leaving room for chat history/system prompt/response), otherwise
+   * falls back to DEFAULT_CONTEXT_TOKEN_BUDGET - which also acts as a floor
+   * so a very small context window still gets a usable amount of context.
+   */
+  private get contextTokenBudget(): number {
+    const contextLength = this.workspace?.contextLength;
+    if (!contextLength || contextLength <= 0)
+      return this.DEFAULT_CONTEXT_TOKEN_BUDGET;
+    return Math.max(
+      this.DEFAULT_CONTEXT_TOKEN_BUDGET,
+      Math.floor(contextLength * 0.5),
+    );
   }
 
   /**
@@ -461,10 +468,11 @@ export default abstract class BaseOpenAILikeProvider {
   ): SemanticSearchResult[] {
     const budgeted: SemanticSearchResult[] = [];
     let usedTokens = 0;
+    const budget = this.contextTokenBudget;
     for (const result of results) {
       const content = String(result.metadata.content || "");
       const tokens = this.estimateTokens(content);
-      if (usedTokens + tokens > this.CONTEXT_TOKEN_BUDGET) break;
+      if (usedTokens + tokens > budget) break;
       budgeted.push(result);
       usedTokens += tokens;
     }

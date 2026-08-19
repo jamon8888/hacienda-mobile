@@ -28,6 +28,7 @@ export default class CactusLmWrapper {
   private model: string;
   private ggufFilePath: string | null = null;
   private cactusLmContext: CactusLM | null = null;
+  private initPromise: Promise<boolean> | null = null;
   private keepAliveTimer: ReturnType<typeof setTimeout> | null = null;
   private keepAliveInterval = 1000 * 60 * 5;
 
@@ -104,12 +105,22 @@ export default class CactusLmWrapper {
   }
 
   async initialize(): Promise<boolean> {
-    try {
-      if (!!this.cactusLmContext) {
-        this.log(`Context already loaded - skipping`);
-        return true;
-      }
+    if (!!this.cactusLmContext) {
+      this.log(`Context already loaded - skipping`);
+      return true;
+    }
+    // Collapse concurrent callers onto the same in-flight init instead of
+    // each racing their own CactusLM construction/download/init.
+    if (this.initPromise) return this.initPromise;
 
+    this.initPromise = this.doInitialize().finally(() => {
+      this.initPromise = null;
+    });
+    return this.initPromise;
+  }
+
+  private async doInitialize(): Promise<boolean> {
+    try {
       const ref = CACTUS_CHAT_MODELS[this.model];
       if (!ref)
         throw new Error(

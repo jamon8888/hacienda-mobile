@@ -627,7 +627,21 @@ class ModelStore {
     }
   };
 
+  private initContextPromise: Promise<CactusLM> | null = null;
+
+  // Guards against concurrent callers (e.g. a double-tap on "load model", or
+  // a manual load racing an AppState resume) each releasing/constructing
+  // their own native context - only the isContextLoading flag existed
+  // before, which is UI-facing state, not something that blocked re-entry.
   initContext = async (model: Model) => {
+    if (this.initContextPromise) return this.initContextPromise;
+    this.initContextPromise = this.doInitContext(model).finally(() => {
+      this.initContextPromise = null;
+    });
+    return this.initContextPromise;
+  };
+
+  private doInitContext = async (model: Model) => {
     await this.releaseContext();
     const filePath = await this.getModelFullPath(model);
     if (!filePath) {

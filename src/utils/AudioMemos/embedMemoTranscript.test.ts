@@ -63,7 +63,9 @@ describe("embedMemoTranscript", () => {
       workspaceSlug: null,
     });
 
-    expect(result).toEqual([]);
+    // undefined (not []) - the memo's existing vectorBoxIds must be left
+    // alone, since skipping isn't the same as "there are now zero vectors".
+    expect(result).toBeUndefined();
     expect(Workspace.first).not.toHaveBeenCalled();
     expect(VectorDB.bulkInsert).not.toHaveBeenCalled();
   });
@@ -108,9 +110,12 @@ describe("embedMemoTranscript", () => {
     });
 
     expect(mockEmbedder.embed).not.toHaveBeenCalled();
+    // chunkSize/chunkOverlap are token budgets that get converted to
+    // characters (×3.5) before being handed to the (character-based)
+    // splitter - 400 tokens -> 1400 chars, 50 tokens -> 175 chars.
     expect(mockEmbedder.splitAndEmbed).toHaveBeenCalledWith(
       longTranscript.trim(),
-      expect.objectContaining({ chunkOverlap: 50 }),
+      { chunkSize: 1400, chunkOverlap: 175 },
       "embed_document",
     );
     expect(VectorDB.bulkInsert).toHaveBeenCalledWith(
@@ -124,19 +129,20 @@ describe("embedMemoTranscript", () => {
     expect(result).toEqual([201, 202]);
   });
 
-  it("deletes prior vectors before inserting new ones (idempotent re-embed)", async () => {
+  it("inserts new vectors before deleting the old ones (idempotent re-embed)", async () => {
     const result = await embedMemoTranscript({
       ...baseMemo,
       vectorBoxIds: [50, 51],
     });
 
     expect(VectorDB.deleteVectorsByIds).toHaveBeenCalledWith([50, 51]);
-    // Deletion happens before the new insert.
-    const deleteOrder = (VectorDB.deleteVectorsByIds as jest.Mock).mock
-      .invocationCallOrder[0];
+    // Insert happens before the old vectors are deleted, so a failure
+    // between the two never leaves the memo un-embedded.
     const insertOrder = (VectorDB.bulkInsert as jest.Mock).mock
       .invocationCallOrder[0];
-    expect(deleteOrder).toBeLessThan(insertOrder);
+    const deleteOrder = (VectorDB.deleteVectorsByIds as jest.Mock).mock
+      .invocationCallOrder[0];
+    expect(insertOrder).toBeLessThan(deleteOrder);
     expect(result).toEqual([101]);
   });
 
@@ -152,11 +158,11 @@ describe("embedMemoTranscript", () => {
     expect(result).toEqual([]);
   });
 
-  it("never throws - returns [] on failure", async () => {
+  it("never throws - returns undefined on failure", async () => {
     (Workspace.first as jest.Mock).mockRejectedValue(new Error("db down"));
 
     const result = await embedMemoTranscript(baseMemo);
 
-    expect(result).toEqual([]);
+    expect(result).toBeUndefined();
   });
 });

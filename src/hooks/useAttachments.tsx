@@ -22,6 +22,7 @@ import {
 } from "@/utils/Embedder";
 import VectorDB from "@/utils/VectorDB";
 import Document from "@/database/models/Document";
+import { invalidateWorkspaceCache } from "@/utils/AiProviders/semanticSearchCache";
 import { showToast } from "@/utils/Notification";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { snapPointsDefault } from "@/screens/WorkspaceChat/PromptInput";
@@ -231,12 +232,19 @@ export default function useAttachments({
         // the original filename.
         await storeProcessedFileAsText(attachment.name, result);
 
-        // Embed the processed file
-        const chunkSize = embeddingConfig ? Math.min(400, 512 - 50) : 2048; // 512 token context for multilingual models
+        // Embed the processed file. chunkSize/chunkOverlap here are token
+        // budgets, but splitAndEmbed's TextSplitter (LangChain's
+        // RecursiveCharacterTextSplitter) counts characters - convert
+        // (~4 chars/token) before handing them off.
+        const CHARS_PER_TOKEN = 4;
+        const tokenChunkSize = embeddingConfig ? Math.min(400, 512 - 50) : 2048; // 512 token context for multilingual models
         const document = await embedder
           .splitAndEmbed(
             result,
-            { chunkSize, chunkOverlap: 50 },
+            {
+              chunkSize: tokenChunkSize * CHARS_PER_TOKEN,
+              chunkOverlap: 50 * CHARS_PER_TOKEN,
+            },
             "embed_document",
           )
           .then(embedResults =>
@@ -262,6 +270,7 @@ export default function useAttachments({
 
         if (!document)
           throw new Error("Failed to create document for attachment");
+        invalidateWorkspaceCache(workspaceSlug);
         const newAttachment: Attachment = {
           ...attachment,
           content: result,

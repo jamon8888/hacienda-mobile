@@ -4,6 +4,7 @@ import VectorDB from "@/utils/VectorDB";
 import Workspace from "@/database/models/Workspace";
 import { AudioMemoType } from "@/database/models/AudioMemo";
 import { MultilingualEmbeddingModelId } from "@/utils/models/defaults";
+import { invalidateWorkspaceCache } from "@/utils/AiProviders/semanticSearchCache";
 
 // AudioMemo has no title field - synthesize a stable, human-readable label
 // from the recording time. Shared so citations (CitationsActionSheet) show
@@ -12,38 +13,52 @@ export function getMemoDisplayName(memo: AudioMemoType): string {
   return `Voice memo — ${dayjs(memo.createdAt).format("MMM D, YYYY, h:mm A")}`;
 }
 
+// Characters-per-token used to convert between the embedder's token-based
+// context budget and the character-based TextSplitter. ~4 is a reasonable
+// average for English prose; transcribed speech and French text tend to run
+// higher tokens-per-character, so both this and CHARS_PER_TOKEN below lean
+// conservative rather than risk silently truncating a transcript.
+const CHARS_PER_TOKEN = 3.5;
+
 /**
  * Embeds a memo's transcript into the workspace's vector store, so it
  * becomes retrievable via RAG like an uploaded Document. Idempotent: any
- * vectors the memo already owns are deleted first, so this also serves as
- * the re-embed path when a transcript is edited.
+ * vectors the memo already owns are replaced, so this also serves as the
+ * re-embed path when a transcript is edited.
  *
  * Global memos (workspaceSlug === null) are skipped - the RAG stack (like
  * Document) requires every vector to belong to exactly one workspace, and
  * there's no "search across workspaces" concept to plug a global memo into.
  *
  * Never throws - embedding is best-effort background work; a failure here
- * should not block saving a transcript. Returns the new vector IDs (or []
- * if skipped/failed) for the caller to persist onto the memo.
+ * should not block saving a transcript. Returns:
+ * - the memo's new vector IDs (possibly []) on success, for the caller to
+ *   persist onto the memo
+ * - `undefined` on failure or when skipped, meaning "leave the memo's
+ *   existing vectorBoxIds alone" - the caller must not overwrite them with
+ *   `[]`, or a transient failure would silently un-embed the memo
  */
 export async function embedMemoTranscript(
   memo: AudioMemoType,
-): Promise<number[]> {
+): Promise<number[] | undefined> {
   try {
-    if (!memo.workspaceSlug) return [];
+    if (!memo.workspaceSlug) return undefined;
 
-    // Idempotent: always clear prior vectors first, whether re-embedding
-    // after a transcript edit or the transcript was cleared out entirely.
-    if (memo.vectorBoxIds.length > 0) {
-      await VectorDB.deleteVectorsByIds(memo.vectorBoxIds);
+    const transcript = memo.transcript?.trim() ?? "";
+
+    if (!transcript) {
+      // Nothing to embed - clear out any vectors left from a prior embed.
+      // Safe to delete outright here since there's no replacement pending.
+      if (memo.vectorBoxIds.length > 0) {
+        await VectorDB.deleteVectorsByIds(memo.vectorBoxIds);
+      }
+      return [];
     }
-
-    if (!memo.transcript || !memo.transcript.trim()) return [];
 
     const workspace = await Workspace.first([
       { field: "slug", value: memo.workspaceSlug },
     ]);
-    if (!workspace) return [];
+    if (!workspace) return undefined;
 
     const embeddingConfig = workspace.embeddingConfig;
     const embedder = embeddingConfig
@@ -51,7 +66,6 @@ export async function embedMemoTranscript(
       : getEmbeddingProvider();
 
     const name = getMemoDisplayName(memo);
-    const transcript = memo.transcript.trim();
     const baseMetadata = {
       name,
       sourceType: "audio-memo" as const,
@@ -60,7 +74,7 @@ export async function embedMemoTranscript(
 
     // Memo transcripts are typically far shorter than documents - skip
     // TextSplitter entirely when the whole transcript fits in one chunk.
-    const estimatedTokens = Math.ceil(transcript.length / 4);
+    const estimatedTokens = Math.ceil(transcript.length / CHARS_PER_TOKEN);
     const contextBudget = embedder.getContextLength() - 50;
 
     let vectors: { embedding: number[]; metadata: object }[];
@@ -72,10 +86,16 @@ export async function embedMemoTranscript(
       );
       vectors = [{ embedding, metadata: { content: transcript, ...baseMetadata } }];
     } else {
-      const chunkSize = embeddingConfig ? Math.min(400, contextBudget) : 2048;
+      // chunkSize/chunkOverlap here are token budgets, but splitAndEmbed's
+      // TextSplitter (LangChain's RecursiveCharacterTextSplitter) counts
+      // characters - convert before handing them off.
+      const tokenChunkSize = embeddingConfig ? Math.min(400, contextBudget) : 2048;
       const results = await embedder.splitAndEmbed(
         transcript,
-        { chunkSize, chunkOverlap: 50 },
+        {
+          chunkSize: Math.round(tokenChunkSize * CHARS_PER_TOKEN),
+          chunkOverlap: Math.round(50 * CHARS_PER_TOKEN),
+        },
         "embed_document",
       );
       vectors = results.map(result => ({
@@ -84,10 +104,19 @@ export async function embedMemoTranscript(
       }));
     }
 
+    // Insert the new vectors before deleting the old ones, so a failure here
+    // never leaves the memo un-embedded - the prior (still-valid) vectors
+    // stay in place until the replacement has actually succeeded.
     const { ids } = await VectorDB.bulkInsert(memo.workspaceSlug, vectors);
+
+    if (memo.vectorBoxIds.length > 0) {
+      await VectorDB.deleteVectorsByIds(memo.vectorBoxIds);
+    }
+
+    invalidateWorkspaceCache(memo.workspaceSlug);
     return ids;
   } catch (err) {
     console.warn("Failed to embed memo transcript:", memo.uuid, err);
-    return [];
+    return undefined;
   }
 }

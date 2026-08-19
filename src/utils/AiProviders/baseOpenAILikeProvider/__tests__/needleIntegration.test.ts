@@ -1,4 +1,5 @@
 import BaseOpenAILikeProvider from "../index";
+import { queryCache } from "@/utils/AiProviders/semanticSearchCache";
 
 jest.mock("react-native-device-info", () => ({
   __esModule: true,
@@ -78,6 +79,11 @@ class TestProvider extends BaseOpenAILikeProvider {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  // The semantic-search cache is shared (module-level) rather than
+  // per-instance now, so it needs resetting between tests the same way the
+  // mocks do - otherwise an earlier test's cached result for the same
+  // prompt/workspace/topN can be served back here instead of a fresh search.
+  queryCache.clear();
   vectorDbMocks.getWorkspaceVectorCount.mockResolvedValue(10);
   vectorDbMocks.runSemanticSearch.mockResolvedValue([
     {
