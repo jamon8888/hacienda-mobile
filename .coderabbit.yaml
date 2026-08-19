@@ -1,9 +1,51 @@
+# yaml-language-server: $schema=https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json
+language: en-US
+
 reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+    # These PRs target the feature branch, not main, so review any base.
+    base_branches:
+      - ".*"
   path_filters:
-    - "babel.config.js"
-    - "jest.config.js"
-    - "src/screens/AudioMemos/AudioMemosScreen.test.tsx"
-    - "src/screens/AudioMemos/MemoPlayerScreen.test.tsx"
-    - "src/screens/AudioMemos/MemoRow.test.tsx"
-    - "src/utils/Embedder/onDevice/tokenizer.ts"
-    - "src/utils/chat/completionSettingsVersions.ts"
+    - "!**/*.lock"
+    - "!yarn.lock"
+    - "!**/dist/**"
+    - "!**/build/**"
+    - "!android/**"
+    - "!ios/**"
+    - "!node_modules/**"
+    - "!**/*.gguf"
+    - "!**/*.tflite"
+    - "!**/*.onnx"
+  path_instructions:
+    - path: "src/utils/Embedder/**"
+      instructions: >
+        Focus on embedding dimension consistency between model config and
+        VectorDB schema, correct model loading/unloading, and workspace
+        isolation. Flag hardcoded dimensions that should be read from model
+        config instead.
+    - path: "src/store/**"
+      instructions: >
+        Check MobX observable/action correctness, missing @action decorators
+        on state mutations, and download/persistence callback typing.
+    - path: "src/screens/**"
+      instructions: >
+        Check for dark-mode support via NativeWind className usage,
+        SafeView/safe-area handling, and accessibility.
+    - path: "**/*.test.{ts,tsx}"
+      instructions: "Check test coverage matches the behavior described in the PR."
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  learnings:
+    scope: auto
