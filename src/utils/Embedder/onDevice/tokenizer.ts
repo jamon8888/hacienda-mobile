@@ -63,7 +63,14 @@ export function tokenize(
     );
   }
 
-  const ids = spmProcessor.encodeIds(text);
+  if (maxLength < 2) {
+    throw new Error(
+      `maxLength must be at least 2 (CLS + SEP tokens), got ${maxLength}`,
+    );
+  }
+
+  const trimmed = text.trim();
+  const ids = trimmed.length > 0 ? spmProcessor.encodeIds(trimmed) : [];
   const tokens: number[] = [
     TOKENIZER_CONSTANTS.CLS_TOKEN,
     ...ids,
