@@ -3,6 +3,11 @@ import { database } from "@/database";
 import { Q, Model } from "@nozbe/watermelondb";
 import { generateUUID } from "@/utils/constants";
 
+// Ensure the vector box ids are an array of numbers (mirrors Document.ts).
+const sanitizeVectorBoxIds = (json: unknown): number[] => {
+  return Array.isArray(json) ? json.map(Number) : [];
+};
+
 export type AudioMemoType = {
   uuid: string;
   workspaceSlug: string | null;
@@ -10,6 +15,7 @@ export type AudioMemoType = {
   transcript: string | null;
   durationMs: number;
   waveformPeaks: number[];
+  vectorBoxIds: number[];
   createdAt: number;
   updatedAt: number;
 };
@@ -23,6 +29,7 @@ export default class AudioMemo extends Model {
   @text("transcript") transcript!: string | null;
   @field("duration_ms") durationMs!: number;
   @json("waveform_peaks", peaks => peaks) waveformPeaks!: number[];
+  @json("vector_box_ids", sanitizeVectorBoxIds) vectorBoxIds!: number[];
   @field("created_at") createdAt!: number;
   @field("updated_at") updatedAt!: number;
 
@@ -34,6 +41,7 @@ export default class AudioMemo extends Model {
       transcript,
       durationMs,
       waveformPeaks,
+      vectorBoxIds,
       createdAt,
       updatedAt,
     } = data;
@@ -44,6 +52,7 @@ export default class AudioMemo extends Model {
       transcript,
       durationMs,
       waveformPeaks,
+      vectorBoxIds: vectorBoxIds ?? [],
       createdAt,
       updatedAt,
     };
@@ -83,6 +92,7 @@ export default class AudioMemo extends Model {
         audioMemo.transcript = transcript ?? null;
         audioMemo.durationMs = durationMs ?? 0;
         audioMemo.waveformPeaks = waveformPeaks ?? [];
+        audioMemo.vectorBoxIds = [];
         audioMemo.createdAt = Date.now();
         audioMemo.updatedAt = Date.now();
       })) as AudioMemo;
@@ -117,6 +127,8 @@ export default class AudioMemo extends Model {
             audioMemo.durationMs = updates.durationMs;
           if (updates.waveformPeaks !== undefined)
             audioMemo.waveformPeaks = updates.waveformPeaks;
+          if (updates.vectorBoxIds !== undefined)
+            audioMemo.vectorBoxIds = updates.vectorBoxIds;
           if (updates.workspaceSlug !== undefined)
             audioMemo.workspaceSlug = updates.workspaceSlug;
           audioMemo.updatedAt = Date.now();

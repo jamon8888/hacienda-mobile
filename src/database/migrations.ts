@@ -73,5 +73,16 @@ export default schemaMigrations({
         }),
       ],
     },
+    {
+      toVersion: 6,
+      steps: [
+        addColumns({
+          table: "audio_memos",
+          columns: [
+            { name: "vector_box_ids", type: "string", isOptional: true },
+          ],
+        }),
+      ],
+    },
   ],
 });

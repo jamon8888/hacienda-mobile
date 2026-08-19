@@ -17,6 +17,7 @@ const mockMemo: AudioMemoType = {
   transcript: "This is a test transcript for the memo",
   durationMs: 65000,
   waveformPeaks: [0.1, 0.5, 0.3, 0.8, 0.2],
+  vectorBoxIds: [],
   createdAt: Date.now() - 86400000,
   updatedAt: Date.now() - 86400000,
 };

@@ -24,7 +24,7 @@ describe("AudioMemo Database Schema", () => {
     expect(audioMemosTable).toBeDefined();
 
     const columns = audioMemosTable.columnArray;
-    expect(columns).toHaveLength(8);
+    expect(columns).toHaveLength(9);
 
     expect(columns.find(c => c.name === "uuid")).toEqual({
       name: "uuid",
@@ -60,6 +60,12 @@ describe("AudioMemo Database Schema", () => {
       type: "string",
     });
 
+    expect(columns.find(c => c.name === "vector_box_ids")).toEqual({
+      name: "vector_box_ids",
+      type: "string",
+      isOptional: true,
+    });
+
     expect(columns.find(c => c.name === "created_at")).toEqual({
       name: "created_at",
       type: "number",
@@ -71,8 +77,8 @@ describe("AudioMemo Database Schema", () => {
     });
   });
 
-  it("should have schema version 5", () => {
-    expect(schema.version).toBe(5);
+  it("should have schema version 6", () => {
+    expect(schema.version).toBe(6);
   });
 });
 
@@ -96,6 +102,23 @@ describe("AudioMemo Migration", () => {
     const createTableStep = steps[0] as any;
     expect(createTableStep.type).toBe("create_table");
     expect(createTableStep.schema.name).toBe("audio_memos");
+  });
+
+  it("should have addColumns step for vector_box_ids in migration v6", () => {
+    const migrationV6 = migrations.sortedMigrations.find(
+      m => m.toVersion === 6,
+    );
+    expect(migrationV6).toBeDefined();
+
+    const steps = migrationV6!.steps;
+    expect(steps).toHaveLength(1);
+
+    const addColumnsStep = steps[0] as any;
+    expect(addColumnsStep.type).toBe("add_columns");
+    expect(addColumnsStep.table).toBe("audio_memos");
+    expect(addColumnsStep.columns).toEqual([
+      { name: "vector_box_ids", type: "string", isOptional: true },
+    ]);
   });
 });
 
@@ -287,10 +310,26 @@ describe("AudioMemo.toAudioMemoObject", () => {
       transcript: "text",
       durationMs: 100,
       waveformPeaks: [1, 2, 3],
+      vectorBoxIds: [10, 20],
       createdAt: 1000,
       updatedAt: 2000,
     };
     const result = AudioMemo.toAudioMemoObject(data as any);
     expect(result).toEqual(data);
+  });
+
+  it("defaults vectorBoxIds to an empty array when absent", () => {
+    const data = {
+      uuid: "uuid",
+      workspaceSlug: "slug",
+      audioUri: "uri",
+      transcript: "text",
+      durationMs: 100,
+      waveformPeaks: [1, 2, 3],
+      createdAt: 1000,
+      updatedAt: 2000,
+    };
+    const result = AudioMemo.toAudioMemoObject(data as any);
+    expect(result.vectorBoxIds).toEqual([]);
   });
 });

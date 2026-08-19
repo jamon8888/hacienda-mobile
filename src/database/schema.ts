@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from "@nozbe/watermelondb";
 
 export default appSchema({
-  version: 5,
+  version: 6,
   tables: [
     tableSchema({
       name: "workspaces",
@@ -69,6 +69,7 @@ export default appSchema({
         { name: "transcript", type: "string", isOptional: true },
         { name: "duration_ms", type: "number" },
         { name: "waveform_peaks", type: "string" },
+        { name: "vector_box_ids", type: "string", isOptional: true },
         { name: "created_at", type: "number" },
         { name: "updated_at", type: "number" },
       ],
