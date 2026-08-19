@@ -134,7 +134,7 @@ export function VoiceSettingsView({ goToPage }: any) {
       vadThreshold,
     };
     await uiStore.setToStorage("voiceSettings", settings);
-    uiStore.showError("Voice settings saved");
+    uiStore.showSuccess("Voice settings saved");
   };
 
   const getRecommendedBadge = (model: VoiceModelOption) => {

@@ -1,7 +1,5 @@
 import { useState, useCallback } from "react";
-import * as RNFS from "@dr.pogodin/react-native-fs";
 import AudioMemo, { AudioMemoType } from "@/database/models/AudioMemo";
-import VectorDB from "@/utils/VectorDB";
 import { embedMemoTranscript } from "@/utils/AudioMemos/embedMemoTranscript";
 
 interface UseAudioMemosReturn {
@@ -74,31 +72,19 @@ export function useAudioMemos(): UseAudioMemosReturn {
     [],
   );
 
-  const deleteMemo = useCallback(
-    async (uuid: string) => {
-      const memo = memos.find(m => m.uuid === uuid);
-      const success = await AudioMemo.delete([{ field: "uuid", value: uuid }]);
-      if (success) {
-        setMemos(prev => prev.filter(m => m.uuid !== uuid));
-        if (memo?.audioUri) {
-          try {
-            await RNFS.unlink(memo.audioUri);
-          } catch (err) {
-            console.warn("Failed to delete memo file:", memo.audioUri, err);
-          }
-        }
-        if (memo?.vectorBoxIds?.length) {
-          try {
-            await VectorDB.deleteVectorsByIds(memo.vectorBoxIds);
-          } catch (err) {
-            console.warn("Failed to delete memo vectors:", memo.uuid, err);
-          }
-        }
-      }
-      return success;
-    },
-    [memos],
-  );
+  const deleteMemo = useCallback(async (uuid: string) => {
+    // File and vector cleanup now happen inside AudioMemo.delete itself, so
+    // this stays correct even when called from contexts that don't have this
+    // hook's in-memory `memos` list (e.g. Workspace.delete, a full app reset).
+    const success = await AudioMemo.delete(
+      [{ field: "uuid", value: uuid }],
+      true,
+    );
+    if (success) {
+      setMemos(prev => prev.filter(m => m.uuid !== uuid));
+    }
+    return success;
+  }, []);
 
   const updateMemo = useCallback(
     async (uuid: string, updates: Partial<AudioMemoType>) => {

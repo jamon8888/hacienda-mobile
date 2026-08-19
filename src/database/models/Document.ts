@@ -3,19 +3,15 @@ import { database } from "@/database";
 import { Q, Model } from "@nozbe/watermelondb";
 import { generateUUID } from "@/utils/constants";
 import VectorDB from "@/utils/VectorDB";
+import sanitizeVectorBoxIds from "./shared/sanitizeVectorBoxIds";
 
 export type DocumentType = {
   name: string;
   uuid: string;
   workspaceSlug: string;
-  vectorBoxIds: string[];
+  vectorBoxIds: number[];
   contentHash?: string | null;
   createdAt: number;
-};
-
-// Ensure the vector box ids are an array of numbers
-const sanitizeVectorBoxIds = (json: string) => {
-  return Array.isArray(json) ? json.map(Number) : [];
 };
 
 export default class Document extends Model {
@@ -74,7 +70,7 @@ export default class Document extends Model {
    */
   static async find(
     where: { field: string; value: string }[] = [],
-  ): Promise<any> {
+  ): Promise<DocumentType[]> {
     const documents = await database
       .get(Document.table)
       .query(where.map(({ field, value }) => Q.where(field, value)))
@@ -133,11 +129,10 @@ export default class Document extends Model {
         if (documents.length === 0) return;
         this.log(`deleting ${documents.length} documents by uuids`);
         for (const document of documents) {
-          // @ts-ignore
-          let documentVectorBoxIds = document._raw.vector_box_ids;
-          if (typeof documentVectorBoxIds === "string")
-            documentVectorBoxIds = JSON.parse(documentVectorBoxIds);
-          vectorBoxIds = [...vectorBoxIds, ...(documentVectorBoxIds || [])];
+          vectorBoxIds = [
+            ...vectorBoxIds,
+            ...((document as Document).vectorBoxIds || []),
+          ];
           await document.destroyPermanently();
         }
       });
@@ -174,11 +169,10 @@ export default class Document extends Model {
         if (documents.length === 0) return;
         this.log(`deleting ${documents.length} documents`, where);
         for (const document of documents) {
-          // @ts-ignore
-          let documentVectorBoxIds = document._raw.vector_box_ids;
-          if (typeof documentVectorBoxIds === "string")
-            documentVectorBoxIds = JSON.parse(documentVectorBoxIds);
-          vectorBoxIds = [...vectorBoxIds, ...(documentVectorBoxIds || [])];
+          vectorBoxIds = [
+            ...vectorBoxIds,
+            ...((document as Document).vectorBoxIds || []),
+          ];
           await document.destroyPermanently();
         }
       });

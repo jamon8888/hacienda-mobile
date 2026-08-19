@@ -2,6 +2,8 @@ import schema from "@/database/schema";
 import migrations from "@/database/migrations";
 import AudioMemo from "@/database/models/AudioMemo";
 import { generateUUID } from "@/utils/constants";
+import * as RNFS from "@dr.pogodin/react-native-fs";
+import VectorDB from "@/utils/VectorDB";
 
 jest.mock("@/database", () => ({
   database: {
@@ -12,6 +14,15 @@ jest.mock("@/database", () => ({
 
 jest.mock("@/utils/constants", () => ({
   generateUUID: jest.fn(),
+}));
+
+jest.mock("@dr.pogodin/react-native-fs", () => ({
+  unlink: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock("@/utils/VectorDB", () => ({
+  __esModule: true,
+  default: { deleteVectorsByIds: jest.fn().mockResolvedValue(true) },
 }));
 
 describe("AudioMemo Database Schema", () => {
@@ -214,6 +225,115 @@ describe("AudioMemo.create", () => {
     expect(result).toHaveProperty("createdAt");
     expect(result).toHaveProperty("updatedAt");
     expect(Array.isArray(result.waveformPeaks)).toBe(true);
+  });
+
+  it("honors caller-supplied vectorBoxIds and updatedAt instead of ignoring them", async () => {
+    const memoObj: any = {
+      uuid: "",
+      workspaceSlug: null,
+      audioUri: "",
+      transcript: null,
+      durationMs: 0,
+      waveformPeaks: [],
+      vectorBoxIds: [],
+      createdAt: 0,
+      updatedAt: 0,
+    };
+    const mockCreate = jest.fn().mockImplementation(callback => {
+      callback(memoObj);
+      return Promise.resolve(memoObj);
+    });
+    const mockGet = jest.fn().mockReturnValue({ create: mockCreate });
+    const mockWrite = jest.fn().mockImplementation(fn => fn());
+
+    require("@/database").database.write = mockWrite;
+    require("@/database").database.get = mockGet;
+    (generateUUID as jest.Mock).mockReturnValue("generated-uuid");
+
+    await AudioMemo.create({
+      audioUri: "test",
+      vectorBoxIds: [10, 20],
+      updatedAt: 555,
+    });
+
+    expect(memoObj.vectorBoxIds).toEqual([10, 20]);
+    expect(memoObj.updatedAt).toBe(555);
+  });
+});
+
+describe("AudioMemo.delete", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("unlinks the audio file and deletes vectors when withVectors is true", async () => {
+    const memo = {
+      uuid: "to-delete",
+      audioUri: "file:///del.m4a",
+      vectorBoxIds: [10, 11],
+      prepareMarkAsDeleted: jest.fn(),
+    };
+    const mockQuery = jest
+      .fn()
+      .mockReturnValue({ fetch: jest.fn().mockResolvedValue([memo]) });
+    const mockBatch = jest.fn().mockResolvedValue(undefined);
+    const mockGet = jest.fn().mockReturnValue({ query: mockQuery });
+    const mockWrite = jest.fn().mockImplementation(fn => fn());
+
+    require("@/database").database.write = mockWrite;
+    require("@/database").database.get = mockGet;
+    require("@/database").database.batch = mockBatch;
+
+    const result = await AudioMemo.delete(
+      [{ field: "uuid", value: "to-delete" }],
+      true,
+    );
+
+    expect(result).toBe(true);
+    expect(RNFS.unlink).toHaveBeenCalledWith("file:///del.m4a");
+    expect(VectorDB.deleteVectorsByIds).toHaveBeenCalledWith([10, 11]);
+  });
+
+  it("does not call VectorDB when withVectors is false", async () => {
+    const memo = {
+      uuid: "to-delete",
+      audioUri: "file:///del.m4a",
+      vectorBoxIds: [10, 11],
+      prepareMarkAsDeleted: jest.fn(),
+    };
+    const mockQuery = jest
+      .fn()
+      .mockReturnValue({ fetch: jest.fn().mockResolvedValue([memo]) });
+    const mockGet = jest.fn().mockReturnValue({ query: mockQuery });
+    const mockWrite = jest.fn().mockImplementation(fn => fn());
+
+    require("@/database").database.write = mockWrite;
+    require("@/database").database.get = mockGet;
+    require("@/database").database.batch = jest.fn().mockResolvedValue(undefined);
+
+    await AudioMemo.delete([{ field: "uuid", value: "to-delete" }]);
+
+    expect(RNFS.unlink).toHaveBeenCalledWith("file:///del.m4a");
+    expect(VectorDB.deleteVectorsByIds).not.toHaveBeenCalled();
+  });
+
+  it("returns false and does not attempt cleanup when nothing matches", async () => {
+    const mockQuery = jest
+      .fn()
+      .mockReturnValue({ fetch: jest.fn().mockResolvedValue([]) });
+    const mockGet = jest.fn().mockReturnValue({ query: mockQuery });
+    const mockWrite = jest.fn().mockImplementation(fn => fn());
+
+    require("@/database").database.write = mockWrite;
+    require("@/database").database.get = mockGet;
+
+    const result = await AudioMemo.delete([
+      { field: "uuid", value: "nonexistent" },
+    ]);
+
+    expect(result).toBe(false);
+    expect(RNFS.unlink).not.toHaveBeenCalled();
+    expect(VectorDB.deleteVectorsByIds).not.toHaveBeenCalled();
   });
 });
 

@@ -217,6 +217,8 @@ export default class WorkspaceThread extends Model {
     try {
       let validatedFields: Partial<WorkspaceThreadType> = {};
       for (const [key, value] of Object.entries(updates)) {
+        if (!WorkspaceThread.writableFields[key])
+          throw new Error(`Unknown workspace thread field: ${key}`);
         const validation = WorkspaceThread.writableFields[key].validate(value);
         if (!validation.valid) throw new Error(validation.error);
         validatedFields[key] = value;
@@ -229,7 +231,6 @@ export default class WorkspaceThread extends Model {
       await database.write(async () => {
         updatedThread = await existingThread.update((thread: any) => {
           Object.assign(thread, validatedFields);
-          return WorkspaceThread.toWorkspaceThreadObject(thread);
         });
       });
 

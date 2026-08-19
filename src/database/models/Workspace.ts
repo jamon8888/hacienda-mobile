@@ -5,6 +5,7 @@ import { Q, Model } from "@nozbe/watermelondb";
 import { generateUUID } from "@/utils/constants";
 import WorkspaceThread, { WorkspaceThreadType } from "./WorkspaceThread";
 import Document from "./Document";
+import AudioMemo from "./AudioMemo";
 import uiStore from "@/store/UIStore";
 import WorkspaceChat from "./WorkspaceChat";
 import AnythingLLMExternal from "@/utils/AnythingLLMExternal";
@@ -138,7 +139,7 @@ export default class Workspace extends Model {
       validate: (value: any) => {
         let error = "";
         if (!value || typeof value !== "object")
-          error = "Embedding config must be an object";
+          return { valid: false, error: "Embedding config must be an object" };
         if (
           value.engine &&
           !MULTILINGUAL_EMBEDDING_MODELS[
@@ -154,7 +155,7 @@ export default class Workspace extends Model {
       validate: (value: any) => {
         let error = "";
         if (!value || typeof value !== "object")
-          error = "Xberg config must be an object";
+          return { valid: false, error: "Xberg config must be an object" };
         if (
           value.chunkingStrategy &&
           !["semantic", "text", "markdown"].includes(value.chunkingStrategy)
@@ -350,14 +351,14 @@ export default class Workspace extends Model {
         .create((workspace: any) => {
           workspace.name = name;
           workspace.slug = slug;
-          workspace.system_prompt = Workspace.defaultSystemPrompt;
+          workspace.systemPrompt = Workspace.defaultSystemPrompt;
           workspace.temperature = Workspace.defaultTemperature;
-          workspace.context_length = Workspace.defaultContextLength;
-          workspace.is_remote = false;
-          workspace.remote_config = null;
-          workspace.embedding_config = defaultEmbeddingConfig;
-          workspace.xberg_config = DEFAULT_XBERG_CONFIG;
-          workspace.created_at = Date.now();
+          workspace.contextLength = Workspace.defaultContextLength;
+          workspace.isRemote = false;
+          workspace.remoteConfig = null;
+          workspace.embeddingConfig = defaultEmbeddingConfig;
+          workspace.xbergConfig = DEFAULT_XBERG_CONFIG;
+          workspace.createdAt = Date.now();
         });
     });
     newWorkspace = this.toWorkspaceObject(newWorkspace);
@@ -381,6 +382,8 @@ export default class Workspace extends Model {
 
       let validatedFields: Partial<WorkspaceType> = {};
       for (const [key, value] of Object.entries(updates)) {
+        if (!Workspace.writableFields[key])
+          throw new Error(`Unknown workspace field: ${key}`);
         const validation = Workspace.writableFields[key].validate(value);
         if (!validation.valid) throw new Error(validation.error);
         validatedFields[key] = value;
@@ -391,16 +394,18 @@ export default class Workspace extends Model {
       await database.write(async () => {
         updatedWorkspace = await workspace.update((ws: any) => {
           Object.assign(ws, validatedFields);
-          return Workspace.toWorkspaceObject(ws);
         });
       });
+      const updatedWorkspaceObject = Workspace.toWorkspaceObject(
+        updatedWorkspace,
+      );
 
       // Emit the updated workspace to the UI if useWorkspace hook is listening
       (uiStore.emitter as any).emit("workspaceUpdate", {
         type: "update",
-        details: { workspace: updatedWorkspace },
+        details: { workspace: updatedWorkspaceObject },
       });
-      return updatedWorkspace;
+      return updatedWorkspaceObject;
     } catch (error) {
       console.error("Error updating workspace:", error);
       return null;
@@ -455,9 +460,17 @@ export default class Workspace extends Model {
           Document.delete([{ field: "workspace_slug", value: wsSlug }], true),
         ),
       );
+      await Promise.all(
+        workspaceSlugs.map(wsSlug =>
+          AudioMemo.delete(
+            [{ field: "workspace_slug", value: wsSlug }],
+            true,
+          ),
+        ),
+      );
 
       this.log(
-        `${workspaceSlugs.length} workspaces, children threads, and dependent documents/vectors successfully deleted`,
+        `${workspaceSlugs.length} workspaces, children threads, and dependent documents/memos/vectors successfully deleted`,
       );
       return true;
     } catch (error) {
@@ -493,17 +506,17 @@ export default class Workspace extends Model {
           if (!workspace.name) workspace.name = Workspace.defaultName;
           if (!workspace.slug)
             workspace.slug = slugify(workspace.name).toLowerCase();
-          if (!workspace.system_prompt)
-            workspace.system_prompt = Workspace.defaultSystemPrompt;
+          if (!workspace.systemPrompt)
+            workspace.systemPrompt = Workspace.defaultSystemPrompt;
           if (!workspace.temperature)
             workspace.temperature = Workspace.defaultTemperature;
-          if (!workspace.context_length)
-            workspace.context_length = Workspace.defaultContextLength;
-          if (!workspace.is_remote)
-            workspace.is_remote = data.isRemote ?? false;
-          if (!workspace.remote_config)
-            workspace.remote_config = data.remoteConfig ?? null;
-          workspace.created_at = Date.now();
+          if (!workspace.contextLength)
+            workspace.contextLength = Workspace.defaultContextLength;
+          if (!workspace.isRemote)
+            workspace.isRemote = data.isRemote ?? false;
+          if (!workspace.remoteConfig)
+            workspace.remoteConfig = data.remoteConfig ?? null;
+          workspace.createdAt = Date.now();
         });
     });
     newWorkspace = this.toWorkspaceObject(newWorkspace);

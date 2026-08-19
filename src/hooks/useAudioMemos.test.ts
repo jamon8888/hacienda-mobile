@@ -1,6 +1,4 @@
 import AudioMemo from "@/database/models/AudioMemo";
-import * as RNFS from "@dr.pogodin/react-native-fs";
-import VectorDB from "@/utils/VectorDB";
 import { embedMemoTranscript } from "@/utils/AudioMemos/embedMemoTranscript";
 
 jest.mock("@/database/models/AudioMemo", () => ({
@@ -10,13 +8,6 @@ jest.mock("@/database/models/AudioMemo", () => ({
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
-  },
-}));
-
-jest.mock("@/utils/VectorDB", () => ({
-  __esModule: true,
-  default: {
-    deleteVectorsByIds: jest.fn().mockResolvedValue(true),
   },
 }));
 
@@ -129,7 +120,10 @@ describe("useAudioMemos", () => {
   });
 
   describe("deleteMemo", () => {
-    it("should delete memo and remove from list", async () => {
+    // File and vector cleanup now happen inside AudioMemo.delete itself (see
+    // AudioMemo.test.ts) - this hook just has to call it correctly and keep
+    // its local list in sync, so that's all these tests assert.
+    it("should delete memo via AudioMemo.delete with vector cleanup enabled and remove from list", async () => {
       const existingMemo = {
         uuid: "to-delete",
         audioUri: "file:///del.m4a",
@@ -154,108 +148,19 @@ describe("useAudioMemos", () => {
         await result.current.deleteMemo("to-delete");
       });
 
-      expect(AudioMemo.delete).toHaveBeenCalledWith([
-        { field: "uuid", value: "to-delete" },
-      ]);
-      expect(result.current.memos).toHaveLength(0);
-    });
-
-    it("should unlink the audio file from disk", async () => {
-      const existingMemo = {
-        uuid: "to-delete",
-        audioUri: "file:///del.m4a",
-        durationMs: 1000,
-        waveformPeaks: [],
-        workspaceSlug: null,
-        transcript: null,
-        createdAt: 1000,
-        updatedAt: 1000,
-      };
-
-      (AudioMemo.find as jest.Mock).mockResolvedValue([existingMemo]);
-      (AudioMemo.delete as jest.Mock).mockResolvedValue(true);
-
-      const { result } = renderHook(() => useAudioMemos());
-
-      await act(async () => {
-        await result.current.fetchMemos();
-      });
-
-      await act(async () => {
-        await result.current.deleteMemo("to-delete");
-      });
-
-      expect(RNFS.unlink).toHaveBeenCalledWith("file:///del.m4a");
-    });
-
-    it("should not throw if the file is already gone", async () => {
-      const existingMemo = {
-        uuid: "to-delete",
-        audioUri: "file:///del.m4a",
-        durationMs: 1000,
-        waveformPeaks: [],
-        workspaceSlug: null,
-        transcript: null,
-        createdAt: 1000,
-        updatedAt: 1000,
-      };
-
-      (AudioMemo.find as jest.Mock).mockResolvedValue([existingMemo]);
-      (AudioMemo.delete as jest.Mock).mockResolvedValue(true);
-      (RNFS.unlink as jest.Mock).mockRejectedValueOnce(
-        new Error("file not found"),
+      expect(AudioMemo.delete).toHaveBeenCalledWith(
+        [{ field: "uuid", value: "to-delete" }],
+        true,
       );
-
-      const { result } = renderHook(() => useAudioMemos());
-
-      await act(async () => {
-        await result.current.fetchMemos();
-      });
-
-      await expect(
-        act(async () => {
-          await result.current.deleteMemo("to-delete");
-        }),
-      ).resolves.not.toThrow();
       expect(result.current.memos).toHaveLength(0);
     });
 
-    it("should delete the memo's vectors from VectorDB when present", async () => {
+    it("should not remove the memo from the list when AudioMemo.delete fails", async () => {
       const existingMemo = {
         uuid: "to-delete",
         audioUri: "file:///del.m4a",
         durationMs: 1000,
         waveformPeaks: [],
-        vectorBoxIds: [10, 11],
-        workspaceSlug: "ws-1",
-        transcript: "text",
-        createdAt: 1000,
-        updatedAt: 1000,
-      };
-
-      (AudioMemo.find as jest.Mock).mockResolvedValue([existingMemo]);
-      (AudioMemo.delete as jest.Mock).mockResolvedValue(true);
-
-      const { result } = renderHook(() => useAudioMemos());
-
-      await act(async () => {
-        await result.current.fetchMemos();
-      });
-
-      await act(async () => {
-        await result.current.deleteMemo("to-delete");
-      });
-
-      expect(VectorDB.deleteVectorsByIds).toHaveBeenCalledWith([10, 11]);
-    });
-
-    it("should not call VectorDB.deleteVectorsByIds when the memo has no vectors", async () => {
-      const existingMemo = {
-        uuid: "to-delete",
-        audioUri: "file:///del.m4a",
-        durationMs: 1000,
-        waveformPeaks: [],
-        vectorBoxIds: [],
         workspaceSlug: null,
         transcript: null,
         createdAt: 1000,
@@ -263,7 +168,7 @@ describe("useAudioMemos", () => {
       };
 
       (AudioMemo.find as jest.Mock).mockResolvedValue([existingMemo]);
-      (AudioMemo.delete as jest.Mock).mockResolvedValue(true);
+      (AudioMemo.delete as jest.Mock).mockResolvedValue(false);
 
       const { result } = renderHook(() => useAudioMemos());
 
@@ -275,7 +180,7 @@ describe("useAudioMemos", () => {
         await result.current.deleteMemo("to-delete");
       });
 
-      expect(VectorDB.deleteVectorsByIds).not.toHaveBeenCalled();
+      expect(result.current.memos).toHaveLength(1);
     });
   });
 

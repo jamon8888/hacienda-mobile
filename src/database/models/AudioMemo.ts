@@ -2,11 +2,22 @@ import { field, json, text } from "@nozbe/watermelondb/decorators";
 import { database } from "@/database";
 import { Q, Model } from "@nozbe/watermelondb";
 import { generateUUID } from "@/utils/constants";
+import * as RNFS from "@dr.pogodin/react-native-fs";
+import VectorDB from "@/utils/VectorDB";
+import sanitizeVectorBoxIds from "./shared/sanitizeVectorBoxIds";
 
-// Ensure the vector box ids are an array of numbers (mirrors Document.ts).
-const sanitizeVectorBoxIds = (json: unknown): number[] => {
-  return Array.isArray(json) ? json.map(Number) : [];
-};
+function warnIfUnscoped(where: { field: string; value: string | null }[]) {
+  if (!__DEV__) return;
+  const scoped = where.some(
+    w => w.field === "workspace_slug" || w.field === "uuid",
+  );
+  if (!scoped) {
+    console.warn(
+      "AudioMemo query has no workspace_slug/uuid filter - this will match memos across every workspace:",
+      where,
+    );
+  }
+}
 
 export type AudioMemoType = {
   uuid: string;
@@ -62,6 +73,7 @@ export default class AudioMemo extends Model {
     where: { field: string; value: string | null }[] = [],
     orderBy: { field: string; direction: "asc" | "desc" }[] = [],
   ): Promise<AudioMemoType[]> {
+    warnIfUnscoped(where);
     const memos = await database
       .get(AudioMemo.table)
       .query(
@@ -80,6 +92,8 @@ export default class AudioMemo extends Model {
       transcript,
       durationMs,
       waveformPeaks,
+      vectorBoxIds,
+      updatedAt,
     } = data;
 
     let newMemo: AudioMemo | null = null;
@@ -92,9 +106,9 @@ export default class AudioMemo extends Model {
         audioMemo.transcript = transcript ?? null;
         audioMemo.durationMs = durationMs ?? 0;
         audioMemo.waveformPeaks = waveformPeaks ?? [];
-        audioMemo.vectorBoxIds = [];
+        audioMemo.vectorBoxIds = vectorBoxIds ?? [];
         audioMemo.createdAt = Date.now();
-        audioMemo.updatedAt = Date.now();
+        audioMemo.updatedAt = updatedAt ?? Date.now();
       })) as AudioMemo;
     });
 
@@ -143,21 +157,72 @@ export default class AudioMemo extends Model {
 
   static async delete(
     where: { field: string; value: string }[],
+    withVectors: boolean = false,
   ): Promise<boolean> {
     try {
-      return await database.write(async () => {
+      warnIfUnscoped(where);
+      let audioUris: string[] = [];
+      let vectorBoxIds: number[] = [];
+      let found = false;
+      await database.write(async () => {
         const memos = (await database
           .get(AudioMemo.table)
           .query(where.map(({ field, value }) => Q.where(field, value)))
           .fetch()) as (Model & AudioMemoType)[];
-        if (memos.length === 0) return false;
+        if (memos.length === 0) return;
+        found = true;
 
+        for (const memo of memos) {
+          if (memo.audioUri) audioUris.push(memo.audioUri);
+          vectorBoxIds = [...vectorBoxIds, ...(memo.vectorBoxIds ?? [])];
+        }
         await database.batch(memos.map(memo => memo.prepareMarkAsDeleted()));
-        return true;
       });
+      if (!found) return false;
+
+      for (const uri of audioUris) {
+        try {
+          await RNFS.unlink(uri);
+        } catch (err) {
+          console.warn("Failed to delete memo file:", uri, err);
+        }
+      }
+      if (withVectors && vectorBoxIds.length) {
+        try {
+          await VectorDB.deleteVectorsByIds(vectorBoxIds);
+        } catch (err) {
+          console.warn("Failed to delete memo vectors:", err);
+        }
+      }
+      return true;
     } catch (error) {
       console.error("Error deleting audio memos", error);
       return false;
     }
+  }
+
+  static async deleteAll(): Promise<boolean> {
+    const memos = (await database
+      .get(AudioMemo.table)
+      .query()
+      .fetch()) as (Model & AudioMemoType)[];
+    if (!memos || memos.length === 0) return true;
+
+    const audioUris = memos.map(m => m.audioUri).filter(Boolean);
+    await database.write(async () => {
+      await database.batch(memos.map(memo => memo.prepareMarkAsDeleted()));
+    });
+
+    for (const uri of audioUris) {
+      try {
+        await RNFS.unlink(uri);
+      } catch (err) {
+        console.warn("Failed to delete memo file:", uri, err);
+      }
+    }
+    // Vector cleanup is intentionally left to the caller (e.g. a full app
+    // reset already calls VectorDB.reset() once for everything, which is
+    // cheaper and avoids racing a second per-id deletion pass here).
+    return true;
   }
 }

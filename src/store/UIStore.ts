@@ -1,8 +1,9 @@
-import { Appearance } from "react-native";
+import { Alert, Appearance, Platform } from "react-native";
 import { makePersistable } from "mobx-persist-store";
 import { makeAutoObservable, runInAction } from "mobx";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NativeEventEmitter } from "react-native";
+import { showToast } from "@/utils/Notification";
 
 type StorageKeys =
   | "onboarding_welcome_completed"
@@ -74,8 +75,20 @@ export class UIStore {
   session = new Map<string, any>();
 
   showError(message: string) {
-    // TODO: Implement error display logic (e.g., toast, alert, etc.)
     console.error(message);
+    if (Platform.OS === "android") {
+      showToast(message, "long");
+    } else {
+      Alert.alert("Error", message);
+    }
+  }
+
+  showSuccess(message: string) {
+    if (Platform.OS === "android") {
+      showToast(message, "short");
+    } else {
+      Alert.alert("Success", message);
+    }
   }
 
   constructor() {

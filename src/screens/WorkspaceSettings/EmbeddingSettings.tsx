@@ -113,7 +113,7 @@ export function EmbeddingSettingsView({
       { embeddingConfig: newConfig },
     );
     setConfig(newConfig);
-    uiStore.showError("Embedding settings saved");
+    uiStore.showSuccess("Embedding settings saved");
   }
 
   async function handleEngineChange(engine: MultilingualEmbeddingModelId) {
