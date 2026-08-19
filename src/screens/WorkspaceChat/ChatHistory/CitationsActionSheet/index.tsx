@@ -16,13 +16,15 @@ import {
   type WorkspaceChatType,
   type IDocumentCitation,
   type IAgentWebSearchCitation,
+  type IAudioMemoCitation,
 } from "@/database/models/WorkspaceChat";
 import { numberToPercentageString, getOrigin } from "@/utils/formatters";
-import { ArrowSquareOut, FileText, Globe } from "phosphor-react-native";
+import { ArrowSquareOut, FileText, Globe, Waveform } from "phosphor-react-native";
 
 const CITATION_COMPONENT = {
   document: DocumentCitation,
   "web-search": WebSearchCitation,
+  "audio-memo": AudioMemoCitation,
 } as const;
 
 export default function CitationsActionSheet() {
@@ -103,6 +105,14 @@ export default function CitationsActionSheet() {
                 />
               );
             }
+            if (citation.type === "audio-memo") {
+              return (
+                <AudioMemoCitation
+                  key={`audio-memo-${index}`}
+                  citation={citation}
+                />
+              );
+            }
             return null;
           })}
         </View>
@@ -131,6 +141,31 @@ function DocumentCitation({ citation }: { citation: IDocumentCitation }) {
       </View>
       <Text style={{ color: "#9F9FA0" }} className="">
         {citation.document.chunk}
+      </Text>
+    </View>
+  );
+}
+
+function AudioMemoCitation({ citation }: { citation: IAudioMemoCitation }) {
+  return (
+    <View
+      className="flex flex-col items-start justify-between w-full"
+      style={{ gap: 12 }}>
+      <View className="flex flex-row items-center justify-between w-full">
+        <View className="flex flex-row items-center" style={{ gap: 4 }}>
+          <Waveform size={18} color="#FFF" />
+          <Text className="text-white text-lg font-semibold">
+            {citation.memo.name}
+          </Text>
+        </View>
+        {citation.memo.score && (
+          <Text style={{ color: "#9F9FA0" }}>
+            Score: {numberToPercentageString(citation.memo.score)}
+          </Text>
+        )}
+      </View>
+      <Text style={{ color: "#9F9FA0" }} className="">
+        {citation.memo.chunk}
       </Text>
     </View>
   );

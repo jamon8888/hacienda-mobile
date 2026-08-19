@@ -1,5 +1,7 @@
 import AudioMemo from "@/database/models/AudioMemo";
 import * as RNFS from "@dr.pogodin/react-native-fs";
+import VectorDB from "@/utils/VectorDB";
+import { embedMemoTranscript } from "@/utils/AudioMemos/embedMemoTranscript";
 
 jest.mock("@/database/models/AudioMemo", () => ({
   __esModule: true,
@@ -9,6 +11,17 @@ jest.mock("@/database/models/AudioMemo", () => ({
     update: jest.fn(),
     delete: jest.fn(),
   },
+}));
+
+jest.mock("@/utils/VectorDB", () => ({
+  __esModule: true,
+  default: {
+    deleteVectorsByIds: jest.fn().mockResolvedValue(true),
+  },
+}));
+
+jest.mock("@/utils/AudioMemos/embedMemoTranscript", () => ({
+  embedMemoTranscript: jest.fn().mockResolvedValue([]),
 }));
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -206,6 +219,64 @@ describe("useAudioMemos", () => {
       ).resolves.not.toThrow();
       expect(result.current.memos).toHaveLength(0);
     });
+
+    it("should delete the memo's vectors from VectorDB when present", async () => {
+      const existingMemo = {
+        uuid: "to-delete",
+        audioUri: "file:///del.m4a",
+        durationMs: 1000,
+        waveformPeaks: [],
+        vectorBoxIds: [10, 11],
+        workspaceSlug: "ws-1",
+        transcript: "text",
+        createdAt: 1000,
+        updatedAt: 1000,
+      };
+
+      (AudioMemo.find as jest.Mock).mockResolvedValue([existingMemo]);
+      (AudioMemo.delete as jest.Mock).mockResolvedValue(true);
+
+      const { result } = renderHook(() => useAudioMemos());
+
+      await act(async () => {
+        await result.current.fetchMemos();
+      });
+
+      await act(async () => {
+        await result.current.deleteMemo("to-delete");
+      });
+
+      expect(VectorDB.deleteVectorsByIds).toHaveBeenCalledWith([10, 11]);
+    });
+
+    it("should not call VectorDB.deleteVectorsByIds when the memo has no vectors", async () => {
+      const existingMemo = {
+        uuid: "to-delete",
+        audioUri: "file:///del.m4a",
+        durationMs: 1000,
+        waveformPeaks: [],
+        vectorBoxIds: [],
+        workspaceSlug: null,
+        transcript: null,
+        createdAt: 1000,
+        updatedAt: 1000,
+      };
+
+      (AudioMemo.find as jest.Mock).mockResolvedValue([existingMemo]);
+      (AudioMemo.delete as jest.Mock).mockResolvedValue(true);
+
+      const { result } = renderHook(() => useAudioMemos());
+
+      await act(async () => {
+        await result.current.fetchMemos();
+      });
+
+      await act(async () => {
+        await result.current.deleteMemo("to-delete");
+      });
+
+      expect(VectorDB.deleteVectorsByIds).not.toHaveBeenCalled();
+    });
   });
 
   describe("updateMemo", () => {
@@ -236,6 +307,75 @@ describe("useAudioMemos", () => {
       });
 
       expect(result.current.memos[0].transcript).toBe("new");
+    });
+
+    it("should trigger embedding and persist the returned vectorBoxIds when the transcript changes", async () => {
+      const existingMemo = {
+        uuid: "to-update",
+        audioUri: "file:///old.m4a",
+        durationMs: 1000,
+        waveformPeaks: [],
+        vectorBoxIds: [],
+        workspaceSlug: "ws-1",
+        transcript: "old",
+        createdAt: 1000,
+        updatedAt: 1000,
+      };
+      const updatedMemo = { ...existingMemo, transcript: "new" };
+      const withVectors = { ...updatedMemo, vectorBoxIds: [42, 43] };
+
+      (AudioMemo.find as jest.Mock).mockResolvedValue([existingMemo]);
+      (AudioMemo.update as jest.Mock)
+        .mockResolvedValueOnce(updatedMemo)
+        .mockResolvedValueOnce(withVectors);
+      (embedMemoTranscript as jest.Mock).mockResolvedValue([42, 43]);
+
+      const { result } = renderHook(() => useAudioMemos());
+
+      await act(async () => {
+        await result.current.fetchMemos();
+      });
+
+      await act(async () => {
+        await result.current.updateMemo("to-update", { transcript: "new" });
+      });
+
+      expect(embedMemoTranscript).toHaveBeenCalledWith(updatedMemo);
+      expect(AudioMemo.update).toHaveBeenNthCalledWith(2, "to-update", {
+        vectorBoxIds: [42, 43],
+      });
+      expect(result.current.memos[0].vectorBoxIds).toEqual([42, 43]);
+    });
+
+    it("should not trigger embedding when the transcript is not part of the update", async () => {
+      const existingMemo = {
+        uuid: "to-update",
+        audioUri: "file:///old.m4a",
+        durationMs: 1000,
+        waveformPeaks: [],
+        vectorBoxIds: [],
+        workspaceSlug: "ws-1",
+        transcript: "old",
+        createdAt: 1000,
+        updatedAt: 1000,
+      };
+      const updatedMemo = { ...existingMemo, durationMs: 2000 };
+
+      (AudioMemo.find as jest.Mock).mockResolvedValue([existingMemo]);
+      (AudioMemo.update as jest.Mock).mockResolvedValue(updatedMemo);
+
+      const { result } = renderHook(() => useAudioMemos());
+
+      await act(async () => {
+        await result.current.fetchMemos();
+      });
+
+      await act(async () => {
+        await result.current.updateMemo("to-update", { durationMs: 2000 });
+      });
+
+      expect(embedMemoTranscript).not.toHaveBeenCalled();
+      expect(AudioMemo.update).toHaveBeenCalledTimes(1);
     });
   });
 

@@ -1,6 +1,8 @@
 import { useState, useCallback } from "react";
 import * as RNFS from "@dr.pogodin/react-native-fs";
 import AudioMemo, { AudioMemoType } from "@/database/models/AudioMemo";
+import VectorDB from "@/utils/VectorDB";
+import { embedMemoTranscript } from "@/utils/AudioMemos/embedMemoTranscript";
 
 interface UseAudioMemosReturn {
   memos: AudioMemoType[];
@@ -74,15 +76,22 @@ export function useAudioMemos(): UseAudioMemosReturn {
 
   const deleteMemo = useCallback(
     async (uuid: string) => {
-      const audioUri = memos.find(m => m.uuid === uuid)?.audioUri;
+      const memo = memos.find(m => m.uuid === uuid);
       const success = await AudioMemo.delete([{ field: "uuid", value: uuid }]);
       if (success) {
         setMemos(prev => prev.filter(m => m.uuid !== uuid));
-        if (audioUri) {
+        if (memo?.audioUri) {
           try {
-            await RNFS.unlink(audioUri);
+            await RNFS.unlink(memo.audioUri);
           } catch (err) {
-            console.warn("Failed to delete memo file:", audioUri, err);
+            console.warn("Failed to delete memo file:", memo.audioUri, err);
+          }
+        }
+        if (memo?.vectorBoxIds?.length) {
+          try {
+            await VectorDB.deleteVectorsByIds(memo.vectorBoxIds);
+          } catch (err) {
+            console.warn("Failed to delete memo vectors:", memo.uuid, err);
           }
         }
       }
@@ -94,8 +103,20 @@ export function useAudioMemos(): UseAudioMemosReturn {
   const updateMemo = useCallback(
     async (uuid: string, updates: Partial<AudioMemoType>) => {
       const updated = await AudioMemo.update(uuid, updates);
-      if (updated) {
-        setMemos(prev => prev.map(m => (m.uuid === uuid ? updated : m)));
+      if (!updated) return;
+      setMemos(prev => prev.map(m => (m.uuid === uuid ? updated : m)));
+
+      // Re-embed (or embed for the first time) whenever the transcript
+      // changes - covers both auto-transcription and manual edits, since
+      // both funnel through this same call. Fire-and-forget: embedding can
+      // take a few seconds (model load) and shouldn't block the caller.
+      if (updates.transcript !== undefined) {
+        embedMemoTranscript(updated).then(async vectorBoxIds => {
+          const withVectors = await AudioMemo.update(uuid, { vectorBoxIds });
+          if (withVectors) {
+            setMemos(prev => prev.map(m => (m.uuid === uuid ? withVectors : m)));
+          }
+        });
       }
     },
     [],

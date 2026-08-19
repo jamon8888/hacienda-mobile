@@ -24,6 +24,16 @@ export type IAgentWebSearchCitation = {
   };
 };
 
+export type IAudioMemoCitation = {
+  type: "audio-memo";
+  memo: {
+    uuid: string;
+    name: string;
+    chunk: string;
+    score?: number;
+  };
+};
+
 export type IAgentToolCall = {
   uuid: string;
   signature: string;
@@ -59,7 +69,10 @@ export type ICalendarEventAction = {
 };
 
 export type IAgentCitation = IAgentWebSearchCitation;
-export type IChatCitation = IDocumentCitation | IAgentCitation;
+export type IChatCitation =
+  | IDocumentCitation
+  | IAgentCitation
+  | IAudioMemoCitation;
 export type IAgentAction = IEmailAction | ITextAction | ICalendarEventAction;
 export type WorkspaceChatResponseType = {
   textResponse: string;

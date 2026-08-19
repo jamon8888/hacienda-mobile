@@ -2,7 +2,7 @@ import Workspace, { type WorkspaceType } from "@/database/models/Workspace";
 import {
   IAgentCitation,
   IAgentToolCall,
-  IDocumentCitation,
+  IChatCitation,
 } from "@/database/models/WorkspaceChat";
 import { DynamicChatMessage } from "@/screens/WorkspaceChat/ChatHistory";
 import { formatChatHistory } from "@/utils/chat/helpers";
@@ -72,7 +72,7 @@ export type IStreamEvent =
 export type IStreamResponse =
   | string
   | ICompleteResponse["metrics"]
-  | IDocumentCitation[]
+  | IChatCitation[]
   | IAgentCitation[]
   | IAgentToolCall
   | IAgentAction;
@@ -280,16 +280,29 @@ export default abstract class BaseOpenAILikeProvider {
 
   private buildDocumentCitations(
     vectorSearchResults: SemanticSearchResult[],
-  ): IDocumentCitation[] {
-    return vectorSearchResults.map(r => ({
-      type: "document",
-      document: {
-        uuid: String(r.id),
-        name: String(r.metadata.name),
-        chunk: String(r.metadata.content),
-        score: r.score, // numberToPercentageString(r.score) will be run on the frontend to convert to a percentage string
-      },
-    }));
+  ): IChatCitation[] {
+    return vectorSearchResults.map(r => {
+      if (r.metadata.sourceType === "audio-memo") {
+        return {
+          type: "audio-memo",
+          memo: {
+            uuid: String(r.metadata.memoUuid),
+            name: String(r.metadata.name),
+            chunk: String(r.metadata.content),
+            score: r.score,
+          },
+        };
+      }
+      return {
+        type: "document",
+        document: {
+          uuid: String(r.id),
+          name: String(r.metadata.name),
+          chunk: String(r.metadata.content),
+          score: r.score, // numberToPercentageString(r.score) will be run on the frontend to convert to a percentage string
+        },
+      };
+    });
   }
 
   /**
@@ -466,7 +479,7 @@ export default abstract class BaseOpenAILikeProvider {
    */
   async buildPrompt(
     messages: DynamicChatMessage[],
-  ): Promise<{ citations: IDocumentCitation[]; formattedMessages: any[] }> {
+  ): Promise<{ citations: IChatCitation[]; formattedMessages: any[] }> {
     if (messages.length === 0)
       throw new Error("Messages array must contain at least one element");
     const history = messages.slice(0, -1);
