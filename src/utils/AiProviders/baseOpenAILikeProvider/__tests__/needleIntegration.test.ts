@@ -22,11 +22,11 @@ jest.mock("@/store/NeedleStore", () => {
   const routeRag = jest.fn();
   const selectTools = jest.fn();
   const init = jest.fn().mockResolvedValue(undefined);
+  const store = { init, routeRag, selectTools, ready: true, routerEnabled: true };
   return {
     __esModule: true,
-    NEEDLE_ROUTER_ENABLED: true,
-    default: { init, routeRag, selectTools, ready: true },
-    __mockStore: { init, routeRag, selectTools },
+    default: store,
+    __mockStore: store,
   };
 });
 

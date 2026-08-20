@@ -1,4 +1,6 @@
-import { makeAutoObservable } from "mobx";
+import { makeAutoObservable, runInAction } from "mobx";
+import { makePersistable } from "mobx-persist-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import type { CactusLMTool } from "cactus-react-native";
 
@@ -9,20 +11,34 @@ import {
   type RouteOptions,
 } from "@/utils/Needle";
 
-// Toggle this to true once P0 on-device bundle verification passes.
-export const NEEDLE_ROUTER_ENABLED = false;
-
 export class NeedleStore {
   ready = false;
   busy = false;
   error: string | null = null;
   lastRoute: NeedleRouteDecision | null = null;
 
+  // Persisted user/device setting gating the on-device Needle router. Defaults
+  // to enabled now that P0 on-device bundle verification has passed via
+  // NeedleSpikeView; kept as a real toggle (not a hardcoded constant) so it
+  // can be turned off per-device without a code change if a regression shows up.
+  routerEnabled = true;
+
   private client: NeedleClient | null = null;
   private downloader = new NeedleBundleDownloader();
 
   constructor() {
     makeAutoObservable(this);
+    makePersistable(this, {
+      name: "NeedleStore",
+      properties: ["routerEnabled"],
+      storage: AsyncStorage,
+    });
+  }
+
+  setRouterEnabled(value: boolean) {
+    runInAction(() => {
+      this.routerEnabled = value;
+    });
   }
 
   async init(onProgress?: (progress: number) => void): Promise<void> {
@@ -35,16 +51,23 @@ export class NeedleStore {
 
     try {
       const bundlePath = await this.downloader.ensureDownloaded(onProgress);
-      this.client = new NeedleClient(bundlePath);
-      await this.client.init();
-      this.ready = true;
+      const client = new NeedleClient(bundlePath);
+      await client.init();
+      runInAction(() => {
+        this.client = client;
+        this.ready = true;
+      });
     } catch (err) {
       console.error("[NeedleStore] init failed:", err);
-      this.error = err instanceof Error ? err.message : String(err);
-      this.ready = false;
-      this.client = null;
+      runInAction(() => {
+        this.error = err instanceof Error ? err.message : String(err);
+        this.ready = false;
+        this.client = null;
+      });
     } finally {
-      this.busy = false;
+      runInAction(() => {
+        this.busy = false;
+      });
     }
   }
 
@@ -59,13 +82,17 @@ export class NeedleStore {
     this.busy = true;
     try {
       const decision = await this.client.routeRag(query, opts);
-      this.lastRoute = decision;
+      runInAction(() => {
+        this.lastRoute = decision;
+      });
       return decision;
     } catch (err) {
       console.error("[NeedleStore] routeRag failed:", err);
       return { type: "fallback" };
     } finally {
-      this.busy = false;
+      runInAction(() => {
+        this.busy = false;
+      });
     }
   }
 
@@ -85,16 +112,22 @@ export class NeedleStore {
       console.error("[NeedleStore] selectTools failed:", err);
       return tools;
     } finally {
-      this.busy = false;
+      runInAction(() => {
+        this.busy = false;
+      });
     }
   }
 
   async destroy(): Promise<void> {
     if (this.client) {
       await this.client.destroy();
-      this.client = null;
+      runInAction(() => {
+        this.client = null;
+      });
     }
-    this.ready = false;
+    runInAction(() => {
+      this.ready = false;
+    });
   }
 }
 

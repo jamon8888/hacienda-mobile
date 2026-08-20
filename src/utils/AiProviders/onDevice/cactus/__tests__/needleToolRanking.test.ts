@@ -28,10 +28,9 @@ jest.mock("@dr.pogodin/react-native-fs", () => ({
 jest.mock("@/store/NeedleStore", () => {
   const init = jest.fn().mockResolvedValue(undefined);
   const selectTools = jest.fn();
-  const store = { init, selectTools, ready: true };
+  const store = { init, selectTools, ready: true, routerEnabled: true };
   return {
     __esModule: true,
-    NEEDLE_ROUTER_ENABLED: true,
     default: store,
     __mockStore: store,
   };

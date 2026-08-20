@@ -17,7 +17,7 @@ import OpenAILite from "@/utils/openai";
 import VectorDB, { SemanticSearchResult } from "@/utils/VectorDB";
 import { type IAgentAction } from "@/database/models/WorkspaceChat";
 import ToolsManager from "@/utils/ToolsManager";
-import needleStore, { NEEDLE_ROUTER_ENABLED } from "@/store/NeedleStore";
+import needleStore from "@/store/NeedleStore";
 import { queryCache, queryCacheSet } from "@/utils/AiProviders/semanticSearchCache";
 
 interface BaseLLMProviderConfig {
@@ -344,9 +344,9 @@ export default abstract class BaseOpenAILikeProvider {
 
       // Optional Needle RAG router: decides whether to skip retrieval, run
       // it as-is, or expand the query. Failures always fall back to normal
-      // retrieval so we never block the chat pipeline. Disabled by default
-      // until P0 on-device bundle verification passes.
-      if (NEEDLE_ROUTER_ENABLED) {
+      // retrieval so we never block the chat pipeline. Gated by a persisted
+      // per-device setting (NeedleStore.routerEnabled), default on.
+      if (needleStore.routerEnabled) {
         // Kick off the (possibly first-ever, download-then-load) init in the background
         // rather than awaiting it here -- awaiting would block this request on a full
         // model download/load instead of the router's own 500ms budget. If it's not

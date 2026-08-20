@@ -11,7 +11,7 @@ import {
 } from "@/utils/chat/completionTypes";
 import { ICompleteResponse } from "@/utils/AiProviders/baseOpenAILikeProvider";
 import type OnDeviceProvider from "@/utils/AiProviders/onDevice/index";
-import needleStore, { NEEDLE_ROUTER_ENABLED } from "@/store/NeedleStore";
+import needleStore from "@/store/NeedleStore";
 
 export type NativeLlamaChatMessage = {
   role: "user" | "assistant" | "system";
@@ -241,7 +241,7 @@ export default class CactusLmWrapper {
     // kicked off in the background rather than awaited, so a cold Needle (still
     // downloading/loading its bundle) never blocks this completion -- see the
     // matching comment in baseOpenAILikeProvider.getContextTexts.
-    if (NEEDLE_ROUTER_ENABLED && cactusTools.length > 5) {
+    if (needleStore.routerEnabled && cactusTools.length > 5) {
       if (!needleStore.ready && !needleStore.busy) {
         needleStore.init().catch(() => {});
       }
