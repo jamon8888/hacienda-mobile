@@ -1,5 +1,6 @@
 import AudioMemo from "@/database/models/AudioMemo";
 import { embedMemoTranscript } from "@/utils/AudioMemos/embedMemoTranscript";
+import { __resetAudioMemoPlayerForTests } from "@/hooks/useAudioMemoPlayer";
 
 jest.mock("@/database/models/AudioMemo", () => ({
   __esModule: true,
@@ -22,6 +23,7 @@ const { useAudioMemos } = require("./useAudioMemos");
 
 beforeEach(() => {
   jest.clearAllMocks();
+  __resetAudioMemoPlayerForTests();
 });
 
 describe("useAudioMemos", () => {
@@ -342,7 +344,7 @@ describe("useAudioMemos", () => {
       expect(result.current.playingId).toBe("memo-1");
     });
 
-    it("should clear playingId on pauseMemo", async () => {
+    it("should keep playingId but clear isPlaying on pauseMemo", async () => {
       const { result } = renderHook(() => useAudioMemos());
 
       await act(async () => {
@@ -353,7 +355,32 @@ describe("useAudioMemos", () => {
         await result.current.pauseMemo();
       });
 
-      expect(result.current.playingId).toBeNull();
+      // playingId is retained (not cleared) on pause - unlike stop - so the
+      // memo can be resumed rather than restarted from 0.
+      expect(result.current.playingId).toBe("memo-1");
+      expect(result.current.isPlaying).toBe(false);
+    });
+
+    it("should restore isPlaying without resetting position on resumeMemo", async () => {
+      const { result } = renderHook(() => useAudioMemos());
+
+      await act(async () => {
+        await result.current.playMemo("memo-1", "file:///test.m4a");
+      });
+      await act(async () => {
+        result.current.updatePlaybackTime(12000, 65000);
+      });
+      await act(async () => {
+        await result.current.pauseMemo();
+      });
+
+      await act(async () => {
+        await result.current.resumeMemo();
+      });
+
+      expect(result.current.playingId).toBe("memo-1");
+      expect(result.current.isPlaying).toBe(true);
+      expect(result.current.playbackPosition).toBe(12000);
     });
 
     it("should clear playingId and position on stopMemo", async () => {

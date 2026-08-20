@@ -17,6 +17,7 @@ import { useAudioMemos } from "@/hooks/useAudioMemos";
 import { useTranslation } from "@/hooks/useTranslation";
 import Workspace, { WorkspaceType } from "@/database/models/Workspace";
 import MemoRow from "./MemoRow";
+import MiniPlayerBar from "./MiniPlayerBar";
 import { PATHS } from "@/utils/paths";
 
 type TabType = "workspace" | "global";
@@ -29,10 +30,12 @@ export default function AudioMemosScreen() {
     memos,
     loading,
     playingId,
+    isPlaying,
     fetchMemos,
     deleteMemo,
     playMemo,
     pauseMemo,
+    resumeMemo,
   } = useAudioMemos();
   const [activeTab, setActiveTab] = useState<TabType>("workspace");
   const [workspaces, setWorkspaces] = useState<WorkspaceType[]>([]);
@@ -202,9 +205,11 @@ export default function AudioMemosScreen() {
           renderItem={({ item }) => (
             <MemoRow
               memo={item}
-              isPlaying={playingId === item.uuid}
+              isActive={playingId === item.uuid}
+              isPlaying={playingId === item.uuid && isPlaying}
               onPlay={() => handlePlay(item.uuid, item.audioUri)}
               onPause={pauseMemo}
+              onResume={resumeMemo}
               onDelete={() => handleDelete(item.uuid)}
               onPress={() =>
                 navigation.navigate(PATHS.audio_memo_player, {
@@ -217,6 +222,7 @@ export default function AudioMemosScreen() {
           contentContainerStyle={{ padding: 16 }}
         />
       )}
+      <MiniPlayerBar />
     </SafeView>
   );
 }

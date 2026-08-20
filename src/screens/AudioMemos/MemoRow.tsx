@@ -7,9 +7,14 @@ import { useTranslation } from "@/hooks/useTranslation";
 
 interface MemoRowProps {
   memo: AudioMemoType;
+  // This row is the shared player's currently loaded memo (playing or
+  // paused) - distinct from isPlaying, which additionally requires it to be
+  // actively sounding right now (used to decide play vs. resume on tap).
+  isActive: boolean;
   isPlaying: boolean;
   onPlay: () => void;
   onPause: () => void;
+  onResume: () => void;
   onDelete: () => void;
   onPress: () => void;
 }
@@ -23,9 +28,11 @@ function formatDuration(ms: number): string {
 
 export default function MemoRow({
   memo,
+  isActive,
   isPlaying,
   onPlay,
   onPause,
+  onResume,
   onDelete,
   onPress,
 }: MemoRowProps) {
@@ -55,7 +62,10 @@ export default function MemoRow({
       className="flex-row items-center p-4 bg-[#27282A] rounded-lg mb-2 border border-[#3A3B3D]">
       {/* Play/Pause Button */}
       <Pressable
-        onPress={isPlaying ? onPause : onPlay}
+        onPress={() => {
+          if (!isActive) return onPlay();
+          return isPlaying ? onPause() : onResume();
+        }}
         className="w-10 h-10 rounded-full bg-[#3B82F6] items-center justify-center mr-3">
         {isPlaying ? (
           <Pause size={18} color="#FFF" weight="fill" />

@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import AudioMemo, { AudioMemoType } from "@/database/models/AudioMemo";
 import { embedMemoTranscript } from "@/utils/AudioMemos/embedMemoTranscript";
+import { useAudioMemoPlayer } from "@/hooks/useAudioMemoPlayer";
 
 // Module-level (not per-hook-instance) so overlapping transcript edits for
 // the same memo serialize correctly even across different mounted screens
@@ -24,6 +25,7 @@ interface UseAudioMemosReturn {
   memos: AudioMemoType[];
   loading: boolean;
   playingId: string | null;
+  isPlaying: boolean;
   playbackPosition: number;
   playbackDuration: number;
   fetchMemos: (workspaceSlug?: string | null) => Promise<void>;
@@ -47,9 +49,7 @@ interface UseAudioMemosReturn {
 export function useAudioMemos(): UseAudioMemosReturn {
   const [memos, setMemos] = useState<AudioMemoType[]>([]);
   const [loading, setLoading] = useState(false);
-  const [playingId, setPlayingId] = useState<string | null>(null);
-  const [playbackPosition, setPlaybackPosition] = useState(0);
-  const [playbackDuration, setPlaybackDuration] = useState(0);
+  const player = useAudioMemoPlayer();
 
   const fetchMemos = useCallback(async (workspaceSlug?: string | null) => {
     setLoading(true);
@@ -143,44 +143,56 @@ export function useAudioMemos(): UseAudioMemosReturn {
     [],
   );
 
-  // These are pure state bookkeeping - the actual audio playback is driven
-  // by the AudioWaveformView ref in MemoPlayerScreen. Callers invoke these
-  // both optimistically (on tap, for instant UI feedback) and correctively
-  // (from the waveform's onPlayerStateChange/onTimeUpdate/onEnd/onSeek
-  // callbacks, which are the real source of truth for player state).
-  const playMemo = useCallback(async (uuid: string, _audioUri: string) => {
-    setPlayingId(uuid);
-  }, []);
+  // These are pure state bookkeeping delegating to the shared player store
+  // (see useAudioMemoPlayer) - the actual audio playback is driven by real
+  // AudioWaveformView instances in MiniPlayerBar and MemoPlayerScreen.
+  // Callers invoke these both optimistically (on tap, for instant UI
+  // feedback) and correctively (from the waveform's
+  // onPlayerStateChange/onTimeUpdate/onEnd/onSeek callbacks, which are the
+  // real source of truth for player state). Delegating to a shared store
+  // (rather than local useState) is what lets a memo started from the list
+  // keep playing - and be resumable - when the user navigates into its
+  // detail screen, and vice versa.
+  const playMemo = useCallback(
+    async (uuid: string, audioUri: string) => {
+      player.playMemo(uuid, audioUri);
+    },
+    [player.playMemo],
+  );
 
   const pauseMemo = useCallback(async () => {
-    setPlayingId(null);
-  }, []);
+    player.pauseMemo();
+  }, [player.pauseMemo]);
 
-  // Unused by any current call site: pauseMemo clears playingId, so there's
-  // no remembered uuid to resume without a scrubber/mini-player that keeps
-  // a memo "loaded" across pause. Left as a no-op until that exists.
-  const resumeMemo = useCallback(async () => {}, []);
+  const resumeMemo = useCallback(async () => {
+    player.resumeMemo();
+  }, [player.resumeMemo]);
 
   const stopMemo = useCallback(async () => {
-    setPlayingId(null);
-    setPlaybackPosition(0);
-  }, []);
+    player.stopMemo();
+  }, [player.stopMemo]);
 
-  const seekTo = useCallback(async (position: number) => {
-    setPlaybackPosition(position);
-  }, []);
+  const seekTo = useCallback(
+    async (position: number) => {
+      player.seekTo(position);
+    },
+    [player.seekTo],
+  );
 
-  const updatePlaybackTime = useCallback((position: number, duration: number) => {
-    setPlaybackPosition(position);
-    setPlaybackDuration(duration);
-  }, []);
+  const updatePlaybackTime = useCallback(
+    (position: number, duration: number) => {
+      player.updatePlaybackTime(position, duration);
+    },
+    [player.updatePlaybackTime],
+  );
 
   return {
     memos,
     loading,
-    playingId,
-    playbackPosition,
-    playbackDuration,
+    playingId: player.playingId,
+    isPlaying: player.isPlaying,
+    playbackPosition: player.playbackPosition,
+    playbackDuration: player.playbackDuration,
     fetchMemos,
     createMemo,
     deleteMemo,

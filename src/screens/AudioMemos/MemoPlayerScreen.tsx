@@ -15,9 +15,14 @@ import {
   type AudioWaveformViewRef,
 } from "react-native-waveform-player";
 import { useAudioMemos } from "@/hooks/useAudioMemos";
+import { useAudioMemoPlayer } from "@/hooks/useAudioMemoPlayer";
 import { useTranslation } from "@/hooks/useTranslation";
-import { AudioMemoType } from "@/database/models/AudioMemo";
-import { useRoute, useNavigation } from "@react-navigation/native";
+import AudioMemo, { AudioMemoType } from "@/database/models/AudioMemo";
+import {
+  useRoute,
+  useNavigation,
+  useFocusEffect,
+} from "@react-navigation/native";
 import { DrawerNavigationProp } from "@react-navigation/drawer";
 import MemoRecorder from "./MemoRecorder";
 
@@ -34,18 +39,19 @@ export default function MemoPlayerScreen() {
     wsSlug?: string | null;
   };
   const {
-    memos,
-    fetchMemos,
     playingId,
+    isPlaying,
     playbackPosition,
     playMemo,
     pauseMemo,
+    resumeMemo,
     stopMemo,
     seekTo,
     updatePlaybackTime,
     updateMemo,
     deleteMemo,
   } = useAudioMemos();
+  const { setFocusedPlayer } = useAudioMemoPlayer();
 
   const [memo, setMemo] = useState<AudioMemoType | null>(null);
   const [speed, setSpeed] = useState<SpeedOption>(1);
@@ -53,20 +59,30 @@ export default function MemoPlayerScreen() {
   const [editedTranscript, setEditedTranscript] = useState("");
   const waveformRef = useRef<AudioWaveformViewRef>(null);
 
-  // useAudioMemos holds local component state, not a shared store - this
-  // screen gets its own empty `memos` array on mount and must fetch, or
-  // the lookup below never finds the memo passed via memoId.
+  // Scoped lookup instead of fetching the entire (unfiltered) memo list just
+  // to find one by id.
   useEffect(() => {
-    if (mode !== "record") fetchMemos();
-  }, [mode, fetchMemos]);
-
-  useEffect(() => {
-    const found = memos.find(m => m.uuid === memoId);
-    if (found) {
+    if (mode === "record" || !memoId) return;
+    let cancelled = false;
+    AudioMemo.find([{ field: "uuid", value: memoId }]).then(([found]) => {
+      if (cancelled || !found) return;
       setMemo(found);
       setEditedTranscript(found.transcript ?? "");
-    }
-  }, [memoId, memos]);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [memoId, mode]);
+
+  // Register this screen as the focused owner of the memo's playback while
+  // visible, so MiniPlayerBar doesn't also mount a second real player for
+  // the same file (see useAudioMemoPlayer's isOwnedByFocusedPlayer).
+  useFocusEffect(
+    useCallback(() => {
+      if (memo) setFocusedPlayer(memo.uuid);
+      return () => setFocusedPlayer(null);
+    }, [memo, setFocusedPlayer]),
+  );
 
   // Cleanup waveformRef on unmount or memo change
   useEffect(() => {
@@ -79,13 +95,18 @@ export default function MemoPlayerScreen() {
   const handlePlayPause = useCallback(() => {
     if (!memo) return;
     if (playingId === memo.uuid) {
-      pauseMemo();
-      waveformRef.current?.pause();
+      if (isPlaying) {
+        pauseMemo();
+        waveformRef.current?.pause();
+      } else {
+        resumeMemo();
+        waveformRef.current?.play();
+      }
     } else {
       playMemo(memo.uuid, memo.audioUri);
       waveformRef.current?.play();
     }
-  }, [memo, playingId, pauseMemo, playMemo]);
+  }, [memo, playingId, isPlaying, pauseMemo, resumeMemo, playMemo]);
 
   const handleSpeedChange = useCallback((newSpeed: SpeedOption) => {
     setSpeed(newSpeed);
@@ -95,6 +116,7 @@ export default function MemoPlayerScreen() {
   const handleSaveTranscript = useCallback(async () => {
     if (!memo) return;
     await updateMemo(memo.uuid, { transcript: editedTranscript });
+    setMemo(prev => (prev ? { ...prev, transcript: editedTranscript } : prev));
     setIsEditing(false);
   }, [memo, editedTranscript, updateMemo]);
 
@@ -180,6 +202,9 @@ export default function MemoPlayerScreen() {
                 : memo.waveformPeaks
               : undefined
           }
+          // Pick up mid-playback if this memo was already playing via the
+          // list's mini-player before the user navigated here.
+          initialPositionMs={playingId === memo.uuid ? playbackPosition : 0}
           style={{ height: 120, marginBottom: 16 }}
           containerBackgroundColor="#27282A"
           containerBorderRadius={12}
@@ -191,6 +216,11 @@ export default function MemoPlayerScreen() {
           showTime={false}
           showSpeedControl={false}
           showBackground={true}
+          onLoad={() => {
+            if (playingId === memo.uuid && isPlaying) {
+              waveformRef.current?.play();
+            }
+          }}
           onLoadError={() => {
             // Error handling for waveform load failure
             console.warn("Failed to load waveform");
@@ -201,11 +231,12 @@ export default function MemoPlayerScreen() {
           onTimeUpdate={({ currentTimeMs, durationMs }) => {
             updatePlaybackTime(currentTimeMs, durationMs);
           }}
-          onPlayerStateChange={({ isPlaying }) => {
+          onPlayerStateChange={({ isPlaying: nowPlaying }) => {
             if (!memo) return;
-            if (isPlaying) {
+            if (nowPlaying) {
               if (playingId !== memo.uuid) playMemo(memo.uuid, memo.audioUri);
-            } else if (playingId === memo.uuid) {
+              else if (!isPlaying) resumeMemo();
+            } else if (playingId === memo.uuid && isPlaying) {
               pauseMemo();
             }
           }}
@@ -228,7 +259,7 @@ export default function MemoPlayerScreen() {
         <TouchableOpacity
           onPress={handlePlayPause}
           className="w-16 h-16 rounded-full bg-[#3B82F6] items-center justify-center mb-6 align-self-center">
-          {playingId === memo.uuid ? (
+          {playingId === memo.uuid && isPlaying ? (
             <Pause size={28} color="#FFF" weight="fill" />
           ) : (
             <Play size={28} color="#FFF" weight="fill" />

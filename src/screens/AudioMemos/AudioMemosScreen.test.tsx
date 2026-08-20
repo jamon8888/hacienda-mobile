@@ -2,6 +2,7 @@ import React from "react";
 import renderer, { act } from "react-test-renderer";
 import { FlatList } from "react-native";
 import AudioMemosScreen from "./AudioMemosScreen";
+import MemoRow from "./MemoRow";
 import { useAudioMemos } from "@/hooks/useAudioMemos";
 import { AudioMemoType } from "@/database/models/AudioMemo";
 import { createMockT } from "@/testUtils/mockUseTranslation";
@@ -118,11 +119,13 @@ describe("AudioMemosScreen", () => {
   const mockUseAudioMemos = {
     memos: mockMemos,
     loading: false,
-    playingId: null,
+    playingId: null as string | null,
+    isPlaying: false,
     fetchMemos: jest.fn(),
     deleteMemo: jest.fn(),
     playMemo: jest.fn(),
     pauseMemo: jest.fn(),
+    resumeMemo: jest.fn(),
   };
 
   beforeEach(() => {
@@ -202,6 +205,43 @@ describe("AudioMemosScreen", () => {
     const backIcon = tree!.root.findAllByProps({ "data-icon": "ArrowLeft" })[0];
     findPressableAncestor(backIcon).props.onPress();
     expect(mockNavigation.goBack).toHaveBeenCalled();
+  });
+
+  it("marks only the currently-playing row as active/playing for MemoRow", async () => {
+    (useAudioMemos as jest.Mock).mockReturnValue({
+      ...mockUseAudioMemos,
+      playingId: "test-uuid-1",
+      isPlaying: true,
+    });
+
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<AudioMemosScreen />);
+    });
+    const rows = tree!.root.findAllByType(MemoRow);
+    const playingRow = rows.find(r => r.props.memo.uuid === "test-uuid-1");
+    const otherRow = rows.find(r => r.props.memo.uuid === "test-uuid-2");
+    expect(playingRow?.props.isActive).toBe(true);
+    expect(playingRow?.props.isPlaying).toBe(true);
+    expect(otherRow?.props.isActive).toBe(false);
+    expect(otherRow?.props.isPlaying).toBe(false);
+  });
+
+  it("marks the row active but not playing while paused", async () => {
+    (useAudioMemos as jest.Mock).mockReturnValue({
+      ...mockUseAudioMemos,
+      playingId: "test-uuid-1",
+      isPlaying: false,
+    });
+
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<AudioMemosScreen />);
+    });
+    const rows = tree!.root.findAllByType(MemoRow);
+    const pausedRow = rows.find(r => r.props.memo.uuid === "test-uuid-1");
+    expect(pausedRow?.props.isActive).toBe(true);
+    expect(pausedRow?.props.isPlaying).toBe(false);
   });
 
   it("navigates to record mode with the selected workspace when plus button is pressed", async () => {

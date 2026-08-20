@@ -21,10 +21,27 @@ const mockRoute = { params: { memoId: "test-uuid-1", mode: "play" } };
 jest.mock("@react-navigation/native", () => ({
   useNavigation: () => mockNavigation,
   useRoute: () => mockRoute,
+  // Approximated as a plain effect for these tests - the renderer only ever
+  // has one "focused" screen, so there's no blur/re-focus cycle to model.
+  useFocusEffect: (callback: () => void | (() => void)) => {
+    const ReactActual = jest.requireActual("react");
+    ReactActual.useEffect(callback, [callback]);
+  },
 }));
 
 jest.mock("@/hooks/useAudioMemos", () => ({
   useAudioMemos: jest.fn(),
+}));
+
+const mockSetFocusedPlayer = jest.fn();
+jest.mock("@/hooks/useAudioMemoPlayer", () => ({
+  useAudioMemoPlayer: () => ({ setFocusedPlayer: mockSetFocusedPlayer }),
+}));
+
+const mockAudioMemoFind = jest.fn();
+jest.mock("@/database/models/AudioMemo", () => ({
+  __esModule: true,
+  default: { find: (...args: any[]) => mockAudioMemoFind(...args) },
 }));
 
 jest.mock("@/components/SafeView", () => {
@@ -91,13 +108,14 @@ const mockMemo: AudioMemoType = {
 
 describe("MemoPlayerScreen", () => {
   const mockUseAudioMemos = {
-    memos: [mockMemo],
     loading: false,
     playingId: null as string | null,
+    isPlaying: false,
     playbackPosition: 0,
     fetchMemos: jest.fn(),
     playMemo: jest.fn(),
     pauseMemo: jest.fn(),
+    resumeMemo: jest.fn(),
     stopMemo: jest.fn(),
     seekTo: jest.fn(),
     updatePlaybackTime: jest.fn(),
@@ -109,6 +127,7 @@ describe("MemoPlayerScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (useAudioMemos as jest.Mock).mockReturnValue(mockUseAudioMemos);
+    mockAudioMemoFind.mockResolvedValue([mockMemo]);
     mockRoute.params = { memoId: "test-uuid-1", mode: "play" };
   });
 
@@ -125,10 +144,7 @@ describe("MemoPlayerScreen", () => {
   };
 
   it("renders 'Memo not found' when memo does not exist", async () => {
-    (useAudioMemos as jest.Mock).mockReturnValue({
-      ...mockUseAudioMemos,
-      memos: [],
-    });
+    mockAudioMemoFind.mockResolvedValue([]);
 
     const tree = await createScreen("non-existent-uuid");
     const text = tree.root.findByProps({ children: "Memo not found" });
@@ -151,10 +167,7 @@ describe("MemoPlayerScreen", () => {
 
   it("shows 'No transcript available' when transcript is null", async () => {
     const memoWithoutTranscript = { ...mockMemo, transcript: null };
-    (useAudioMemos as jest.Mock).mockReturnValue({
-      ...mockUseAudioMemos,
-      memos: [memoWithoutTranscript],
-    });
+    mockAudioMemoFind.mockResolvedValue([memoWithoutTranscript]);
 
     const tree = await createScreen();
     const noTranscriptText = tree.root.findByProps({
@@ -201,6 +214,7 @@ describe("MemoPlayerScreen", () => {
     (useAudioMemos as jest.Mock).mockReturnValue({
       ...mockUseAudioMemos,
       playingId: "test-uuid-1",
+      isPlaying: true,
     });
 
     const tree = await createScreen();

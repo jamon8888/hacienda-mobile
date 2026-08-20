@@ -25,9 +25,11 @@ const mockMemo: AudioMemoType = {
 describe("MemoRow", () => {
   const defaultProps = {
     memo: mockMemo,
+    isActive: false,
     isPlaying: false,
     onPlay: jest.fn(),
     onPause: jest.fn(),
+    onResume: jest.fn(),
     onDelete: jest.fn(),
     onPress: jest.fn(),
   };
@@ -86,9 +88,9 @@ describe("MemoRow", () => {
     expect(defaultProps.onPress).toHaveBeenCalled();
   });
 
-  it("calls onPlay when play button is pressed and not playing", () => {
+  it("calls onPlay when play button is pressed and this row is not active", () => {
     const tree = renderer.create(
-      <MemoRow {...defaultProps} isPlaying={false} />,
+      <MemoRow {...defaultProps} isActive={false} isPlaying={false} />,
     );
     const root = tree.root;
     const playButton = root.findAllByType(Pressable)[0];
@@ -96,14 +98,25 @@ describe("MemoRow", () => {
     expect(defaultProps.onPlay).toHaveBeenCalled();
   });
 
-  it("calls onPause when pause button is pressed and playing", () => {
+  it("calls onPause when pause button is pressed and this row is playing", () => {
     const tree = renderer.create(
-      <MemoRow {...defaultProps} isPlaying={true} />,
+      <MemoRow {...defaultProps} isActive={true} isPlaying={true} />,
     );
     const root = tree.root;
     const pauseButton = root.findAllByType(Pressable)[0];
     pauseButton?.props.onPress();
     expect(defaultProps.onPause).toHaveBeenCalled();
+  });
+
+  it("calls onResume when play button is pressed and this row is active but paused", () => {
+    const tree = renderer.create(
+      <MemoRow {...defaultProps} isActive={true} isPlaying={false} />,
+    );
+    const root = tree.root;
+    const playButton = root.findAllByType(Pressable)[0];
+    playButton?.props.onPress();
+    expect(defaultProps.onResume).toHaveBeenCalled();
+    expect(defaultProps.onPlay).not.toHaveBeenCalled();
   });
 
   it("calls onDelete when delete button is pressed", () => {
