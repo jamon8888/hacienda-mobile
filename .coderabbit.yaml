@@ -1,3 +1,8 @@
+auto_review:
+  enabled: true
+  base_branches:
+    - ".*"
+
 reviews:
   path_filters:
     - "babel.config.js"
