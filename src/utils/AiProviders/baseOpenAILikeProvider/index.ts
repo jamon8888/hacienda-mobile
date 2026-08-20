@@ -341,7 +341,7 @@ export default abstract class BaseOpenAILikeProvider {
         // ready yet, routeRag() below falls through to normal retrieval this turn, and
         // a later request benefits once init finishes.
         if (!needleStore.ready && !needleStore.busy) {
-          needleStore.init().catch(() => {});
+          needleStore.init().catch(e => console.warn("[Needle] init failed:", e));
         }
         const route = await needleStore.routeRag(userPrompt, {
           maxTopK: this.SEMANTIC_SEARCH_CANDIDATE_TOP_N,
