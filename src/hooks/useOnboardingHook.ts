@@ -28,14 +28,11 @@ export function useOnboardingCompleted(): {
   }, []);
 
   useEffect(() => {
-    uiStore.emitter.addListener(uiStore.globalEvents.ONBOARDING_COMPLETED, () =>
-      setOnboardingCompleted(true),
+    const subscription = uiStore.emitter.addListener(
+      uiStore.globalEvents.ONBOARDING_COMPLETED,
+      () => setOnboardingCompleted(true),
     );
-    return () => {
-      uiStore.emitter.removeAllListeners(
-        uiStore.globalEvents.ONBOARDING_COMPLETED,
-      );
-    };
+    return () => subscription.remove();
   }, []);
   return { loadingOnboardingCompleted: loading, onboardingCompleted };
 }

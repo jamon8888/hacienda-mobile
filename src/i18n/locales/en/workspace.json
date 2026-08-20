@@ -29,5 +29,85 @@
   },
   "deleteTitle": "Delete workspace",
   "deleteMessage": "Are you sure you want to delete this workspace? All threads will be lost.",
-  "deleteRemoteNote": "This will not delete the workspace in your remote instance."
+  "deleteRemoteNote": "This will not delete the workspace in your remote instance.",
+  "embedding": {
+    "title": "Embedding Settings",
+    "saveError": "Embedding settings could not be saved",
+    "saveSuccess": "Embedding settings saved",
+    "engine": {
+      "label": "Embedding Engine",
+      "fieldLabel": "Engine",
+      "description": "{{description}} | {{size}} | French MTEB: {{quality}}",
+      "pickerTitle": "Select Embedding Engine",
+      "frenchQuality": "French: {{quality}}",
+      "cancel": "Cancel",
+      "options": {
+        "multilingual-e5-small": {
+          "label": "Multilingual E5 Small",
+          "description": "100+ languages, fast & tiny. Best for low-RAM devices."
+        },
+        "multilingual-e5-base": {
+          "label": "Multilingual E5 Base",
+          "description": "100+ languages, better quality. Good balance."
+        },
+        "sentence-camembert-base": {
+          "label": "CamemBERT Base (French)",
+          "description": "French-specific, optimized for French tasks."
+        },
+        "nomic-embed-text-v2-moe": {
+          "label": "Nomic Embed v2 MoE (Multilingual)",
+          "description": "~100 languages, MoE, Matryoshka dims. Best quality."
+        }
+      }
+    },
+    "dimensions": {
+      "label": "Embedding Dimensions",
+      "fieldLabel": "Dimensions",
+      "valueSuffix": "dims",
+      "fixedSuffix": "dims (fixed for this model)",
+      "matryoshkaDescription": "Matryoshka truncation: smaller dimensions = faster search, less storage. 256 dims retains ~99% quality.",
+      "fixedDescription": "This model has fixed dimensions. Switch to Nomic v2 MoE for Matryoshka truncation.",
+      "pickerTitle": "Select Dimensions",
+      "cancel": "Cancel",
+      "options": {
+        "768": "768 - Best quality",
+        "512": "512 - Balanced (66% storage)",
+        "256": "256 - Fast search (33% storage) ⭐",
+        "128": "128 - Mobile optimized (16% storage)",
+        "64": "64 - Tiny (8% storage)"
+      }
+    },
+    "autoDetect": {
+      "label": "Auto-detect Language",
+      "fieldLabel": "Auto-detect",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "description": "Automatically detect document language and route to optimal embedder. When disabled, uses selected engine for all documents."
+    },
+    "reembed": {
+      "label": "Re-embed Workspace",
+      "button": "Re-embed All Documents",
+      "description": "Re-process all documents with current embedding settings. This will delete existing vectors and create new ones.",
+      "confirmTitle": "Re-embed Workspace?",
+      "confirmMessage": "This will re-process all documents in this workspace using the current embedding engine and dimensions. Existing vectors will be replaced. This operation cannot be undone and may take several minutes.",
+      "cancel": "Cancel",
+      "confirm": "Re-embed",
+      "success_one": "Re-embedded {{count}} item",
+      "success_other": "Re-embedded {{count}} items",
+      "successWithFailures_one": "Re-embedded {{count}} item, {{failed}} failed",
+      "successWithFailures_other": "Re-embedded {{count}} items, {{failed}} failed"
+    },
+    "currentConfig": {
+      "label": "Current Configuration",
+      "engine": "Engine",
+      "dimensions": "Dimensions",
+      "modelSize": "Model Size",
+      "contextLength": "Context Length",
+      "contextLengthValue": "512 tokens",
+      "autoDetect": "Auto-detect Language",
+      "matryoshka": "Matryoshka",
+      "supported": "Supported",
+      "notSupported": "Not supported"
+    }
+  }
 }

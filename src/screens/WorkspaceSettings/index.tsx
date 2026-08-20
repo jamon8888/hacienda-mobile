@@ -78,12 +78,15 @@ export default function WorkspaceSettings() {
   }
 
   useEffect(() => {
-    eventEmitter.addListener("setWorkspaceSettingsPage", event => {
-      if (!(event.page in PAGES))
-        throw new Error(`Invalid page: ${event.page}`);
-      setPage(event.page as keyof typeof PAGES);
-    });
-    return () => eventEmitter.removeAllListeners("setWorkspaceSettingsPage");
+    const subscription = eventEmitter.addListener(
+      "setWorkspaceSettingsPage",
+      event => {
+        if (!(event.page in PAGES))
+          throw new Error(`Invalid page: ${event.page}`);
+        setPage(event.page as keyof typeof PAGES);
+      },
+    );
+    return () => subscription.remove();
   }, []);
 
   if (loadingWorkspace) return <LoadingView />;

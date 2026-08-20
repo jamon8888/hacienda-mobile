@@ -9,6 +9,7 @@ import {
   Easing,
   TouchableOpacity,
 } from "react-native";
+import { useRoute, RouteProp } from "@react-navigation/native";
 import SafeView from "@/components/SafeView";
 import { Microphone, X, SpeakerHigh, Sparkle } from "phosphor-react-native";
 import {
@@ -102,6 +103,9 @@ const DEFAULT_VOICE_PIPELINE_CONFIG: VoicePipelineConfig = {
  * mounts, which is what this wrapper exists for.
  */
 export default function VoiceChatScreen() {
+  const route =
+    useRoute<RouteProp<{ VoiceChat: { wsSlug?: string } }, "VoiceChat">>();
+  const wsSlug = route.params?.wsSlug ?? null;
   const [config, setConfig] = useState<VoicePipelineConfig | null>(null);
 
   useEffect(() => {
@@ -109,16 +113,21 @@ export default function VoiceChatScreen() {
     loadVoicePipelineConfig()
       .then(saved => {
         if (!cancelled)
-          setConfig({ ...DEFAULT_VOICE_PIPELINE_CONFIG, ...saved });
+          setConfig({
+            ...DEFAULT_VOICE_PIPELINE_CONFIG,
+            ...saved,
+            workspaceSlug: wsSlug,
+          });
       })
       .catch(err => {
         console.error("Failed to load voice settings:", err);
-        if (!cancelled) setConfig(DEFAULT_VOICE_PIPELINE_CONFIG);
+        if (!cancelled)
+          setConfig({ ...DEFAULT_VOICE_PIPELINE_CONFIG, workspaceSlug: wsSlug });
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [wsSlug]);
 
   if (!config) return null;
   return <VoiceChatScreenInner config={config} />;

@@ -29,5 +29,85 @@
   },
   "deleteTitle": "Supprimer l'espace de travail",
   "deleteMessage": "Êtes-vous sûr de vouloir supprimer cet espace de travail ? Tous les fils seront perdus.",
-  "deleteRemoteNote": "Cela ne supprimera pas l'espace de travail dans votre instance distante."
+  "deleteRemoteNote": "Cela ne supprimera pas l'espace de travail dans votre instance distante.",
+  "embedding": {
+    "title": "Paramètres d'embedding",
+    "saveError": "Impossible d'enregistrer les paramètres d'embedding",
+    "saveSuccess": "Paramètres d'embedding enregistrés",
+    "engine": {
+      "label": "Moteur d'embedding",
+      "fieldLabel": "Moteur",
+      "description": "{{description}} | {{size}} | MTEB français : {{quality}}",
+      "pickerTitle": "Sélectionner un moteur d'embedding",
+      "frenchQuality": "Français : {{quality}}",
+      "cancel": "Annuler",
+      "options": {
+        "multilingual-e5-small": {
+          "label": "Multilingual E5 Small",
+          "description": "100+ langues, rapide et léger. Idéal pour les appareils à faible RAM."
+        },
+        "multilingual-e5-base": {
+          "label": "Multilingual E5 Base",
+          "description": "100+ langues, meilleure qualité. Bon compromis."
+        },
+        "sentence-camembert-base": {
+          "label": "CamemBERT Base (Français)",
+          "description": "Spécifique au français, optimisé pour les tâches en français."
+        },
+        "nomic-embed-text-v2-moe": {
+          "label": "Nomic Embed v2 MoE (Multilingue)",
+          "description": "~100 langues, MoE, dimensions Matryoshka. Meilleure qualité."
+        }
+      }
+    },
+    "dimensions": {
+      "label": "Dimensions d'embedding",
+      "fieldLabel": "Dimensions",
+      "valueSuffix": "dims",
+      "fixedSuffix": "dims (fixes pour ce modèle)",
+      "matryoshkaDescription": "Troncature Matryoshka : des dimensions plus petites signifient une recherche plus rapide et moins de stockage. 256 dims conservent ~99 % de la qualité.",
+      "fixedDescription": "Ce modèle a des dimensions fixes. Passez à Nomic v2 MoE pour la troncature Matryoshka.",
+      "pickerTitle": "Sélectionner les dimensions",
+      "cancel": "Annuler",
+      "options": {
+        "768": "768 - Meilleure qualité",
+        "512": "512 - Équilibré (66 % du stockage)",
+        "256": "256 - Recherche rapide (33 % du stockage) ⭐",
+        "128": "128 - Optimisé mobile (16 % du stockage)",
+        "64": "64 - Minimal (8 % du stockage)"
+      }
+    },
+    "autoDetect": {
+      "label": "Détection automatique de la langue",
+      "fieldLabel": "Détection auto",
+      "enabled": "Activée",
+      "disabled": "Désactivée",
+      "description": "Détecte automatiquement la langue du document et l'oriente vers l'embedder optimal. Si désactivé, utilise le moteur sélectionné pour tous les documents."
+    },
+    "reembed": {
+      "label": "Réembedder l'espace de travail",
+      "button": "Réembedder tous les documents",
+      "description": "Retraite tous les documents avec les paramètres d'embedding actuels. Cela supprimera les vecteurs existants et en créera de nouveaux.",
+      "confirmTitle": "Réembedder l'espace de travail ?",
+      "confirmMessage": "Cela retraitera tous les documents de cet espace de travail avec le moteur et les dimensions d'embedding actuels. Les vecteurs existants seront remplacés. Cette opération est irréversible et peut prendre plusieurs minutes.",
+      "cancel": "Annuler",
+      "confirm": "Réembedder",
+      "success_one": "{{count}} élément réembeddé",
+      "success_other": "{{count}} éléments réembeddés",
+      "successWithFailures_one": "{{count}} élément réembeddé, {{failed}} échec",
+      "successWithFailures_other": "{{count}} éléments réembeddés, {{failed}} échecs"
+    },
+    "currentConfig": {
+      "label": "Configuration actuelle",
+      "engine": "Moteur",
+      "dimensions": "Dimensions",
+      "modelSize": "Taille du modèle",
+      "contextLength": "Longueur de contexte",
+      "contextLengthValue": "512 tokens",
+      "autoDetect": "Détection automatique de la langue",
+      "matryoshka": "Matryoshka",
+      "supported": "Pris en charge",
+      "notSupported": "Non pris en charge"
+    }
+  }
 }

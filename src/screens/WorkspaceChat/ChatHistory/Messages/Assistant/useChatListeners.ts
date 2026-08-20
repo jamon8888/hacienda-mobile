@@ -12,17 +12,24 @@ export default function useChatListeners(chat: DynamicChatMessage) {
   const [localChat, setLocalChat] = useState<DynamicChatMessage>({ ...chat });
   const [autoClose, setAutoClose] = useState(false);
 
-  function setupListeners() {
-    // Update the local chat state when the chat is updated
-    uiStore.emitter.addListener(CHAT_HANDLER_EVENTS.UPDATE_CHAT, event => {
-      if (event.uuid !== chat.uuid) return;
-      setLocalChat({ ...event.chat } as DynamicChatMessage);
-    });
+  useEffect(() => {
+    // Each mounted chat message gets its own hook instance, so the listener
+    // subscriptions must be per-instance too - removing only this instance's
+    // subscription (not removeAllListeners) ensures tearing it down never
+    // rips out another chat message's still-active listeners for the same
+    // event. NativeEventEmitter has no removeListener(event, fn) - the
+    // subscription returned by addListener is the only handle to remove one.
+    const updateChatSub = uiStore.emitter.addListener(
+      CHAT_HANDLER_EVENTS.UPDATE_CHAT,
+      (event: any) => {
+        if (event.uuid !== chat.uuid) return;
+        setLocalChat({ ...event.chat } as DynamicChatMessage);
+      },
+    );
 
-    // Teardown the listeners when the chat is complete
-    uiStore.emitter.addListener(
+    const assistantResponseCompleteSub = uiStore.emitter.addListener(
       CHAT_HANDLER_EVENTS.ASSISTANT_RESPONSE_COMPLETE,
-      event => {
+      (event: any) => {
         if (event.uuid !== chat.uuid) return;
         teardownListeners();
       },
@@ -30,26 +37,28 @@ export default function useChatListeners(chat: DynamicChatMessage) {
 
     /**
      * Set auto close to true when a new chat is started
-     * This listener is not torn down since it is used to close the supplemental UI containers
-     * so it needs to persist even after the chat is complete. It will self remove once invoked.
+     * This listener is not torn down when the chat completes since it is
+     * used to close the supplemental UI containers so it needs to persist
+     * even after the chat is complete. It self-removes once invoked.
      */
-    uiStore.emitter.addListener(CHAT_HANDLER_EVENTS.NEW_CHAT_STARTED, event => {
-      if (event.uuid === chat.uuid) return; // Do not close the current chat
-      setAutoClose(true);
-      uiStore.emitter.removeAllListeners(CHAT_HANDLER_EVENTS.NEW_CHAT_STARTED);
-    });
-  }
-
-  function teardownListeners() {
-    uiStore.emitter.removeAllListeners(CHAT_HANDLER_EVENTS.UPDATE_CHAT);
-    uiStore.emitter.removeAllListeners(
-      CHAT_HANDLER_EVENTS.ASSISTANT_RESPONSE_COMPLETE,
+    const newChatStartedSub = uiStore.emitter.addListener(
+      CHAT_HANDLER_EVENTS.NEW_CHAT_STARTED,
+      (event: any) => {
+        if (event.uuid === chat.uuid) return; // Do not close the current chat
+        setAutoClose(true);
+        newChatStartedSub.remove();
+      },
     );
-  }
 
-  useEffect(() => {
-    setupListeners();
-    return () => teardownListeners();
+    function teardownListeners() {
+      updateChatSub.remove();
+      assistantResponseCompleteSub.remove();
+    }
+
+    return () => {
+      teardownListeners();
+      newChatStartedSub.remove();
+    };
   }, []);
 
   return { chat: localChat, autoClose };

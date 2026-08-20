@@ -329,17 +329,19 @@ function WorkspaceThreadsContainer({
 
   useEffect(() => {
     if (!workspace.threads) return;
-    uiStore.emitter.addListener(uiStore.globalEvents.REDIRECT, event => {
-      if (event.path !== PATHS.workspace_chat) return;
-      if (event.params.wsSlug !== workspace.slug) return;
-      setActiveThreadIdx(
-        workspace.threads?.findIndex(
-          (t: any) => t.slug === event.params.threadSlug,
-        ) || 0,
-      );
-    });
-    return () =>
-      uiStore.emitter.removeAllListeners(uiStore.globalEvents.REDIRECT);
+    const subscription = uiStore.emitter.addListener(
+      uiStore.globalEvents.REDIRECT,
+      event => {
+        if (event.path !== PATHS.workspace_chat) return;
+        if (event.params.wsSlug !== workspace.slug) return;
+        setActiveThreadIdx(
+          workspace.threads?.findIndex(
+            (t: any) => t.slug === event.params.threadSlug,
+          ) || 0,
+        );
+      },
+    );
+    return () => subscription.remove();
   }, [workspace.threads]);
   if (!workspace.threads) return null;
 

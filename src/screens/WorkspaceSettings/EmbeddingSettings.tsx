@@ -20,6 +20,7 @@ import {
 } from "@/utils/models/defaults";
 import Workspace from "@/database/models/Workspace";
 import { reembedWorkspace } from "@/utils/Embedder/reembedWorkspace";
+import { useTranslation } from "@/hooks/useTranslation";
 import type { IWorkspacePageKey } from "./index";
 
 interface EmbeddingSettingsViewProps {
@@ -28,55 +29,24 @@ interface EmbeddingSettingsViewProps {
   initialThreadSlug?: string | null;
 }
 
-const ENGINE_OPTIONS: {
-  value: MultilingualEmbeddingModelId;
-  label: string;
-  description: string;
-  size: string;
-  quality: number;
-  dimensions: number;
-}[] = [
-  {
-    value: "multilingual-e5-small",
-    label: "Multilingual E5 Small",
-    description: "100+ languages, fast & tiny. Best for low-RAM devices.",
-    size: "124MB",
-    quality: 0.63,
-    dimensions: 384,
-  },
-  {
-    value: "multilingual-e5-base",
-    label: "Multilingual E5 Base",
-    description: "100+ languages, better quality. Good balance.",
-    size: "280MB",
-    quality: 0.65,
-    dimensions: 768,
-  },
-  {
-    value: "sentence-camembert-base",
-    label: "CamemBERT Base (French)",
-    description: "French-specific, optimized for French tasks.",
-    size: "115MB",
-    quality: 0.59,
-    dimensions: 768,
-  },
-  {
-    value: "nomic-embed-text-v2-moe",
-    label: "Nomic Embed v2 MoE (Multilingual)",
-    description: "~100 languages, MoE, Matryoshka dims. Best quality.",
-    size: "328MB",
-    quality: 0.66,
-    dimensions: 768,
-  },
+const ENGINE_VALUES: MultilingualEmbeddingModelId[] = [
+  "multilingual-e5-small",
+  "multilingual-e5-base",
+  "sentence-camembert-base",
+  "nomic-embed-text-v2-moe",
 ];
 
-const DIMENSION_OPTIONS = [
-  { value: 768, label: "768 - Best quality" },
-  { value: 512, label: "512 - Balanced (66% storage)" },
-  { value: 256, label: "256 - Fast search (33% storage) ⭐" },
-  { value: 128, label: "128 - Mobile optimized (16% storage)" },
-  { value: 64, label: "64 - Tiny (8% storage)" },
-];
+const ENGINE_META: Record<
+  MultilingualEmbeddingModelId,
+  { size: string; quality: number; dimensions: number }
+> = {
+  "multilingual-e5-small": { size: "124MB", quality: 0.63, dimensions: 384 },
+  "multilingual-e5-base": { size: "280MB", quality: 0.65, dimensions: 768 },
+  "sentence-camembert-base": { size: "115MB", quality: 0.59, dimensions: 768 },
+  "nomic-embed-text-v2-moe": { size: "328MB", quality: 0.66, dimensions: 768 },
+};
+
+const DIMENSION_VALUES = [768, 512, 256, 128, 64];
 
 export function EmbeddingSettingsView({
   workspace,
@@ -84,6 +54,7 @@ export function EmbeddingSettingsView({
 }: EmbeddingSettingsViewProps) {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation("workspace");
   const [config, setConfig] = useState(
     workspace.embeddingConfig || {
       engine: DEFAULT_MULTILINGUAL_EMBEDDING_MODEL,
@@ -97,6 +68,17 @@ export function EmbeddingSettingsView({
   const [showEnginePicker, setShowEnginePicker] = useState(false);
   const [showDimensionPicker, setShowDimensionPicker] = useState(false);
   const [showReembedConfirm, setShowReembedConfirm] = useState(false);
+
+  const ENGINE_OPTIONS = ENGINE_VALUES.map(value => ({
+    value,
+    label: t(`embedding.engine.options.${value}.label`),
+    description: t(`embedding.engine.options.${value}.description`),
+    ...ENGINE_META[value],
+  }));
+  const DIMENSION_OPTIONS = DIMENSION_VALUES.map(value => ({
+    value,
+    label: t(`embedding.dimensions.options.${value}`),
+  }));
 
   const selectedEngine =
     ENGINE_OPTIONS.find(e => e.value === config.engine) || ENGINE_OPTIONS[0];
@@ -115,11 +97,11 @@ export function EmbeddingSettingsView({
       { embeddingConfig: newConfig },
     );
     if (!updated) {
-      uiStore.showError("Embedding settings could not be saved");
+      uiStore.showError(t("embedding.saveError"));
       return;
     }
     setConfig(newConfig);
-    uiStore.showSuccess("Embedding settings saved");
+    uiStore.showSuccess(t("embedding.saveSuccess"));
   }
 
   async function handleEngineChange(engine: MultilingualEmbeddingModelId) {
@@ -155,10 +137,10 @@ export function EmbeddingSettingsView({
     const total = documentsReembedded + memosReembedded;
     const failed = documentsFailed + memosFailed;
     if (failed === 0) {
-      uiStore.showSuccess(`Re-embedded ${total} item${total === 1 ? "" : "s"}`);
+      uiStore.showSuccess(t("embedding.reembed.success", { count: total }));
     } else {
       uiStore.showError(
-        `Re-embedded ${total} item${total === 1 ? "" : "s"}, ${failed} failed`,
+        t("embedding.reembed.successWithFailures", { count: total, failed }),
       );
     }
   }
@@ -187,7 +169,7 @@ export function EmbeddingSettingsView({
           numberOfLines={1}
           ellipsizeMode="middle"
           className="text-white text-lg font-medium">
-          Embedding Settings
+          {t("embedding.title")}
         </Text>
       </View>
 
@@ -204,7 +186,7 @@ export function EmbeddingSettingsView({
         <View className="w-full flex flex-col" style={{ gap: 12 }}>
           <View className="flex flex-row items-center justify-between">
             <Text style={{ color: "#9F9FA0" }} className="text-sm uppercase">
-              Embedding Engine
+              {t("embedding.engine.label")}
             </Text>
             <Info size={18} color="#6F6F71" />
           </View>
@@ -214,7 +196,9 @@ export function EmbeddingSettingsView({
             onPress={() => setShowEnginePicker(true)}>
             <View className="flex flex-row gap-2 items-center">
               <Globe size={18} color="#FFF" />
-              <Text className="text-white text-lg">Engine</Text>
+              <Text className="text-white text-lg">
+                {t("embedding.engine.fieldLabel")}
+              </Text>
             </View>
             <View className="flex flex-1 flex-row gap-2 items-center justify-between">
               <Text
@@ -228,8 +212,11 @@ export function EmbeddingSettingsView({
             </View>
           </TouchableOpacity>
           <Text style={{ color: "#9F9FA0" }} className="text-xs">
-            {selectedEngine.description} | {selectedEngine.size} | French MTEB:{" "}
-            {selectedEngine.quality}
+            {t("embedding.engine.description", {
+              description: selectedEngine.description,
+              size: selectedEngine.size,
+              quality: selectedEngine.quality,
+            })}
           </Text>
 
           {/* Engine Picker Modal */}
@@ -239,7 +226,7 @@ export function EmbeddingSettingsView({
               style={{ top: insets.top }}>
               <View className="bg-gray-900 rounded-xl p-6 w-full mx-4 max-h-[80%]">
                 <Text className="text-white text-xl font-bold mb-4">
-                  Select Embedding Engine
+                  {t("embedding.engine.pickerTitle")}
                 </Text>
                 <ScrollView>
                   {ENGINE_OPTIONS.map(engine => (
@@ -272,7 +259,11 @@ export function EmbeddingSettingsView({
                         </Text>
                         <View className="flex flex-row gap-4 mt-2 text-xs text-gray-500">
                           <Text>{engine.size}</Text>
-                          <Text>French: {engine.quality}</Text>
+                          <Text>
+                            {t("embedding.engine.frenchQuality", {
+                              quality: engine.quality,
+                            })}
+                          </Text>
                         </View>
                       </View>
                     </TouchableOpacity>
@@ -281,7 +272,7 @@ export function EmbeddingSettingsView({
                 <TouchableOpacity
                   onPress={() => setShowEnginePicker(false)}
                   className="mt-4 w-full bg-gray-700 py-3 rounded-lg items-center justify-center">
-                  <Text className="text-white">Cancel</Text>
+                  <Text className="text-white">{t("embedding.engine.cancel")}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -293,7 +284,7 @@ export function EmbeddingSettingsView({
           <View className="w-full flex flex-col" style={{ gap: 12 }}>
             <View className="flex flex-row items-center justify-between">
               <Text style={{ color: "#9F9FA0" }} className="text-sm uppercase">
-                Embedding Dimensions
+                {t("embedding.dimensions.label")}
               </Text>
               <Info size={18} color="#6F6F71" />
             </View>
@@ -303,7 +294,9 @@ export function EmbeddingSettingsView({
               onPress={() => setShowDimensionPicker(true)}>
               <View className="flex flex-row gap-2 items-center">
                 <Globe size={18} color="#FFF" />
-                <Text className="text-white text-lg">Dimensions</Text>
+                <Text className="text-white text-lg">
+                  {t("embedding.dimensions.fieldLabel")}
+                </Text>
               </View>
               <View className="flex flex-1 flex-row gap-2 items-center justify-between">
                 <Text
@@ -311,14 +304,13 @@ export function EmbeddingSettingsView({
                   ellipsizeMode="tail"
                   style={{ color: "#9F9FA0" }}
                   className="text-lg flex-1 text-right">
-                  {config.dimensions} dims
+                  {config.dimensions} {t("embedding.dimensions.valueSuffix")}
                 </Text>
                 <CaretDown size={18} color="#FFF" />
               </View>
             </TouchableOpacity>
             <Text style={{ color: "#9F9FA0" }} className="text-xs">
-              Matryoshka truncation: smaller dimensions = faster search, less
-              storage. 256 dims retains ~99% quality.
+              {t("embedding.dimensions.matryoshkaDescription")}
             </Text>
 
             {/* Dimension Picker Modal */}
@@ -328,7 +320,7 @@ export function EmbeddingSettingsView({
                 style={{ top: insets.top }}>
                 <View className="bg-gray-900 rounded-xl p-6 w-full mx-4 max-h-[80%]">
                   <Text className="text-white text-xl font-bold mb-4">
-                    Select Dimensions
+                    {t("embedding.dimensions.pickerTitle")}
                   </Text>
                   <ScrollView>
                     {availableDimensions.map(dim => (
@@ -357,7 +349,9 @@ export function EmbeddingSettingsView({
                   <TouchableOpacity
                     onPress={() => setShowDimensionPicker(false)}
                     className="mt-4 w-full bg-gray-700 py-3 rounded-lg items-center justify-center">
-                    <Text className="text-white">Cancel</Text>
+                    <Text className="text-white">
+                      {t("embedding.dimensions.cancel")}
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -369,7 +363,7 @@ export function EmbeddingSettingsView({
           <View className="w-full flex flex-col" style={{ gap: 12 }}>
             <View className="flex flex-row items-center justify-between">
               <Text style={{ color: "#9F9FA0" }} className="text-sm uppercase">
-                Embedding Dimensions
+                {t("embedding.dimensions.label")}
               </Text>
             </View>
             <View
@@ -377,7 +371,9 @@ export function EmbeddingSettingsView({
               className="w-full flex flex-row items-center rounded-lg">
               <View className="flex flex-row gap-2 items-center">
                 <Globe size={18} color="#FFF" />
-                <Text className="text-white text-lg">Dimensions</Text>
+                <Text className="text-white text-lg">
+                  {t("embedding.dimensions.fieldLabel")}
+                </Text>
               </View>
               <View className="flex flex-1 flex-row gap-2 items-center justify-between">
                 <Text
@@ -385,13 +381,12 @@ export function EmbeddingSettingsView({
                   ellipsizeMode="tail"
                   style={{ color: "#9F9FA0" }}
                   className="text-lg flex-1 text-right">
-                  {config.dimensions} dims (fixed for this model)
+                  {config.dimensions} {t("embedding.dimensions.fixedSuffix")}
                 </Text>
               </View>
             </View>
             <Text style={{ color: "#9F9FA0" }} className="text-xs">
-              This model has fixed dimensions. Switch to Nomic v2 MoE for
-              Matryoshka truncation.
+              {t("embedding.dimensions.fixedDescription")}
             </Text>
           </View>
         )}
@@ -407,11 +402,15 @@ export function EmbeddingSettingsView({
             onPress={() => handleAutoDetectChange(!config.autoDetectLanguage)}>
             <View className="flex flex-row gap-2 items-center">
               <Globe size={18} color="#FFF" />
-              <Text className="text-white text-lg">Auto-detect</Text>
+              <Text className="text-white text-lg">
+                {t("embedding.autoDetect.fieldLabel")}
+              </Text>
             </View>
             <View className="flex flex-1 flex-row gap-2 items-center justify-between">
               <Text className="text-white text-lg">
-                {config.autoDetectLanguage ? "Enabled" : "Disabled"}
+                {config.autoDetectLanguage
+                  ? t("embedding.autoDetect.enabled")
+                  : t("embedding.autoDetect.disabled")}
               </Text>
               <Switch
                 value={config.autoDetectLanguage}
@@ -422,15 +421,14 @@ export function EmbeddingSettingsView({
             </View>
           </TouchableOpacity>
           <Text style={{ color: "#9F9FA0" }} className="text-xs">
-            Automatically detect document language and route to optimal
-            embedder. When disabled, uses selected engine for all documents.
+            {t("embedding.autoDetect.description")}
           </Text>
         </View>
 
         {/* Re-embed Workspace */}
         <View className="w-full flex flex-col" style={{ gap: 12 }}>
           <Text style={{ color: "#9F9FA0" }} className="text-sm uppercase">
-            Re-embed Workspace
+            {t("embedding.reembed.label")}
           </Text>
           <TouchableOpacity
             style={{
@@ -442,12 +440,13 @@ export function EmbeddingSettingsView({
             onPress={() => setShowReembedConfirm(true)}>
             <View className="flex flex-row gap-2 items-center">
               <Warning size={18} color="#3B82F6" />
-              <Text className="text-white text-lg">Re-embed All Documents</Text>
+              <Text className="text-white text-lg">
+                {t("embedding.reembed.button")}
+              </Text>
             </View>
           </TouchableOpacity>
           <Text style={{ color: "#9F9FA0" }} className="text-xs">
-            Re-process all documents with current embedding settings. This will
-            delete existing vectors and create new ones.
+            {t("embedding.reembed.description")}
           </Text>
 
           {/* Re-embed Confirm Modal */}
@@ -457,24 +456,25 @@ export function EmbeddingSettingsView({
               style={{ top: insets.top }}>
               <View className="bg-gray-900 rounded-xl p-6 w-full mx-4">
                 <Text className="text-white text-xl font-bold mb-4">
-                  Re-embed Workspace?
+                  {t("embedding.reembed.confirmTitle")}
                 </Text>
                 <Text className="text-gray-300 mb-6">
-                  This will re-process all documents in this workspace using the
-                  current embedding engine and dimensions. Existing vectors will
-                  be replaced. This operation cannot be undone and may take
-                  several minutes.
+                  {t("embedding.reembed.confirmMessage")}
                 </Text>
                 <View className="flex flex-row gap-4">
                   <TouchableOpacity
                     onPress={() => setShowReembedConfirm(false)}
                     className="flex-1 bg-gray-700 py-3 rounded-lg items-center justify-center">
-                    <Text className="text-white">Cancel</Text>
+                    <Text className="text-white">
+                      {t("embedding.reembed.cancel")}
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={handleReembedWorkspace}
                     className="flex-1 bg-blue-600 py-3 rounded-lg items-center justify-center">
-                    <Text className="text-white">Re-embed</Text>
+                    <Text className="text-white">
+                      {t("embedding.reembed.confirm")}
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -485,37 +485,55 @@ export function EmbeddingSettingsView({
         {/* Current Model Info */}
         <View className="w-full flex flex-col" style={{ gap: 12 }}>
           <Text style={{ color: "#9F9FA0" }} className="text-sm uppercase">
-            Current Configuration
+            {t("embedding.currentConfig.label")}
           </Text>
           <View
             style={{ backgroundColor: "#27282A", padding: 14, gap: 12 }}
             className="w-full rounded-lg">
             <View className="flex flex-row justify-between">
-              <Text className="text-gray-400">Engine</Text>
+              <Text className="text-gray-400">
+                {t("embedding.currentConfig.engine")}
+              </Text>
               <Text className="text-white">{selectedEngine.label}</Text>
             </View>
             <View className="flex flex-row justify-between">
-              <Text className="text-gray-400">Dimensions</Text>
+              <Text className="text-gray-400">
+                {t("embedding.currentConfig.dimensions")}
+              </Text>
               <Text className="text-white">{config.dimensions}</Text>
             </View>
             <View className="flex flex-row justify-between">
-              <Text className="text-gray-400">Model Size</Text>
+              <Text className="text-gray-400">
+                {t("embedding.currentConfig.modelSize")}
+              </Text>
               <Text className="text-white">{selectedEngine.size}</Text>
             </View>
             <View className="flex flex-row justify-between">
-              <Text className="text-gray-400">Context Length</Text>
-              <Text className="text-white">512 tokens</Text>
-            </View>
-            <View className="flex flex-row justify-between">
-              <Text className="text-gray-400">Auto-detect Language</Text>
+              <Text className="text-gray-400">
+                {t("embedding.currentConfig.contextLength")}
+              </Text>
               <Text className="text-white">
-                {config.autoDetectLanguage ? "Enabled" : "Disabled"}
+                {t("embedding.currentConfig.contextLengthValue")}
               </Text>
             </View>
             <View className="flex flex-row justify-between">
-              <Text className="text-gray-400">Matryoshka</Text>
+              <Text className="text-gray-400">
+                {t("embedding.currentConfig.autoDetect")}
+              </Text>
               <Text className="text-white">
-                {supportsMatryoshka ? "Supported" : "Not supported"}
+                {config.autoDetectLanguage
+                  ? t("embedding.autoDetect.enabled")
+                  : t("embedding.autoDetect.disabled")}
+              </Text>
+            </View>
+            <View className="flex flex-row justify-between">
+              <Text className="text-gray-400">
+                {t("embedding.currentConfig.matryoshka")}
+              </Text>
+              <Text className="text-white">
+                {supportsMatryoshka
+                  ? t("embedding.currentConfig.supported")
+                  : t("embedding.currentConfig.notSupported")}
               </Text>
             </View>
           </View>

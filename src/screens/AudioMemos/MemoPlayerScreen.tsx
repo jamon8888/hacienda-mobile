@@ -1,5 +1,12 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { View, Text, TouchableOpacity, TextInput, Alert } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  Share as RNShare,
+} from "react-native";
 import SafeView from "@/components/SafeView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowLeft, Play, Pause, Trash, Share } from "phosphor-react-native";
@@ -21,7 +28,7 @@ export default function MemoPlayerScreen() {
   const route = useRoute();
   const navigation = useNavigation<DrawerNavigationProp<any>>();
   const { t } = useTranslation("audio");
-  const { memoId, mode, wsSlug } = route.params as {
+  const { memoId, mode, wsSlug } = (route.params ?? {}) as {
     memoId?: string;
     mode?: "record" | "play";
     wsSlug?: string | null;
@@ -91,6 +98,18 @@ export default function MemoPlayerScreen() {
     setIsEditing(false);
   }, [memo, editedTranscript, updateMemo]);
 
+  const handleShare = useCallback(async () => {
+    if (!memo) return;
+    try {
+      await RNShare.share({
+        message: memo.transcript || undefined,
+        url: memo.audioUri,
+      });
+    } catch (err) {
+      console.warn("Failed to share memo:", memo.uuid, err);
+    }
+  }, [memo]);
+
   const handleDelete = useCallback(async () => {
     if (!memo) return;
     const success = await deleteMemo(memo.uuid);
@@ -143,7 +162,7 @@ export default function MemoPlayerScreen() {
           <TouchableOpacity onPress={handleDelete}>
             <Trash size={22} color="#9F9FA0" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => {}}>
+          <TouchableOpacity onPress={handleShare}>
             <Share size={22} color="#9F9FA0" />
           </TouchableOpacity>
         </View>

@@ -51,17 +51,14 @@ export default function CitationsActionSheet() {
   }, [registerSheet]);
 
   useEffect(() => {
-    uiStore.emitter.addListener(
+    const subscription = uiStore.emitter.addListener(
       uiStore.globalEvents.CITATIONS_FOCUSED,
       (citations: WorkspaceChatType["response"]["citations"]) => {
         setFocusedCitations(citations);
         if (citations.length) presentSheet(BOTTOM_SHEET_NAMES.CITATIONS, true);
       },
     );
-    return () =>
-      uiStore.emitter.removeAllListeners(
-        uiStore.globalEvents.CITATIONS_FOCUSED,
-      );
+    return () => subscription.remove();
   }, []);
 
   return (

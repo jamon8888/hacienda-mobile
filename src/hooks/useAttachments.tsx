@@ -403,15 +403,18 @@ export default function useAttachments({
   }, [wsSlug]);
 
   useEffect(() => {
-    uiStore.emitter.addListener(CHAT_HANDLER_EVENTS.PROMPT_SUBMITTED, () =>
-      setAttachments([]),
+    const clearAttachments = () => setAttachments([]);
+    const promptSubmittedSub = uiStore.emitter.addListener(
+      CHAT_HANDLER_EVENTS.PROMPT_SUBMITTED,
+      clearAttachments,
     );
-    uiStore.emitter.addListener(CHAT_HANDLER_EVENTS.CLEAR_ATTACHMENTS, () =>
-      setAttachments([]),
+    const clearAttachmentsSub = uiStore.emitter.addListener(
+      CHAT_HANDLER_EVENTS.CLEAR_ATTACHMENTS,
+      clearAttachments,
     );
     return () => {
-      uiStore.emitter.removeAllListeners(CHAT_HANDLER_EVENTS.PROMPT_SUBMITTED);
-      uiStore.emitter.removeAllListeners(CHAT_HANDLER_EVENTS.CLEAR_ATTACHMENTS);
+      promptSubmittedSub.remove();
+      clearAttachmentsSub.remove();
     };
   }, [setAttachments]);
 

@@ -495,43 +495,31 @@ export function chatHandlerInterface({
    * Listen for events from the UI store to manage the prompt state
    */
   useEffect(() => {
-    uiStore.emitter.addListener(
-      CHAT_HANDLER_EVENTS.DISABLE_PROMPT_INPUT,
-      disablePromptInput,
-    );
-    uiStore.emitter.addListener(
-      CHAT_HANDLER_EVENTS.ENABLE_PROMPT_INPUT,
-      enablePromptInput,
-    );
-    uiStore.emitter.addListener(CHAT_HANDLER_EVENTS.RESET_CHAT, reset);
-    uiStore.emitter.addListener(
-      CHAT_HANDLER_EVENTS.PROMPT_SUBMITTED,
-      hideKeyboard,
-    );
-    uiStore.emitter.addListener(
-      uiStore.globalEvents.MODEL_DOWNLOAD_STARTED,
-      disablePromptInput,
-    );
-    uiStore.emitter.addListener(
-      uiStore.globalEvents.MODEL_DOWNLOAD_COMPLETE,
-      enablePromptInput,
-    );
-    return () => {
-      uiStore.emitter.removeAllListeners(
+    const subscriptions = [
+      uiStore.emitter.addListener(
         CHAT_HANDLER_EVENTS.DISABLE_PROMPT_INPUT,
-      );
-      uiStore.emitter.removeAllListeners(
+        disablePromptInput,
+      ),
+      uiStore.emitter.addListener(
         CHAT_HANDLER_EVENTS.ENABLE_PROMPT_INPUT,
-      );
-      uiStore.emitter.removeAllListeners(CHAT_HANDLER_EVENTS.RESET_CHAT);
-      uiStore.emitter.removeAllListeners(
+        enablePromptInput,
+      ),
+      uiStore.emitter.addListener(CHAT_HANDLER_EVENTS.RESET_CHAT, reset),
+      uiStore.emitter.addListener(
+        CHAT_HANDLER_EVENTS.PROMPT_SUBMITTED,
+        hideKeyboard,
+      ),
+      uiStore.emitter.addListener(
         uiStore.globalEvents.MODEL_DOWNLOAD_STARTED,
-      );
-      uiStore.emitter.removeAllListeners(
+        disablePromptInput,
+      ),
+      uiStore.emitter.addListener(
         uiStore.globalEvents.MODEL_DOWNLOAD_COMPLETE,
-      );
-    };
-  }, [reset, disablePromptInput, enablePromptInput]);
+        enablePromptInput,
+      ),
+    ];
+    return () => subscriptions.forEach(subscription => subscription.remove());
+  }, [reset, disablePromptInput, enablePromptInput, hideKeyboard]);
 
   const chatHandlerInterface = useMemo(() => {
     return {

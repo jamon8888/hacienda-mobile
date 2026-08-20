@@ -108,6 +108,14 @@ export function useVoiceTranscription(): UseVoiceTranscriptionReturn {
       audioStream.on("onError", err => setError(err));
 
       await audioStream.start();
+      if (!recordingRef.current) {
+        // stopRecording() ran while we were awaiting start() (a fast
+        // tap-release) - audioStreamRef was never set so stopRecording had
+        // nothing to stop. Stop this now-orphaned stream instead of handing
+        // it back and marking recording as active after the user released.
+        await audioStream.stop();
+        return;
+      }
       audioStreamRef.current = audioStream;
       setIsRecording(true);
     } catch (err) {

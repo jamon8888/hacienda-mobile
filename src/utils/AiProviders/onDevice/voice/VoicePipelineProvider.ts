@@ -24,6 +24,7 @@ export interface VoicePipelineConfig {
   processingDelayMs?: number;
   enableTTS?: boolean;
   vadThreshold?: number;
+  workspaceSlug?: string | null;
 }
 
 export interface VoiceResponse {
@@ -82,6 +83,7 @@ export class VoicePipelineProvider {
     processingDelayMs: 50,
     enableTTS: true,
     vadThreshold: 0.5,
+    workspaceSlug: null,
   };
 
   constructor(config: VoicePipelineConfig = {}) {
@@ -303,7 +305,7 @@ export class VoicePipelineProvider {
     let contextString = "";
     try {
       const contextResults = await retrieveContext(transcript, {
-        workspaceId: "default", // TODO: Get from current workspace
+        workspaceId: this.config.workspaceSlug ?? "default",
         topK: 5,
       });
       contextString = buildContextString(contextResults);

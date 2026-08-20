@@ -31,6 +31,7 @@ export default function MemoRecorder({
   const { createMemo, updateMemo } = useAudioMemos();
   const recorderRef = useRef<WaveformRecorderViewRef>(null);
   const [state, setState] = useState<WaveformRecorderState>("idle");
+  const stateRef = useRef(state);
   const [saving, setSaving] = useState(false);
   const startedRef = useRef(false);
 
@@ -54,12 +55,14 @@ export default function MemoRecorder({
 
   useEffect(() => {
     return () => {
-      if (state === "recording" || state === "paused") {
+      // Read the ref rather than `state` - an effect with an empty dep array
+      // only ever closes over the state from the render that mounted it, so
+      // reading `state` directly here would always see "idle" and never
+      // actually cancel an in-progress recording on unmount.
+      if (stateRef.current === "recording" || stateRef.current === "paused") {
         recorderRef.current?.cancel();
       }
     };
-    // Only run on unmount - `state` is read via closure intentionally.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleStop = useCallback(() => {
@@ -151,7 +154,10 @@ export default function MemoRecorder({
           showBackground
           showTime
           timeColor="#FFFFFF"
-          onStateChange={({ state: newState }) => setState(newState)}
+          onStateChange={({ state: newState }) => {
+            stateRef.current = newState;
+            setState(newState);
+          }}
           onComplete={handleComplete}
           onError={handleError}
           onPermissionDenied={() => {

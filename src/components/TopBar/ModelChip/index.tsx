@@ -102,16 +102,13 @@ export default function ModelChip({ workspace }: { workspace: WorkspaceType }) {
   useEffect(() => {
     if (workspace?.isRemote) {
       fetchRemoteModelName();
-      uiStore.emitter.addListener(
+      const subscription = uiStore.emitter.addListener(
         uiStore.globalEvents.CHAT_HISTORY_REFRESHED,
         fetchRemoteModelName,
       );
-    } else setModelName(getPresetModelName(llmPreferences));
-
-    return () =>
-      uiStore.emitter.removeAllListeners(
-        uiStore.globalEvents.CHAT_HISTORY_REFRESHED,
-      );
+      return () => subscription.remove();
+    }
+    setModelName(getPresetModelName(llmPreferences));
   }, [workspace]);
 
   // If the model name is not set and the workspace is remote, we don't want to show the model chip

@@ -69,7 +69,9 @@ export default function TopBar({
             <NewThreadIcon width={32} height={32} fill="white" />
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => navigation.navigate(PATHS.voice_chat)}
+            onPress={() =>
+              navigation.navigate(PATHS.voice_chat, { wsSlug: workspace?.slug })
+            }
             className="ml-2">
             <Microphone size={32} color="white" weight="bold" />
           </TouchableOpacity>
@@ -78,7 +80,9 @@ export default function TopBar({
         <>
           <View className="w-[32px]" />
           <TouchableOpacity
-            onPress={() => navigation.navigate(PATHS.voice_chat)}>
+            onPress={() =>
+              navigation.navigate(PATHS.voice_chat, { wsSlug: workspace?.slug })
+            }>
             <Microphone size={32} color="white" weight="bold" />
           </TouchableOpacity>
         </>
