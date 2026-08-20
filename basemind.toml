@@ -52,8 +52,11 @@
 # transport = "stdio"
 
 [documents]
+# Disabled on this machine: the document/image OCR + embedding tier uses ONNX Runtime,
+# which requires AVX2 (this Intel i5-2400S / Sandy Bridge CPU does not support it) and
+# crashes with SIGILL during scan. Code indexing (tree-sitter) does not need this, so off.
 # Document RAG tier (PDF / Office / HTML / email / images). Requires a `documents` build.
-# enabled = true
+enabled = false
 # Embed documents for semantic search. ON by default — embeddings pay off on real prose / OCR.
 # embed = true
 # Embedding model preset. Changing it forces a FULL RE-EMBED of the corpus (time + CPU): every

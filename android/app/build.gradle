@@ -218,7 +218,7 @@ dependencies {
     implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.18.0'
     // LiteRT for EmbeddingGemma inference
     implementation 'com.google.ai.edge.litert:litert:2.1.6'
-    implementation 'com.google.ai.edge.litert:litert-gpu:2.1.6'
+    implementation 'com.google.ai.edge.litert:litert-gpu:1.4.2'
     // Core library desugaring for Java 8+ APIs (MethodHandle, etc.)
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
 }
