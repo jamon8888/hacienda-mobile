@@ -1,0 +1,9 @@
+reviews:
+  path_filters:
+    - "babel.config.js"
+    - "jest.config.js"
+    - "src/screens/AudioMemos/AudioMemosScreen.test.tsx"
+    - "src/screens/AudioMemos/MemoPlayerScreen.test.tsx"
+    - "src/screens/AudioMemos/MemoRow.test.tsx"
+    - "src/utils/Embedder/onDevice/tokenizer.ts"
+    - "src/utils/chat/completionSettingsVersions.ts"
