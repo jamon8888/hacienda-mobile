@@ -5,7 +5,6 @@ import {
   X,
   FolderSimple,
   File,
-  MusicNotes,
 } from "phosphor-react-native";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import {
@@ -38,7 +37,6 @@ import { getSHA256Hash } from "@/utils/device";
 import { indexingStore, IndexProgress } from "@/store/IndexingStore";
 import { dedupeChunks } from "@/utils/chunking";
 import uiStore from "@/store/UIStore";
-import { xbergStore } from "@/store/XbergStore";
 
 const MAX_IMPORT_FILE_SIZE = 50 * 1024 * 1024;
 const SUPPORTED_EXTENSIONS = new Set(
@@ -362,42 +360,25 @@ export default function WorkspaceFilesActionSheet({
 
         {/* Import Buttons */}
         {!optionsActive && (
-          <View className="flex flex-col gap-2 mb-4">
-            <View className="flex flex-row gap-2">
-              <TouchableOpacity
-                onPress={handleImportFiles}
-                disabled={isImporting}
-                style={{ backgroundColor: "#27282A", flex: 1, padding: 12 }}
-                className="rounded-lg flex flex-row items-center justify-center gap-2">
-                <File size={18} color="#3B82F6" />
-                <Text className="text-white text-sm">
-                  {isImporting ? "Importing..." : "Import Files"}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleImportFolder}
-                disabled={isImporting}
-                style={{ backgroundColor: "#27282A", flex: 1, padding: 12 }}
-                className="rounded-lg flex flex-row items-center justify-center gap-2">
-                <FolderSimple size={18} color="#6CE9A6" />
-                <Text className="text-white text-sm">
-                  {isImporting ? "Importing..." : "Import Folder"}
-                </Text>
-              </TouchableOpacity>
-            </View>
+          <View className="flex flex-row gap-2 mb-4">
             <TouchableOpacity
-              onPress={() =>
-                presentSheet(BOTTOM_SHEET_NAMES.TRANSCRIPTION_OPTIONS)
-              }
-              style={{ backgroundColor: "#27282A", padding: 10 }}
+              onPress={handleImportFiles}
+              disabled={isImporting}
+              style={{ backgroundColor: "#27282A", flex: 1, padding: 12 }}
               className="rounded-lg flex flex-row items-center justify-center gap-2">
-              <MusicNotes size={16} color="#9F9FA0" />
-              <Text style={{ color: "#9F9FA0" }} className="text-xs">
-                Transcription:{" "}
-                {xbergStore.transcriptionModel} /{" "}
-                {xbergStore.transcriptionLanguage === "auto"
-                  ? "Auto-detect"
-                  : xbergStore.transcriptionLanguage}
+              <File size={18} color="#3B82F6" />
+              <Text className="text-white text-sm">
+                {isImporting ? "Importing..." : "Import Files"}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleImportFolder}
+              disabled={isImporting}
+              style={{ backgroundColor: "#27282A", flex: 1, padding: 12 }}
+              className="rounded-lg flex flex-row items-center justify-center gap-2">
+              <FolderSimple size={18} color="#6CE9A6" />
+              <Text className="text-white text-sm">
+                {isImporting ? "Importing..." : "Import Folder"}
               </Text>
             </TouchableOpacity>
           </View>

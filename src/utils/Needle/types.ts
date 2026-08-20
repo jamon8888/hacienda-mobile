@@ -40,7 +40,7 @@ export interface NeedleToolCall {
 }
 
 export interface NeedleClient {
-  init(bundlePath: string): Promise<void>;
+  init(): Promise<void>;
   routeRag(query: string, opts?: RouteOptions): Promise<NeedleRouteDecision>;
   selectTools(
     query: string,

@@ -6,7 +6,6 @@ import {
 } from "react-native";
 import DatabaseInspectorView from "./views/DatabaseInspectorView";
 import LLMManagerView from "./views/LLMManagerView";
-import NeedleSpikeView from "./views/NeedleSpikeView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function DevToolsMenu() {
@@ -24,7 +23,6 @@ export default function DevToolsMenu() {
             padding: 16,
             paddingBottom: insets.bottom + 30,
           }}>
-          <NeedleSpikeView />
           <DatabaseInspectorView />
           <LLMManagerView />
         </ScrollView>

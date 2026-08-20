@@ -37,7 +37,7 @@ export default async function AwaitableAlert(
       ...rejectButton,
     };
     const resolutionButton: AwaitableAlertButton = {
-      text: "Continue",
+      text: "Confirm",
       style: "default",
       onPress: () => {
         resolve(true);

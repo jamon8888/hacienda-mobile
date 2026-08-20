@@ -3,6 +3,7 @@ import { View, TouchableOpacity, Text, Image } from "react-native";
 import { DownloadSimple, Cube } from "phosphor-react-native";
 import MODEL_CARDS from "@/utils/models/defaults";
 import truncate from "truncate";
+import useTranslation from "@/hooks/useTranslation";
 
 interface ModelCardProps {
   model: any;
@@ -23,6 +24,7 @@ export default function ModelCard({
   onSelect,
   onUninstall,
 }: ModelCardProps) {
+  const { t } = useTranslation();
   const getModelIcon = () => {
     if (model.imageUrl) {
       return (
@@ -84,7 +86,7 @@ export default function ModelCard({
           ) : isDownloaded ? (
             <TouchableOpacity onPress={onUninstall} className="px-3 py-1 ml-4">
               <Text className="text-white font-medium text-sm py-2 px-4 bg-white/10 rounded-lg">
-                Uninstall
+                {t("components.modelCard.uninstall")}
               </Text>
             </TouchableOpacity>
           ) : (
