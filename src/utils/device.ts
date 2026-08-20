@@ -199,7 +199,6 @@ export function hfAsModel(
 
   return _model;
 }
-export const randId = () => Math.random().toString(36).substring(2, 11);
 
 // There is a an issue with RNFS.hash: https://github.com/birdofpreyru/react-native-fs/issues/99
 export const getSHA256Hash = async (filePath: string): Promise<string> => {
@@ -323,8 +322,7 @@ export const safeParseJSON = (json: string) => {
       return JSON.parse(cleanJson);
     }
   } catch (error) {
-    console.log("Original json: ", json);
-    console.error("Error parsing JSON:", error);
+    console.error("Error parsing JSON:", error, "Original json:", json);
     return { prompt: "", error: error };
   }
 };

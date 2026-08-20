@@ -118,8 +118,8 @@ export default function useWorkspaces(withThreads: boolean = false) {
           const { workspaceSlug } = event.details;
           setWorkspaces(prev => prev.filter(ws => ws.slug !== workspaceSlug));
           fetchWorkspaces(true).then(workspaces => {
-            if (workspaces.length === 0)
-              return console.log("no workspaces left - nowhere to go!");
+            // No workspaces left - nowhere to redirect to.
+            if (workspaces.length === 0) return;
             eventEmitter.emit("workspaceChatPageInfo", {
               type: "update",
               details: { wsSlug: workspaces[0].slug },

@@ -37,7 +37,6 @@ export default function Survey() {
   const insets = useSafeAreaInsets();
 
   const onContinue = async () => {
-    console.log("Stubbed: Sending survey data to server");
     uiStore.setToStorage("onboarding_survey_completed", true);
     Telemetry.logEvent(Telemetry.CUSTOM_EVENTS.ONBOARDING.SURVEY_RESPONSE, {
       selection,

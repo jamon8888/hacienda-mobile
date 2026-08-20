@@ -120,7 +120,9 @@ class AnythingLLMExternal {
     } = { token: "", platform: "server", error: "Unknown error" };
     try {
       data = await response.json();
-    } catch {}
+    } catch (err) {
+      console.warn("Failed to parse device registration response:", err);
+    }
 
     if (!response.ok || !!data?.error) {
       console.error(

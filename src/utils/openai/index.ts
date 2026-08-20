@@ -71,7 +71,7 @@ export default class OpenAILite {
     _options: any = {},
   ) {
     const formattedURL = this.formatURL(`${this.baseURL}/chat/completions`);
-    console.log("createChatCompletion", formattedURL, {
+    this.log("createChatCompletion", formattedURL, {
       hasApiKey: !!this.apiKey,
     });
     return await fetch(formattedURL, {
@@ -99,7 +99,7 @@ export default class OpenAILite {
     options: { controller?: AbortController } = {},
   ) {
     const formattedURL = this.formatURL(`${this.baseURL}/chat/completions`);
-    console.log("streamingChatCompletion", formattedURL, {
+    this.log("streamingChatCompletion", formattedURL, {
       hasApiKey: !!this.apiKey,
     });
     const response = await this.streamingFetch!(formattedURL, {
@@ -147,7 +147,7 @@ export default class OpenAILite {
 
   async listModels() {
     const formattedURL = this.formatURL(`${this.baseURL}/models`);
-    console.log("listModels", formattedURL, { hasApiKey: !!this.apiKey });
+    this.log("listModels", formattedURL, { hasApiKey: !!this.apiKey });
     return await fetch(formattedURL, {
       method: "GET",
       headers: {

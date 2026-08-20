@@ -275,8 +275,6 @@ export default function useModelManager({
       // Set selected model state first
       setSelectedModel(model?.modelId || null);
 
-      console.log("selectModel::llmPreferences", llmPreferences);
-      console.log("selectModel::model.modelId", model?.modelId);
       // Then update preferences
       await uiStore.setToStorage("llmPreference", {
         provider: llmPreferences?.provider ?? "native", // if the provider is not set, default to native

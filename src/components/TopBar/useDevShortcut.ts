@@ -15,6 +15,7 @@ export default function useDevShortcut({
   let timer: ReturnType<typeof setTimeout>;
   const [presses, setPresses] = useState(0);
   function registerPress() {
+    if (!__DEV__) return;
     setPresses(prevPresses => prevPresses + 1);
   }
 

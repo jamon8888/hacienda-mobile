@@ -81,6 +81,9 @@ export async function unregisterConnection(
       connection.connectionUrl,
       connection.token,
     ).sendCommand("unregister-device");
-  } catch {}
+  } catch (err) {
+    // Best-effort - the local connection is already removed above regardless.
+    console.warn("Failed to notify instance of device unregistration:", err);
+  }
   return newConnections;
 }

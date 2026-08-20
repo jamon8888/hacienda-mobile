@@ -35,10 +35,6 @@ export default class TextSplitter {
   ) {
     /*
           config can be a ton of things depending on what is required or optional by the specific splitter.
-          Non-splitter related keys
-          {
-            splitByFilename: string, // TODO
-          }
           ------
           Default: "RecursiveCharacterTextSplitter"
           Config: {
@@ -155,7 +151,6 @@ export default class TextSplitter {
       chunkHeaderMeta: null,
     },
   ) {
-    // if (!config?.splitByFilename) {// TODO do something when specific extension is present? }
     return new RecursiveSplitter({
       chunkSize: isNaN(config?.chunkSize ?? 1024)
         ? 1024

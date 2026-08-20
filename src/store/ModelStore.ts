@@ -226,13 +226,16 @@ class ModelStore {
 
   setNContext = (n_context: number) => {
     runInAction(() => {
-      this.n_context = n_context;
+      this.n_context = Math.max(this.MIN_CONTEXT_SIZE, n_context);
     });
   };
 
   // Helper method to get effective values respecting constraints
   getEffectiveValues = () => {
-    const effectiveContext = this.n_context;
+    // Also enforced here (not just in setNContext) since n_context can be
+    // set directly via persisted storage/mobx-persist-store rehydration,
+    // bypassing the setter.
+    const effectiveContext = Math.max(this.MIN_CONTEXT_SIZE, this.n_context);
     const effectiveBatch = Math.min(this.n_batch, effectiveContext);
     const effectiveUBatch = Math.min(this.n_ubatch, effectiveBatch);
 
@@ -368,8 +371,22 @@ class ModelStore {
     this.initializeDownloadStatus();
   };
 
+  private appStateSubscription: { remove: () => void } | null = null;
+
   setupAppStateListener = () => {
-    AppState.addEventListener("change", this.handleAppStateChange);
+    this.appStateSubscription = AppState.addEventListener(
+      "change",
+      this.handleAppStateChange,
+    );
+  };
+
+  // ModelStore is a process-lifetime singleton, so nothing calls this today -
+  // kept for symmetry with setupAppStateListener and for tests/future
+  // teardown paths (e.g. a store-reset helper) rather than leaking the
+  // subscription silently.
+  teardownAppStateListener = () => {
+    this.appStateSubscription?.remove();
+    this.appStateSubscription = null;
   };
 
   handleAppStateChange = async (nextAppState: AppStateStatus) => {
@@ -516,14 +533,19 @@ class ModelStore {
 
   checkSpaceAndDownload = async (modelId: string) => {
     const model = this.models.find(m => m.id === modelId);
-    // Skip if model is undefined, local or doesn't have a download URL
-    // TODO: we need a better way to handle this. Why this could ever happen?
-    if (
-      !model ||
-      model.isLocal ||
-      model.origin === ModelOrigin.LOCAL ||
-      !model.downloadUrl
-    ) {
+    // Already-local models and models without a resolved download URL are
+    // legitimately not downloadable - just skip them. `!model` is the only
+    // branch that shouldn't happen given today's call sites (both look the
+    // model up in `this.models` immediately before calling this), so it's
+    // logged rather than silently ignored in case a future caller passes a
+    // stale/invalid id.
+    if (!model) {
+      console.warn(
+        `checkSpaceAndDownload: no model found for id "${modelId}"`,
+      );
+      return;
+    }
+    if (model.isLocal || model.origin === ModelOrigin.LOCAL || !model.downloadUrl) {
       return;
     }
 
@@ -604,8 +626,6 @@ class ModelStore {
       }
     } else {
       // Non-local models are not removed from the list, when the file is deleted.
-      console.log("deleting: ", filePath);
-
       try {
         if (filePath) {
           await RNFS.unlink(filePath);
@@ -710,10 +730,8 @@ class ModelStore {
   };
 
   releaseContext = async () => {
-    console.log("attempt to release");
     if (!this.context) return Promise.resolve("No context to release");
     await this.context.destroy();
-    console.log("released");
     runInAction(() => {
       this.context = undefined;
       this.activeContextSettings = undefined;
@@ -937,13 +955,11 @@ class ModelStore {
       // Add relevant stop tokens from chat templates
       // Check model's custom chat template.
       const template = storeModel.chatTemplate?.chatTemplate;
-      console.log("template: ", template);
       if (template) {
         const templateStops = stops.filter(stop => template.includes(stop));
         stopTokens.push(...templateStops);
       }
 
-      console.log("stopTokens: ", stopTokens);
       // Only update if we found stop tokens
       if (stopTokens.length > 0) {
         runInAction(() => {
