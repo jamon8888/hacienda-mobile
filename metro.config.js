@@ -8,10 +8,17 @@ const configOptions = {
   resolver: {
     assetExts: assetExts.filter(ext => ext !== "svg"),
     sourceExts: [...sourceExts, "svg"],
-    // Shim Node's fs for @sctg/sentencepiece-js (only uses loadFromB64StringModel,
-    // never calls readFileSync, but the package imports fs at the top level).
+    // @sctg/sentencepiece-js (SentencePiece tokenizer for EmbeddingGemma, see
+    // src/utils/Embedder/onDevice/tokenizer.ts) statically imports Node's `fs` module at the
+    // top of its bundle, which Metro has no RN-side module for. The function that actually
+    // uses it (SentencePieceProcessor.load(url)) is never called -- our tokenizer uses
+    // loadFromB64StringModel() instead -- so a stub that throws if ever reached is safe. See
+    // scripts/stubs/fs.js. `module` and `url` are imported by the same bundle and need the
+    // same treatment. Jest has its own `^fs$` mapping to src/shims/fs.js (jest.config.js).
     extraNodeModules: {
-      fs: __dirname + "/src/shims/fs.js",
+      fs: require.resolve("./scripts/stubs/fs.js"),
+      module: require.resolve("./scripts/stubs/module.js"),
+      url: require.resolve("./scripts/stubs/url.js"),
     },
   },
   transformer: {

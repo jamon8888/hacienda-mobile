@@ -196,7 +196,11 @@ dependencies {
     
     // for download manager
     implementation "androidx.work:work-runtime-ktx:2.9.0"
-    def room_version = "2.6.1"
+    // Must stay >= 2.7.0. The KSP coordinate in ../build.gradle resolves to the 2.x line
+    // (KSP2, com.google.devtools.ksp.gradle.KspAAWorkerAction), and Room only gained KSP2
+    // support in 2.7.0. On 2.6.1 the room-compiler processor died with
+    //   e: [ksp] java.lang.IllegalStateException: unexpected jvm signature V
+    def room_version = "2.7.1"
     ksp "androidx.room:room-compiler:$room_version"
     implementation "androidx.room:room-runtime:$room_version"
     implementation "androidx.room:room-ktx:$room_version"
@@ -216,9 +220,12 @@ dependencies {
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.22.1'
     // ONNX Runtime for Silero VAD
     implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.18.0'
-    // LiteRT for EmbeddingGemma inference
+    // LiteRT for EmbeddingGemma inference. litert-gpu was dropped -- Google's Maven repo never
+    // published a 2.x release of it (maxes out at 1.4.2, while litert itself reached 2.2.0), so
+    // it 404'd on every resolve. Not currently used by EmbeddingGemmaModule.kt (still a
+    // CPU-only placeholder), so nothing regresses; re-add once litert-gpu ships a matching
+    // 2.x version or EmbeddingGemmaModule actually wires up a GPU delegate.
     implementation 'com.google.ai.edge.litert:litert:2.1.6'
-    implementation 'com.google.ai.edge.litert:litert-gpu:1.4.2'
     // Core library desugaring for Java 8+ APIs (MethodHandle, etc.)
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
 }
