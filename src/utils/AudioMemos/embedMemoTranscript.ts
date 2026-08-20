@@ -51,6 +51,7 @@ export async function embedMemoTranscript(
       // Safe to delete outright here since there's no replacement pending.
       if (memo.vectorBoxIds.length > 0) {
         await VectorDB.deleteVectorsByIds(memo.vectorBoxIds);
+        invalidateWorkspaceCache(memo.workspaceSlug);
       }
       return [];
     }
