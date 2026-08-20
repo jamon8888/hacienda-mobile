@@ -12,6 +12,7 @@ import {
 import { View, Text, TouchableOpacity } from "react-native";
 import { Check, CaretDown } from "phosphor-react-native";
 import { CactusVoiceModelId } from "@/utils/models/defaults";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface VoiceModelOption {
   id: CactusVoiceModelId;
@@ -42,6 +43,7 @@ export function ModelPickerModal({
 }: ModelPickerModalProps) {
   const bottomSheetRef = useRef<any>(null);
   const { registerSheet } = useBottomSheet();
+  const { t } = useTranslation("audio");
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -86,7 +88,7 @@ export function ModelPickerModal({
             {recommended && (
               <View className="bg-emerald-500 px-2 py-0.5 rounded">
                 <Text className="text-white text-xs font-medium">
-                  Recommended
+                  {t("voiceSettings.modal.recommended")}
                 </Text>
               </View>
             )}

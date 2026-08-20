@@ -41,4 +41,32 @@ index 6669e9e..b97c424 100644
 +        project.properties["enableWarningsAsErrors"]?.toString()?.toBoolean() ?: false)
    }
  }
+diff --git a/node_modules/@react-native/gradle-plugin/settings-plugin/build.gradle.kts b/node_modules/@react-native/gradle-plugin/settings-plugin/build.gradle.kts
+index 1234567..abcdefg 100644
+--- a/node_modules/@react-native/gradle-plugin/settings-plugin/build.gradle.kts
++++ b/node_modules/@react-native/gradle-plugin/settings-plugin/build.gradle.kts
+@@ -6,6 +6,8 @@
+  */
  
+ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
++import org.jetbrains.kotlin.gradle.dsl.JvmTarget
++import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
+ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+ 
+ plugins {
+@@ -50,12 +52,12 @@ kotlin { jvmToolchain(17) }
+ 
+ tasks.withType<KotlinCompile>().configureEach {
+-  kotlinOptions {
+-    apiVersion = "1.6"
++  compilerOptions {
++    apiVersion.set(KotlinVersion.KOTLIN_2_0)
+     // See comment above on JDK 11 support
+-    jvmTarget = "11"
+-    allWarningsAsErrors =
+-        project.properties["enableWarningsAsErrors"]?.toString()?.toBoolean() ?: false
++    jvmTarget.set(JvmTarget.JVM_11)
++    allWarningsAsErrors.set(
++        project.properties["enableWarningsAsErrors"]?.toString()?.toBoolean() ?: false)
+   }
+ }

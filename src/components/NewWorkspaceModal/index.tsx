@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import useTranslation from "@/hooks/useTranslation";
 
 const eventEmitter = new NativeEventEmitter();
 export default function NewWorkspaceModal({
@@ -19,6 +20,7 @@ export default function NewWorkspaceModal({
   showing: boolean;
   close: () => void;
 }) {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
 
   async function handleCreateWorkspace() {
@@ -53,24 +55,24 @@ export default function NewWorkspaceModal({
         <View className="flex-1 justify-center items-center bg-black/50">
           <View className="bg-[--primary-bg] rounded-lg p-6 w-4/5">
             <Text className="text-xl font-bold mb-4 text-[--primary-text]">
-              New Workspace
+              {t("components.modal.createWorkspace")}
             </Text>
             <TextInput
               className="border border-white/20 rounded-lg p-2 mb-4 text-[--secondary-bg] !text-white placeholder:text-white/50"
               value={name}
               onChangeText={setName}
-              placeholder="Enter new workspace name"
+              placeholder={t("components.modal.enterWorkspaceName")}
             />
             <View className="flex-row justify-between gap-x-2">
               <TouchableOpacity
                 className="px-4 py-2 rounded-lg bg-transparent"
                 onPress={close}>
-                <Text className="text-white/50">Cancel</Text>
+                <Text className="text-white/50">{t("buttons.cancel")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 className="px-4 py-2 rounded-lg bg-transparent border border-white"
                 onPress={handleCreateWorkspace}>
-                <Text className="text-white">Create</Text>
+                <Text className="text-white">{t("components.modal.create")}</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -23,8 +23,6 @@ export async function initializeTokenizer(): Promise<void> {
     let modelData: string;
 
     if (Platform.OS === "android") {
-      // Android assets live inside the APK and must be read via readFileAssets.
-      // MainBundlePath + exists() works on iOS only.
       modelData = await RNFS.readFileAssets("sentencepiece.model", "base64");
     } else {
       const modelPath = `${RNFS.MainBundlePath}/sentencepiece.model`;
@@ -63,7 +61,14 @@ export function tokenize(
     );
   }
 
-  const ids = spmProcessor.encodeIds(text);
+  if (!Number.isSafeInteger(maxLength) || maxLength < 2) {
+    throw new Error(
+      `maxLength must be at least 2 (CLS + SEP tokens), got ${maxLength}`,
+    );
+  }
+
+  const trimmed = text.trim();
+  const ids = trimmed.length > 0 ? spmProcessor.encodeIds(trimmed) : [];
   const tokens: number[] = [
     TOKENIZER_CONSTANTS.CLS_TOKEN,
     ...ids,
@@ -92,7 +97,6 @@ export function decode(tokens: number[]): string {
   if (!spmProcessor) {
     throw new Error("Tokenizer not initialized");
   }
-  // Filter out special tokens (below MASK_TOKEN = 4)
   const filteredTokens = tokens.filter(
     t => t >= TOKENIZER_CONSTANTS.MASK_TOKEN,
   );

@@ -1,0 +1,72 @@
+{
+  "app": {
+    "name": "AnythingLLM"
+  },
+  "buttons": {
+    "getStarted": "Get Started",
+    "continue": "Continue",
+    "back": "Back",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "retry": "Retry",
+    "loading": "Loading..."
+  },
+  "errors": {
+    "unknown": "Unknown error",
+    "network": "Network error. Please check your connection.",
+    "required": "This field is required",
+    "invalidEmail": "Please enter a valid email address"
+  },
+  "status": {
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "success": "Success!",
+    "error": "Error"
+  },
+  "accessibility": {
+    "openMenu": "Open menu",
+    "newThread": "New thread",
+    "voiceChat": "Voice chat"
+  },
+  "nav": {
+    "workspaces": "Workspaces",
+    "newWorkspace": "New Workspace"
+  },
+  "home": {
+    "welcomeTitle": "Welcome to {{appName}}",
+    "getStartedSubtitle": "Get started by creating a new workspace.",
+    "createWorkspace": "Create Workspace",
+    "defaultWorkspaceName": "My Workspace"
+  },
+  "components": {
+    "alerts": {
+      "confirm": "Confirm",
+      "cancel": "Cancel"
+    },
+    "modal": {
+      "createWorkspace": "Create Workspace",
+      "workspaceName": "Workspace Name",
+      "create": "Create",
+      "enterWorkspaceName": "Enter new workspace name"
+    },
+    "provider": {
+      "chooseProvider": "Choose your provider",
+      "search": "Search",
+      "noProvidersFound": "No providers found for \"{{query}}\""
+    },
+    "modelCard": {
+      "uninstall": "Uninstall"
+    }
+  },
+  "topbar": {
+    "modelChip": {
+      "noModelLoaded": "No model loaded",
+      "noModelsFound": "No models found for \"{{query}}\"",
+      "additionalLLMs": "Additional LLMs",
+      "externalProviderToast": "Please manage your model preferences in the settings page.",
+      "remoteWorkspaceToast": "This workspace is managed remotely. You cannot change the model here."
+    }
+  }
+}

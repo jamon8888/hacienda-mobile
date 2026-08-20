@@ -1,6 +1,7 @@
 import React, { useRef, useCallback } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { BottomSheetModal, BottomSheetBackdrop } from "@gorhom/bottom-sheet";
+import useTranslation from "@/hooks/useTranslation";
 
 export default function ThreadItem({
   isActive,
@@ -10,6 +11,7 @@ export default function ThreadItem({
   onRename,
 }) {
   const bottomSheetRef = useRef<BottomSheetModal>(null);
+  const { t } = useTranslation("workspace");
   const renderBackdrop = useCallback(
     props => (
       <BottomSheetBackdrop
@@ -69,12 +71,12 @@ export default function ThreadItem({
           <TouchableOpacity
             onPress={handleRename}
             className="flex-row items-center py-3 px-2">
-            <Text className="text-[--primary-text] text-lg">Rename</Text>
+            <Text className="text-[--primary-text] text-lg">{t("thread.rename")}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleDelete}
             className="flex-row items-center py-3 px-2">
-            <Text className="text-red-500 text-lg">Delete</Text>
+            <Text className="text-red-500 text-lg">{t("common:buttons.delete")}</Text>
           </TouchableOpacity>
         </View>
       </BottomSheetModal>

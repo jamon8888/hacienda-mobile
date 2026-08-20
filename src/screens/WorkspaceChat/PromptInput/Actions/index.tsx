@@ -3,7 +3,6 @@ import { TouchableOpacity, View } from "react-native";
 import { PaperPlaneRight } from "phosphor-react-native";
 import { AttachmentInterface } from "@/hooks/useAttachments";
 import AttachmentsButton from "./AttachmentsButton";
-import { MicButton } from "./AttachmentsButton/MicButton";
 import { SettingsActionIcon } from "./Settings";
 import { type ChatHandlerInterface } from "@/hooks/useChatHandler/index";
 
@@ -11,16 +10,12 @@ export const ACTION_MENU_HEIGHT = 40;
 export default function ActionMenu({
   isFullScreen,
   chatHandler,
-  attachmentHandler,
-  workspaceSlug,
-  onTranscriptReady,
+  ...props
 }: {
   isFullScreen: boolean;
   sheetIndex?: number;
   attachmentHandler: AttachmentInterface;
   chatHandler: ChatHandlerInterface;
-  workspaceSlug: string;
-  onTranscriptReady: (text: string) => void;
 }) {
   return (
     <View
@@ -30,11 +25,9 @@ export default function ActionMenu({
         <View />
       ) : (
         <View className="flex flex-row items-center gap-x-4">
-          <MicButton onTranscriptReady={onTranscriptReady} />
           <AttachmentsButton
             chatHandler={chatHandler}
-            attachmentHandler={attachmentHandler}
-            workspaceSlug={workspaceSlug}
+            attachmentHandler={props.attachmentHandler}
           />
           <SettingsActionIcon />
         </View>

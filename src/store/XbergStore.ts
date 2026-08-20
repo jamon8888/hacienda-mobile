@@ -43,7 +43,7 @@ export class XbergStore {
       // Ingest extracted text into memory store
       if (workspaceId && result.results?.length > 0) {
         const fullText = result.results
-          .map(r => r.content)
+          .map((r) => r.content)
           .filter(Boolean)
           .join("\n\n");
         if (fullText) {

@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Cube, CheckCircle, ShieldCheck, TrendUp } from "phosphor-react-native";
+import { useTranslation } from "react-i18next";
 import MODEL_CARDS from "@/utils/models/defaults";
 
 interface ModelRecommendation {
@@ -41,6 +42,14 @@ export default function ModelCard({
   onSelect,
   containerStyle = {},
 }: ModelCardProps) {
+  const { t } = useTranslation("onboarding");
+  const tierTranslations: Record<string, string> = {
+    optimal: t("modelSelection.deviceTier.optimal"),
+    good: t("modelSelection.deviceTier.good"),
+    acceptable: t("modelSelection.deviceTier.acceptable"),
+    not_recommended: t("modelSelection.deviceTier.not_recommended"),
+  };
+
   const getModelIcon = () => {
     if (model.imageUrl) {
       return (
@@ -90,7 +99,7 @@ export default function ModelCard({
         }`}>
         <TierIcon size={10} color="#fff" weight="bold" />
         <Text className="text-white text-xs font-medium capitalize">
-          {recommendation.deviceTier}
+          {tierTranslations[recommendation.deviceTier]}
         </Text>
       </View>
     );
@@ -110,7 +119,7 @@ export default function ModelCard({
         <Text className={`${color} text-xs font-mono`}>
           {recommendation.qualityScore}
         </Text>
-        <Text className="text-white/50 text-xs">/100</Text>
+        <Text className="text-white/50 text-xs">{t("modelSelection.qualitySuffix")}</Text>
       </View>
     );
   };

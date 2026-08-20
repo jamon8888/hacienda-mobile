@@ -38,13 +38,6 @@ CREATE TRIGGER IF NOT EXISTS memories_ai AFTER INSERT ON memories BEGIN
     VALUES (new.rowid, new.content, new.summary, new.source_type);
 END;
 
-CREATE TRIGGER IF NOT EXISTS memories_au AFTER UPDATE ON memories BEGIN
-    INSERT INTO memories_fts(memories_fts, rowid, content, summary, source_type)
-    VALUES ('delete', old.rowid, old.content, old.summary, old.source_type);
-    INSERT INTO memories_fts(rowid, content, summary, source_type)
-    VALUES (new.rowid, new.content, new.summary, new.source_type);
-END;
-
 CREATE TRIGGER IF NOT EXISTS memories_ad AFTER DELETE ON memories BEGIN
     INSERT INTO memories_fts(memories_fts, rowid, content, summary, source_type)
     VALUES ('delete', old.rowid, old.content, old.summary, old.source_type);

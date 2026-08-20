@@ -4,10 +4,12 @@ import SafeView from "@/components/SafeView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowLeft, Check, Star, Crown } from "phosphor-react-native";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function SubscriptionScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { isPaid } = useSubscription();
+  const { t } = useTranslation("subscription");
 
   return (
     <SafeView safeAreaClassNames="bg-[#1B1B1E]">
@@ -18,7 +20,7 @@ export default function SubscriptionScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft size={24} color="#FFF" weight="bold" />
         </TouchableOpacity>
-        <Text className="text-white text-lg font-medium">Subscription</Text>
+        <Text className="text-white text-lg font-medium">{t("title")}</Text>
       </View>
 
       <View className="flex-1 px-4">
@@ -31,30 +33,52 @@ export default function SubscriptionScreen({ navigation }: any) {
               weight="fill"
             />
             <Text className="text-white font-medium">
-              {isPaid ? "Pro Plan" : "Free Plan"}
+              {isPaid ? t("plans.pro") : t("plans.free")}
             </Text>
           </View>
           <Text className="text-white/60 text-sm">
-            {isPaid
-              ? "You have access to all premium features"
-              : "Upgrade to unlock cloud inference, verticals, and more"}
+            {isPaid ? t("descriptions.pro") : t("descriptions.free")}
           </Text>
         </View>
 
         {/* Features Comparison */}
         <View className="bg-[#27282A] rounded-lg p-4 mb-4">
-          <Text className="text-white font-medium mb-3">Plan Features</Text>
+          <Text className="text-white font-medium mb-3">
+            {t("features.title")}
+          </Text>
 
           <View className="gap-3">
-            <FeatureRow label="Local Inference" included={true} />
-            <FeatureRow label="Document Generation" included={true} />
-            <FeatureRow label="Office Format Reading" included={true} />
-            <FeatureRow label="Push-to-Talk" included={true} />
-            <FeatureRow label="Audio Memos" included={true} />
-            <FeatureRow label="Cloud Inference" included={isPaid} comingSoon />
-            <FeatureRow label="Verticals" included={false} comingSoon />
-            <FeatureRow label="NER Extraction" included={false} comingSoon />
-            <FeatureRow label="LoRA Adapters" included={false} comingSoon />
+            <FeatureRow label={t("features.localInference")} included={true} />
+            <FeatureRow
+              label={t("features.documentGeneration")}
+              included={true}
+            />
+            <FeatureRow
+              label={t("features.officeFormatReading")}
+              included={true}
+            />
+            <FeatureRow label={t("features.pushToTalk")} included={true} />
+            <FeatureRow label={t("features.audioMemos")} included={true} />
+            <FeatureRow
+              label={t("features.cloudInference")}
+              included={isPaid}
+              comingSoon
+            />
+            <FeatureRow
+              label={t("features.verticals")}
+              included={false}
+              comingSoon
+            />
+            <FeatureRow
+              label={t("features.nerExtraction")}
+              included={false}
+              comingSoon
+            />
+            <FeatureRow
+              label={t("features.loraAdapters")}
+              included={false}
+              comingSoon
+            />
           </View>
         </View>
 
@@ -63,7 +87,9 @@ export default function SubscriptionScreen({ navigation }: any) {
           disabled
           className="bg-[#3B82F6]/50 py-3 px-4 rounded-lg flex-row items-center justify-center gap-2">
           <Star size={20} color="#FFF" weight="fill" />
-          <Text className="text-white/60 font-medium">Coming Soon</Text>
+          <Text className="text-white/60 font-medium">
+            {t("badges.comingSoon")}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeView>
@@ -79,6 +105,7 @@ function FeatureRow({
   included: boolean;
   comingSoon?: boolean;
 }) {
+  const { t } = useTranslation("subscription");
   return (
     <View className="flex-row items-center gap-2">
       <Check size={16} color={included ? "#22C55E" : "#9F9FA0"} weight="bold" />
@@ -86,7 +113,7 @@ function FeatureRow({
         {label}
       </Text>
       {comingSoon && (
-        <Text className="text-xs text-[#3B82F6] ml-auto">Coming Soon</Text>
+        <Text className="text-xs text-[#3B82F6] ml-auto">{t("badges.comingSoon")}</Text>
       )}
     </View>
   );

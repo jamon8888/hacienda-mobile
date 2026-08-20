@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import { Gear, SlidersHorizontal } from "phosphor-react-native";
+import { Gear, Paperclip, SlidersHorizontal } from "phosphor-react-native";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import {
   useBottomSheet,
@@ -10,6 +10,7 @@ import { ToolsActionButton } from "./Tools";
 import ResetChatActionButton from "./ResetChat";
 import { WorkspaceType } from "@/database/models/Workspace";
 import { WorkspaceThreadType } from "@/database/models/WorkspaceThread";
+import { WorkspaceFilesActionButton } from "./Files";
 import { PATHS } from "@/utils/paths";
 import uiStore from "@/store/UIStore";
 
@@ -57,6 +58,7 @@ export default function SettingsActionSheet({
       <View
         style={{ paddingHorizontal: 30 }}
         className="flex flex-row items-center justify-between">
+        <WorkspaceFilesActionButton disabled={isRemote} />
         <ResetChatActionButton />
         <ToolsActionButton disabled={isRemote} />
         <GenericSettingsItem

@@ -35,6 +35,7 @@ import { WorkspaceType } from "@/database/models/Workspace";
 import { showToast } from "@/utils/Notification";
 import uiStore from "@/store/UIStore";
 import { AVAILABLE_LLM_PROVIDERS } from "@/utils/llmproviders";
+import useTranslation from "@/hooks/useTranslation";
 
 function getPresetModelName(llmPreferences: { provider: string; config: any }) {
   if (llmPreferences.provider !== "native") return llmPreferences.config.model;
@@ -72,6 +73,7 @@ export default function ModelChip({ workspace }: { workspace: WorkspaceType }) {
   const { registerSheet, presentSheet, dismissSheet } = useBottomSheet();
   const { llmPreferences, LLMProvider } = useLlmPreference();
   const [modelName, setModelName] = useState<string | null>(null);
+  const { t } = useTranslation("common");
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -123,11 +125,11 @@ export default function ModelChip({ workspace }: { workspace: WorkspaceType }) {
         onPress={() => {
           if (LLMProvider?.isExternalProvider)
             return showToast(
-              "Please manage your model preferences in the settings page.",
+              t("common:topbar.modelChip.externalProviderToast"),
             );
           if (workspace?.isRemote)
             return showToast(
-              "This workspace is managed remotely. You cannot change the model here.",
+              t("common:topbar.modelChip.remoteWorkspaceToast"),
             );
           presentSheet(BOTTOM_SHEET_NAMES.MODEL_CHIP_SELECTION);
         }}
@@ -144,7 +146,7 @@ export default function ModelChip({ workspace }: { workspace: WorkspaceType }) {
             className={`${!modelName ? "text-red-500" : "text-white"}`}
             numberOfLines={1}
             ellipsizeMode="middle">
-            {modelNameToDisplayName(modelName) || "No model loaded"}
+            {modelNameToDisplayName(modelName) || t("common:topbar.modelChip.noModelLoaded")}
           </Text>
         </View>
       </TouchableOpacity>
@@ -191,6 +193,7 @@ function AvailableModels({
   const [availableModels, setAvailableModels] = useState<AvailableModel[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef(null);
+  const { t } = useTranslation("common");
 
   const {
     modelDownloadUrl,
@@ -234,7 +237,7 @@ function AvailableModels({
           ref={searchInputRef}
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder="Search"
+          placeholder={t("common:components.provider.search")}
           placeholderTextColor="#9F9FA0"
           className="flex-1 h-[38px] ml-2 text-white"
           scrollEnabled={false}
@@ -260,7 +263,7 @@ function AvailableModels({
       </View>
       {!filteredModels.length && (
         <Text className="text-white text-sm text-center pt-4">
-          No models found for "{searchQuery}"
+          {t("common:topbar.modelChip.noModelsFound", { query: searchQuery })}
         </Text>
       )}
       {filteredModels.length > 0 && (
@@ -305,7 +308,7 @@ function AvailableModels({
                         zIndex: 2,
                       }}
                       className="text-white text-sm">
-                      Additional LLMs
+                      {t("common:topbar.modelChip.additionalLLMs")}
                     </Text>
                     <View
                       style={{

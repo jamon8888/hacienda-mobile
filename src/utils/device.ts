@@ -2,7 +2,6 @@ import * as React from "react";
 import { ColorValue } from "react-native";
 
 import _ from "lodash";
-import dayjs from "dayjs";
 import { MD3Theme } from "react-native-paper";
 import DeviceInfo from "react-native-device-info";
 import Blob from "react-native/Libraries/Blob/Blob";
@@ -59,27 +58,6 @@ export const hashCode = (text = "") => {
     hash |= 0; // Convert to 32bit integer
   }
   return Math.abs(hash);
-};
-
-/** Inits dayjs locale */
-export const initLocale = (locale?: any) => {
-  const locales: { [key: string]: unknown } = {
-    en: require("dayjs/locale/en"),
-    // es: require('dayjs/locale/es'),
-    // ko: require('dayjs/locale/ko'),
-    // pl: require('dayjs/locale/pl'),
-    // pt: require('dayjs/locale/pt'),
-    // ru: require('dayjs/locale/ru'),
-    // tr: require('dayjs/locale/tr'),
-    // uk: require('dayjs/locale/uk'),
-    // ca: require('dayjs/locale/ca'),
-    // de: require('dayjs/locale/de'),
-    // ja: require('dayjs/locale/ja'),
-    // zh: require('dayjs/locale/zh'),
-  };
-
-  locale ? locales[locale] : locales.en;
-  dayjs.locale(locale);
 };
 
 /** Returns either prop or empty object if null or undefined */

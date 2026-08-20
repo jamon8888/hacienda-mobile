@@ -1,8 +1,14 @@
 import React from "react";
-import { Pressable, TouchableOpacity } from "react-native";
+import { TouchableOpacity, Pressable } from "react-native";
 import renderer from "react-test-renderer";
 import MemoRow from "./MemoRow";
 import { AudioMemoType } from "@/database/models/AudioMemo";
+import { createMockT } from "@/testUtils/mockUseTranslation";
+
+jest.mock("@/hooks/useTranslation", () => {
+  const { createMockT } = require("@/testUtils/mockUseTranslation");
+  return { useTranslation: () => createMockT() };
+});
 
 const mockMemo: AudioMemoType = {
   uuid: "test-uuid-1",
@@ -30,12 +36,13 @@ describe("MemoRow", () => {
   });
 
   it("renders memo title from transcript", () => {
-    const tree = renderer.create(<MemoRow {...defaultProps} />);
+    const shortMemo = { ...mockMemo, transcript: "Short transcript" };
+    const tree = renderer.create(
+      <MemoRow {...defaultProps} memo={shortMemo} />,
+    );
     const root = tree.root;
     const titleText = root.findByProps({ numberOfLines: 1 });
-    expect(titleText.props.children).toBe(
-      "This is a test transcript for ...",
-    );
+    expect(titleText.props.children).toBe("Short transcript");
   });
 
   it("renders 'Untitled Memo' when transcript is null", () => {
@@ -57,6 +64,17 @@ describe("MemoRow", () => {
     const root = tree.root;
     const titleText = root.findByProps({ numberOfLines: 1 });
     expect(titleText.props.children).toBe("A".repeat(30) + "...");
+  });
+
+  it("trims trailing spaces before ellipsis", () => {
+    const spacedTranscript = "Hello world this is a test transcript  ";
+    const memoWithSpaces = { ...mockMemo, transcript: spacedTranscript };
+    const tree = renderer.create(
+      <MemoRow {...defaultProps} memo={memoWithSpaces} />,
+    );
+    const root = tree.root;
+    const titleText = root.findByProps({ numberOfLines: 1 });
+    expect(titleText.props.children).toBe("Hello world this is a test tra...");
   });
 
   it("calls onPress when row is pressed", () => {

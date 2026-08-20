@@ -8,6 +8,11 @@ const configOptions = {
   resolver: {
     assetExts: assetExts.filter(ext => ext !== "svg"),
     sourceExts: [...sourceExts, "svg"],
+    // Shim Node's fs for @sctg/sentencepiece-js (only uses loadFromB64StringModel,
+    // never calls readFileSync, but the package imports fs at the top level).
+    extraNodeModules: {
+      fs: __dirname + "/src/shims/fs.js",
+    },
   },
   transformer: {
     babelTransformerPath: require.resolve(

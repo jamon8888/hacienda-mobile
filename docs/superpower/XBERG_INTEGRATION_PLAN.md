@@ -79,18 +79,18 @@ Integrate Xberg (document intelligence engine) into Hacienda Mobile for on-devic
 
 ### Android (4 files)
 
-| File                                                           | Action | Purpose                                       |
-| -------------------------------------------------------------- | ------ | --------------------------------------------- |
-| `android/app/build.gradle`                                     | Modify | Add `io.xberg:xberg-android:1.0.8` dependency |
+| File                                                              | Action | Purpose                                       |
+| ----------------------------------------------------------------- | ------ | --------------------------------------------- |
+| `android/app/build.gradle`                                        | Modify | Add `io.xberg:xberg-android:1.0.8` dependency |
 | `android/app/src/main/java/com/hacienda/xberg/XbergModule.kt`  | Create | React Native native module wrapping Xberg     |
 | `android/app/src/main/java/com/hacienda/xberg/XbergPackage.kt` | Create | Package registration                          |
 | `android/app/src/main/java/com/hacienda/MainApplication.kt`    | Modify | Register `XbergPackage()`                     |
 
 ### iOS (5 files)
 
-| File                              | Action | Purpose                                   |
-| --------------------------------- | ------ | ----------------------------------------- |
-| `ios/Podfile`                     | Modify | Add `ObjectBox` pod                       |
+| File                                 | Action | Purpose                                   |
+| ------------------------------------ | ------ | ----------------------------------------- |
+| `ios/Podfile`                        | Modify | Add `ObjectBox` pod                       |
 | `ios/Hacienda/XbergModule.swift`  | Create | React Native native module wrapping Xberg |
 | `ios/Hacienda/XbergModule.m`      | Create | ObjC bridge for React Native              |
 | `ios/Hacienda/VectorBox.swift`    | Create | ObjectBox wrapper for vector search       |

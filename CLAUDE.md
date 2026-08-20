@@ -2,23 +2,6 @@
 
 > **Rule**: Use `basemind` for code intelligence BEFORE grep/read/git. It's the default, not a preference.
 
-## Dev Environment Status (as of 2026-08-04)
-
-Installed and verified on this machine:
-
-| Tool | Version | Install method | Notes |
-|------|---------|-----------------|-------|
-| `basemind` | 0.23.1 | `npm install -g basemind@0.23.1` | postinstall (`install.js`) had to be run manually — `allow-scripts` blocked it. Indexed: 461 files scanned, 324 indexed, 91 docs, git-history built (3 commits). |
-| `xberg` (CLI) | 1.0.12 | `cargo install xberg-cli@1.0.12 --locked` | ~59 min cold build (OCR/PDF deps: tesseract, candle-ocr, resvg, lopdf…). No `brew` on this box, so cargo was the only path. Backs the `xberg` Claude Code plugin — document extraction, relevant to [SPEC_XBERG_INTEGRATION.md](SPEC_XBERG_INTEGRATION.md). |
-| `crawlberg` (CLI) | 1.1.2 | `cargo install crawlberg-cli@1.1.2 --locked` | ~13.5 min build. Backs the `crawlberg` Claude Code plugin — web crawling, relevant to the `tools-manager` agent's webSearch capability. |
-| Node deps | — | `corepack yarn install` | **Do not run plain `yarn`** — `/usr/bin/yarn` on this machine is an unrelated Debian tool (cliapp-based), not Yarn JS. Always use `corepack yarn <cmd>`. Also run with nothing else memory-heavy in parallel — a concurrent `cargo build` starved it OOM once. |
-
-Claude Code plugins installed (user scope): `xberg@xberg`, `crawlberg@xberg` (marketplace: `xberg-io/plugins`, self-hosted via `claude plugin marketplace add`). Not installed: `html-to-markdown`, `liter-llm`, `tree-sitter-language-pack` — available from the same marketplace if a future task needs them, but not clearly needed by this RN client today.
-
-Not installed: `opencode` (the `opencode-ai` npm package) — the `.opencode/` agent configs below are present in-repo but the CLI itself was skipped by explicit choice. Install with `npm install -g opencode-ai` if you want to actually run `opencode --agent ...`.
-
-Known pre-existing state, not caused by this setup: `yarn typecheck` currently fails (38 errors, verified via `corepack yarn typecheck` — re-run it before trusting this count, it will drift) on the `feature/cactus-voice-pipeline` branch. `VoiceSettings.tsx`/`ModalPicker.tsx` are now clean (fixed in this PR). Remaining failures cluster in: `src/store/ModelStore.ts` (6, missing `Model`/`NPUEnabledModel` fields), `src/utils/openai/index.ts` (5, `global`/`TextDecoder`/`Response.body`), `src/utils/polyfills.ts` (4, `global`), `node_modules/@yz1311/react-native-intent-launcher` (4, third-party type defs, not ours to fix), `src/utils/AiProviders/onDevice/voice/VoicePipelineProvider.ts` (3), `src/screens/WorkspaceSettings/NumericInput/index.tsx` (3), plus one-offs in `device.ts`, `UIStore.ts`, `DownloadManager.ts`, `TextSplitter/index.ts`, `VoiceAudioStream.ts`, `genie/index.ts`, `cactus/index.ts`, `TextInput/index.tsx`, `VoiceChatScreen.tsx`, `DataHandling/index.tsx`, `Register/index.tsx`, `useStorageCheck.ts`, `useDevShortcut.ts`. The `global`/`NodeJS`/`module` gaps across several files point to a missing `@types/node` (or missing `"node"` in `tsconfig.json`'s `types`). Left untouched; flag if you want these fixed.
-
 ## Quick Start
 
 ```bash
@@ -257,37 +240,3 @@ cd ios && pod install && cd .. && npx react-native run-ios
 ---
 
 **Remember**: `basemind` first, then act. The code map is your source of truth.
-
-<!-- BEGIN basemind (managed by `basemind init`) -->
-
-## basemind — prefer it over grep / read / git
-
-basemind is this repo's indexed context layer. Prefer it BEFORE grep, before reading files to find structure, and before naked `git` — it's the default, not a preference. basemind returns paths, lines, and signatures at a fraction of the tokens of reading source.
-
-### Routing
-
-| Reach for                                                                                                                            | Instead of                                         |
-| ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------- |
-| `search_symbols` / `goto_definition` / `find_references` / `find_callers` / `find_implementations` / `call_graph` / `workspace_grep` | `grep` / `rg` / opening files to find a symbol     |
-| `outline` / `architecture_map`                                                                                                       | reading whole files to learn their shape           |
-| `recent_changes` / `blame_symbol` / `commits_touching` / `diff_file`                                                                 | `git log` / `git blame` / `git diff`               |
-| `find_files` (fuzzy path search)                                                                                                     | `find` / `fd` / `ls -R` to locate a file by name   |
-| `thread_post` / `inbox_read` / `thread_list`                                                                                         | assuming you're the only agent in the repo         |
-| `workspaces` / `worktrees` / `worktree_claim`                                                                                        | editing a worktree another session may already own |
-| `search_documents` / `web_scrape` / `web_crawl` / `web_map`                                                                          | manually reading PDFs / docs or ad-hoc fetching    |
-| semantic code search over the index                                                                                                  | keyword-only guessing at where a concept lives     |
-
-### Red flags — stop and re-route
-
-- About to `grep` / `rg`? → `workspace_grep`.
-- About to open a file just to find a symbol? → `outline` / `search_symbols`.
-- About to `git log` / `git blame`? → `recent_changes` / `blame_symbol`.
-- Already mapped a file with basemind? Don't re-read it.
-
-### Setup & maintenance
-
-- Install the basemind Claude Code plugin from its marketplace (`/plugin marketplace add Goldziher/basemind`, then install `basemind`).
-- Keep basemind current: enable plugin auto-update, or update the binary regularly so the index format and tools stay in sync.
-- Re-run `basemind init` (or `/bm-init`) after enabling new capabilities to refresh this block.
-
-<!-- END basemind -->

@@ -7,6 +7,7 @@ import { useNavigation } from "@react-navigation/native";
 import { IStatus } from "..";
 import { IExternalConnection } from "../..";
 import Telemetry from "@/utils/Telemetry";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface RegisterProps {
   connectionUrl: string; // eg: http://192.168.1.100:3000/api/mobile
@@ -20,6 +21,7 @@ export default function Register({
   updateStatus,
 }: RegisterProps) {
   const navigation = useNavigation();
+  const { t } = useTranslation("connectToInstance");
   const [deviceToken, setDeviceToken] = useState<string | null>(null);
   const [state, setState] = useState<
     "waiting_for_registration" | "awaiting_approval"
@@ -68,7 +70,7 @@ export default function Register({
           status: "error",
           message: !!error
             ? (error as Error)?.message
-            : "Failed to register device. Please try again.",
+            : t("register.failed"),
         });
       }
     }
@@ -88,7 +90,7 @@ export default function Register({
           if (isApproved) {
             updateStatus({
               status: "import",
-              message: "Collecting instance data...",
+              message: t("register.collectingData"),
             });
             break;
           }
@@ -100,7 +102,7 @@ export default function Register({
         if (!isApproved) {
           updateStatus({
             status: "error",
-            message: "Failed to register or approve device. Please try again.",
+            message: t("register.approvalFailed"),
           });
         } else {
           navigation.reset({
@@ -128,10 +130,10 @@ export default function Register({
       <View className="flex flex-col items-center justify-center gap-4">
         <ActivityIndicator size="large" color="#FFF" />
         <Text style={{ textAlign: "center" }} className="text-white text-lg">
-          Registering your device...
+          {t("verify.registering")}
         </Text>
         <Text style={{ textAlign: "center" }} className="text-white text-sm">
-          This may take a few seconds...
+          {t("verify.seconds")}
         </Text>
       </View>
     );
@@ -142,10 +144,10 @@ export default function Register({
       <View className="flex flex-col items-center justify-center gap-4">
         <ActivityIndicator size="large" color="#FFF" />
         <Text style={{ textAlign: "center" }} className="text-white text-lg">
-          Awaiting approval...
+          {t("verify.awaitingApproval")}
         </Text>
         <Text style={{ textAlign: "center" }} className="text-white text-sm">
-          Please approve the device in the AnythingLLM application...
+          {t("verify.approvePrompt")}
         </Text>
       </View>
     );

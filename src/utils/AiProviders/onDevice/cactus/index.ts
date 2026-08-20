@@ -232,7 +232,7 @@ export default class CactusLmWrapper {
     // matching comment in baseOpenAILikeProvider.getContextTexts.
     if (NEEDLE_ROUTER_ENABLED && cactusTools.length > 5) {
       if (!needleStore.ready && !needleStore.busy) {
-        needleStore.init().catch(() => {});
+        needleStore.init().catch(e => console.warn("[Needle] init failed:", e));
       }
       const lastUserMessage = messages
         .slice()

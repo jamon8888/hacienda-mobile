@@ -25,6 +25,7 @@ import { Suspense } from "react";
 import SafeView from "@/components/SafeView";
 import useInitialRoute from "@/hooks/useInitialRoute";
 import "./src/utils/polyfills";
+import "@/i18n";
 import { BottomSheetProvider } from "@/contexts/BottomSheetContext";
 import { LLMPreferenceProvider } from "@/contexts/LLMPreferenceContext";
 import { useEnablePushNotifications } from "@/utils/PushNotifications";
@@ -177,28 +178,6 @@ const App = observer(() => {
                           name={PATHS.developer.home}
                           component={gestureHandlerRootHOC(
                             Screens.DevToolsMenu,
-                          )}
-                          options={{ headerShown: false }}
-                        />
-
-                        <Drawer.Screen
-                          name={PATHS.subscription}
-                          component={gestureHandlerRootHOC(
-                            Screens.SubscriptionScreen,
-                          )}
-                          options={{ headerShown: false }}
-                        />
-                        <Drawer.Screen
-                          name={PATHS.audio_memos}
-                          component={gestureHandlerRootHOC(
-                            Screens.AudioMemosScreen,
-                          )}
-                          options={{ headerShown: false }}
-                        />
-                        <Drawer.Screen
-                          name={PATHS.audio_memo_player}
-                          component={gestureHandlerRootHOC(
-                            Screens.MemoPlayerScreen,
                           )}
                           options={{ headerShown: false }}
                         />

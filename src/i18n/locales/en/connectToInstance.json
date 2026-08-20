@@ -1,0 +1,33 @@
+{
+  "title": "Connect to AnythingLLM",
+  "main": {
+    "scanPrompt": "Scan the QR code for your AnythingLLM instance or client to sync it's data to this mobile device for AI on the go!",
+    "previousConnections": "Previous Connections"
+  },
+  "verify": {
+    "title": "Verify Connection",
+    "registering": "Registering your device...",
+    "seconds": "This may take a few seconds...",
+    "awaitingApproval": "Awaiting approval...",
+    "approvePrompt": "Please approve the device in the AnythingLLM application...",
+    "error": "Error",
+    "goBack": "Go Back"
+  },
+  "import": {
+    "expired": "Your existing connection to AnythingLLM Desktop expired.",
+    "refreshFailed": "Failed to refresh workspaces",
+    "goBackToHome": "Go back to home"
+  },
+  "register": {
+    "failed": "Failed to register device. Please try again.",
+    "collectingData": "Collecting instance data...",
+    "approvalFailed": "Failed to register or approve device. Please try again."
+  },
+  "workspaceItem": {
+    "threads": "Threads",
+    "chats": "Chats",
+    "sync": "Sync",
+    "synced": "Synced",
+    "failed": "Failed"
+  }
+}

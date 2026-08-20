@@ -22,8 +22,10 @@ import {
 } from "@/contexts/BottomSheetContext";
 import { PATHS } from "@/utils/paths";
 import uiStore from "@/store/UIStore";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function SidebarContent({ navigation }: { navigation: any }) {
+  const { t } = useTranslation();
   const drawerStatus = useDrawerStatus();
   const { presentSheet, dismissAllSheets } = useBottomSheet();
   const {
@@ -111,7 +113,7 @@ export default function SidebarContent({ navigation }: { navigation: any }) {
           {/* Topbar */}
           <View className="flex flex-row items-center justify-between pt-[20px] w-full p-[16px] border-b border-[--hex-gray-8] shrink-0">
             <Text className="text-2xl font-semibold text-white">
-              Workspaces
+              {t("nav.workspaces")}
             </Text>
             <TouchableOpacity activeOpacity={0.6} onPress={goToUserSettings}>
               <Gear size={30} color="#FFF" />
@@ -164,7 +166,9 @@ export default function SidebarContent({ navigation }: { navigation: any }) {
               activeOpacity={0.8}
               onPress={openNewWorkspaceModal}
               className="flex flex-1 flex-row items-center justify-center bg-white/10 rounded-lg py-[11px]">
-              <Text className="text-lg text-white">New Workspace</Text>
+              <Text className="text-lg text-white">
+                {t("nav.newWorkspace")}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={goToWorkspaceImportStart}
@@ -178,7 +182,9 @@ export default function SidebarContent({ navigation }: { navigation: any }) {
               activeOpacity={0.8}
               className="flex flex-1 flex-row items-center justify-center bg-white/10 rounded-lg py-[11px]">
               <MusicNotes size={20} color="#FFF" />
-              <Text className="text-white text-sm ml-2">Audio Memos</Text>
+              <Text className="text-white text-sm ml-2">
+                {t("audio:memos.title")}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

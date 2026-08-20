@@ -6,13 +6,16 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Modal,
 } from "react-native";
 import SafeView from "@/components/SafeView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { DrawerNavigationProp } from "@react-navigation/drawer";
-import { ArrowLeft, Plus } from "phosphor-react-native";
+import { ArrowLeft, Plus, CaretDown, Check } from "phosphor-react-native";
 import { useAudioMemos } from "@/hooks/useAudioMemos";
+import { useTranslation } from "@/hooks/useTranslation";
+import Workspace, { WorkspaceType } from "@/database/models/Workspace";
 import MemoRow from "./MemoRow";
 import { PATHS } from "@/utils/paths";
 
@@ -21,6 +24,7 @@ type TabType = "workspace" | "global";
 export default function AudioMemosScreen() {
   const navigation = useNavigation<DrawerNavigationProp<any>>();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation("audio");
   const {
     memos,
     loading,
@@ -31,19 +35,38 @@ export default function AudioMemosScreen() {
     pauseMemo,
   } = useAudioMemos();
   const [activeTab, setActiveTab] = useState<TabType>("workspace");
+  const [workspaces, setWorkspaces] = useState<WorkspaceType[]>([]);
+  const [selectedWsSlug, setSelectedWsSlug] = useState<string | null>(null);
+  const [pickerVisible, setPickerVisible] = useState(false);
 
   useEffect(() => {
-    // TODO: Get actual current workspace slug from navigation context
-    // For now, fetch all memos (workspace tab shows all, global shows all)
-    fetchMemos(null);
-  }, [activeTab, fetchMemos]);
+    Workspace.find().then(setWorkspaces);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "workspace" && !selectedWsSlug && workspaces.length > 0) {
+      setSelectedWsSlug(workspaces[0].slug);
+    }
+  }, [activeTab, selectedWsSlug, workspaces]);
+
+  const refetch = useCallback(() => {
+    fetchMemos(activeTab === "workspace" ? selectedWsSlug : null);
+  }, [activeTab, selectedWsSlug, fetchMemos]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  // Screens stay mounted in the drawer navigator, so a plain mount-time
+  // effect won't refresh the list after returning from recording a memo.
+  useFocusEffect(refetch);
 
   const handleDelete = useCallback(
     (uuid: string) => {
-      Alert.alert("Delete Memo", "Are you sure you want to delete this memo?", [
-        { text: "Cancel", style: "cancel" },
+      Alert.alert(t("memos.delete.title"), t("memos.delete.confirm"), [
+        { text: t("common:buttons.cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("common:buttons.delete"),
           style: "destructive",
           onPress: async () => {
             await deleteMemo(uuid);
@@ -51,7 +74,7 @@ export default function AudioMemosScreen() {
         },
       ]);
     },
-    [deleteMemo],
+    [deleteMemo, t],
   );
 
   const handlePlay = useCallback(
@@ -62,8 +85,8 @@ export default function AudioMemosScreen() {
   );
 
   const tabs: { key: TabType; label: string }[] = [
-    { key: "workspace", label: "Workspace" },
-    { key: "global", label: "Global" },
+    { key: "workspace", label: t("memos.tabs.workspace") },
+    { key: "global", label: t("memos.tabs.global") },
   ];
 
   return (
@@ -81,10 +104,15 @@ export default function AudioMemosScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft size={24} color="#FFF" weight="bold" />
         </TouchableOpacity>
-        <Text className="text-white text-lg font-medium">Audio Memos</Text>
+        <Text className="text-white text-lg font-medium">
+          {t("memos.title")}
+        </Text>
         <TouchableOpacity
           onPress={() =>
-            navigation.navigate(PATHS.audio_memo_player, { mode: "record" })
+            navigation.navigate(PATHS.audio_memo_player, {
+              mode: "record",
+              wsSlug: activeTab === "workspace" ? selectedWsSlug : null,
+            })
           }>
           <Plus size={24} color="#FFF" weight="bold" />
         </TouchableOpacity>
@@ -109,6 +137,55 @@ export default function AudioMemosScreen() {
         ))}
       </View>
 
+      {/* Workspace Picker */}
+      {activeTab === "workspace" && (
+        <TouchableOpacity
+          onPress={() => setPickerVisible(true)}
+          className="flex-row items-center justify-between mx-4 mb-4 bg-[#27282A] rounded-lg px-4 py-3">
+          <Text className="text-white" numberOfLines={1}>
+            {workspaces.find(w => w.slug === selectedWsSlug)?.name ??
+              t("workspacePicker.title")}
+          </Text>
+          <CaretDown size={16} color="#9F9FA0" />
+        </TouchableOpacity>
+      )}
+
+      <Modal
+        visible={pickerVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPickerVisible(false)}>
+        <TouchableOpacity
+          className="flex-1 bg-black/60 justify-end"
+          activeOpacity={1}
+          onPress={() => setPickerVisible(false)}>
+          <View
+            className="bg-[#27282A] rounded-t-2xl pb-6"
+            style={{ paddingBottom: insets.bottom + 16 }}>
+            <Text className="text-white text-lg font-medium px-5 pt-5 pb-2">
+              {t("workspacePicker.title")}
+            </Text>
+            <FlatList
+              data={workspaces}
+              keyExtractor={item => item.slug}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  onPress={() => {
+                    setSelectedWsSlug(item.slug);
+                    setPickerVisible(false);
+                  }}
+                  className="flex-row items-center justify-between px-5 py-3">
+                  <Text className="text-white">{item.name}</Text>
+                  {item.slug === selectedWsSlug && (
+                    <Check size={18} color="#3B82F6" weight="bold" />
+                  )}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       {/* Memo List */}
       {loading ? (
         <View className="flex-1 justify-center items-center">
@@ -116,9 +193,7 @@ export default function AudioMemosScreen() {
         </View>
       ) : memos.length === 0 ? (
         <View className="flex-1 justify-center items-center px-4">
-          <Text className="text-white/60 text-center">
-            No memos yet.{"\n"}Tap + to record your first memo.
-          </Text>
+          <Text className="text-white/60 text-center">{t("memos.empty")}</Text>
         </View>
       ) : (
         <FlatList

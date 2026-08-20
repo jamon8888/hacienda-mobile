@@ -1,5 +1,10 @@
 import React from "react";
-import { View, TouchableOpacity, NativeEventEmitter } from "react-native";
+import {
+  View,
+  Image,
+  TouchableOpacity,
+  NativeEventEmitter,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { DrawerNavigationProp } from "@react-navigation/drawer";
 import { List, Microphone } from "phosphor-react-native";
@@ -8,7 +13,6 @@ import NewThreadIcon from "@/assets/new-thread.svg";
 import WorkspaceThread from "@/database/models/WorkspaceThread";
 import { PATHS } from "@/utils/paths";
 import ModelChip from "./ModelChip";
-import LogoIcon from "@/components/LogoIcon";
 import uiStore from "@/store/UIStore";
 
 export default function TopBar({
@@ -59,7 +63,14 @@ export default function TopBar({
           onLongPress={showDebug}
           onPress={registerPress}
           className="flex flex-col items-center gap-y-0">
-          <LogoIcon size={40} />
+          <Image
+            source={require("@/assets/logo/anything-llm.png")}
+            style={{
+              width: 150,
+              height: 50,
+            }}
+            resizeMode="center"
+          />
         </TouchableOpacity>
         <ModelChip workspace={workspace} />
       </View>

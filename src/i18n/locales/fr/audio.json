@@ -1,0 +1,116 @@
+{
+  "memos": {
+    "title": "Memos audio",
+    "empty": "Pas encore de mémos.\nAppuyez sur + pour enregistrer votre premier mémo.",
+    "delete": {
+      "title": "Supprimer le mémo",
+      "confirm": "Êtes-vous sûr de vouloir supprimer ce mémo ?"
+    },
+    "untitled": "Mémo sans titre",
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "daysAgo_one": "Il y a {{count}} jour",
+    "daysAgo_other": "Il y a {{count}} jours",
+    "tabs": {
+      "workspace": "Espace de travail",
+      "global": "Global"
+    }
+  },
+  "player": {
+    "title": "Mémo",
+    "notFound": "Mémo non trouvé",
+    "transcript": {
+      "title": "Transcription",
+      "edit": "Modifier",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "noTranscript": "Aucune transcription disponible"
+    },
+    "deleteFailed": "Échec de la suppression du mémo"
+  },
+  "record": {
+    "title": "Nouveau mémo",
+    "recording": "Enregistrement...",
+    "stop": "Arrêter",
+    "discard": "Supprimer",
+    "discardConfirm": {
+      "title": "Abandonner l'enregistrement ?",
+      "message": "Cet enregistrement sera perdu."
+    },
+    "permissionDenied": {
+      "title": "Accès au microphone requis",
+      "message": "Activez l'accès au microphone dans les Réglages pour enregistrer des mémos audio."
+    },
+    "error": "Échec de l'enregistrement. Veuillez réessayer.",
+    "saving": "Enregistrement en cours..."
+  },
+  "transcription": {
+    "inProgress": "Transcription en cours...",
+    "failed": "Impossible de générer une transcription automatiquement. Vous pouvez en ajouter une manuellement."
+  },
+  "workspacePicker": {
+    "title": "Sélectionner l'espace de travail",
+    "allWorkspaces": "Tous les espaces de travail",
+    "global": "Global (aucun espace de travail)"
+  },
+  "voiceChat": {
+    "title": "Assistant vocal",
+    "states": {
+      "tapToStart": "Appuyez pour commencer",
+      "loadingModels": "Chargement des modèles...",
+      "listening": "Écoute...",
+      "transcribing": "Transcription...",
+      "thinking": "Réflexion...",
+      "responding": "Réponse...",
+      "error": "Erreur survenue",
+      "unknown": "Inconnu"
+    },
+    "sections": {
+      "response": "Réponse",
+      "thinking": "Réflexion"
+    },
+    "confidence": "Confiance :",
+    "holdToSpeak": "Maintenez pour parler · Se libère au silence",
+    "processing": "Traitement avec Gemma 4 E2B Hybrid..."
+  },
+  "voiceSettings": {
+    "title": "Paramètres vocaux",
+    "sections": {
+      "deviceCapabilities": "Capacités de l'appareil",
+      "asr": "Reconnaissance vocale (ASR)",
+      "llm": "Modèle de langage (LLM)",
+      "advanced": "Paramètres avancés"
+    },
+    "labels": {
+      "ramTier": "Niveau de RAM",
+      "npu": "NPU",
+      "availableRam": "RAM disponible",
+      "asrModel": "Modèle ASR",
+      "llmModel": "Modèle LLM",
+      "confidenceThreshold": "Seuil de confiance",
+      "cloudHandoff": "Transfert vers le cloud",
+      "processingDelay": "Délai de traitement",
+      "vadSensitivity": "Sensibilité VAD",
+      "tts": "Synthèse vocale"
+    },
+    "descriptions": {
+      "cloudHandoff": "Rediriger les requêtes à faible confiance vers le cloud",
+      "vadSensitivity": "Seuil de détection de la parole",
+      "tts": "Lire les réponses à voix haute"
+    },
+    "buttons": {
+      "save": "Enregistrer les paramètres vocaux"
+    },
+    "toast": {
+      "saved": "Paramètres vocaux enregistrés"
+    },
+    "modal": {
+      "selectAsr": "Sélectionner le modèle ASR",
+      "selectLlm": "Sélectionner le modèle LLM",
+      "recommended": "Recommandé"
+    }
+  },
+  "micButton": {
+    "accessibility": "Enregistrer la voix"
+  }
+}
