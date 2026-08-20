@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import { PATHS } from "@/utils/paths";
 import Register from "./Register";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface VerifyViewProps {
   params: { connectionUrl: string; registrationToken: string };
@@ -21,11 +22,12 @@ export type IStatus = {
 export function VerifyView({ params }: VerifyViewProps) {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const { t } = useTranslation("connectToInstance");
   const connectionUrl = params?.connectionUrl ?? null;
   const registrationToken = params?.registrationToken ?? null;
   const [status, setStatus] = useState<IStatus>({
     status: "register",
-    message: "Registering your device...",
+    message: t("verify.registering"),
   });
   const goBack = () => {
     navigation.reset({
@@ -61,7 +63,7 @@ export function VerifyView({ params }: VerifyViewProps) {
           numberOfLines={1}
           ellipsizeMode="middle"
           className="text-white text-lg font-medium">
-          Verify Connection
+          {t("verify.title")}
         </Text>
       </View>
 
@@ -80,7 +82,7 @@ export function VerifyView({ params }: VerifyViewProps) {
             <Text
               style={{ textAlign: "center" }}
               className="text-red-500 text-lg">
-              Error
+              {t("verify.error")}
             </Text>
             <Text
               style={{ textAlign: "center" }}
@@ -90,7 +92,7 @@ export function VerifyView({ params }: VerifyViewProps) {
             <TouchableOpacity
               onPress={goBack}
               className="bg-white rounded-full px-4 py-2">
-              <Text className="text-black text-sm">Go Back</Text>
+              <Text className="text-black text-sm">{t("verify.goBack")}</Text>
             </TouchableOpacity>
           </View>
         )}

@@ -8,9 +8,11 @@ import {
   type AudioWaveformViewRef,
 } from "react-native-waveform-player";
 import { useAudioMemos } from "@/hooks/useAudioMemos";
+import { useTranslation } from "@/hooks/useTranslation";
 import { AudioMemoType } from "@/database/models/AudioMemo";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { DrawerNavigationProp } from "@react-navigation/drawer";
+import MemoRecorder from "./MemoRecorder";
 
 type SpeedOption = 0.5 | 1 | 1.5 | 2;
 
@@ -18,13 +20,22 @@ export default function MemoPlayerScreen() {
   const insets = useSafeAreaInsets();
   const route = useRoute();
   const navigation = useNavigation<DrawerNavigationProp<any>>();
-  const { memoId } = route.params as { memoId: string; mode?: string };
+  const { t } = useTranslation("audio");
+  const { memoId, mode, wsSlug } = route.params as {
+    memoId?: string;
+    mode?: "record" | "play";
+    wsSlug?: string | null;
+  };
   const {
     memos,
+    fetchMemos,
     playingId,
     playbackPosition,
     playMemo,
     pauseMemo,
+    stopMemo,
+    seekTo,
+    updatePlaybackTime,
     updateMemo,
     deleteMemo,
   } = useAudioMemos();
@@ -34,6 +45,13 @@ export default function MemoPlayerScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTranscript, setEditedTranscript] = useState("");
   const waveformRef = useRef<AudioWaveformViewRef>(null);
+
+  // useAudioMemos holds local component state, not a shared store - this
+  // screen gets its own empty `memos` array on mount and must fetch, or
+  // the lookup below never finds the memo passed via memoId.
+  useEffect(() => {
+    if (mode !== "record") fetchMemos();
+  }, [mode, fetchMemos]);
 
   useEffect(() => {
     const found = memos.find(m => m.uuid === memoId);
@@ -79,15 +97,25 @@ export default function MemoPlayerScreen() {
     if (success) {
       navigation.goBack();
     } else {
-      Alert.alert("Error", "Failed to delete memo");
+      Alert.alert(t("common:status.error"), t("player.deleteFailed"));
     }
-  }, [memo, deleteMemo, navigation]);
+  }, [memo, deleteMemo, navigation, t]);
 
   if (!memo) {
+    if (mode === "record") {
+      return (
+        <MemoRecorder
+          wsSlug={wsSlug ?? null}
+          onDone={() => navigation.goBack()}
+          onCancel={() => navigation.goBack()}
+        />
+      );
+    }
+
     return (
       <SafeView safeAreaClassNames="bg-[#1B1B1E]">
         <View className="flex-1 justify-center items-center">
-          <Text className="text-white/60">Memo not found</Text>
+          <Text className="text-white/60">{t("player.notFound")}</Text>
         </View>
       </SafeView>
     );
@@ -108,7 +136,9 @@ export default function MemoPlayerScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft size={24} color="#FFF" weight="bold" />
         </TouchableOpacity>
-        <Text className="text-white text-lg font-medium">Memo</Text>
+        <Text className="text-white text-lg font-medium">
+          {t("player.title")}
+        </Text>
         <View className="flex-row gap-4">
           <TouchableOpacity onPress={handleDelete}>
             <Trash size={22} color="#9F9FA0" />
@@ -145,6 +175,23 @@ export default function MemoPlayerScreen() {
           onLoadError={() => {
             // Error handling for waveform load failure
             console.warn("Failed to load waveform");
+          }}
+          onEnd={() => {
+            stopMemo();
+          }}
+          onTimeUpdate={({ currentTimeMs, durationMs }) => {
+            updatePlaybackTime(currentTimeMs, durationMs);
+          }}
+          onPlayerStateChange={({ isPlaying }) => {
+            if (!memo) return;
+            if (isPlaying) {
+              if (playingId !== memo.uuid) playMemo(memo.uuid, memo.audioUri);
+            } else if (playingId === memo.uuid) {
+              pauseMemo();
+            }
+          }}
+          onSeek={({ positionMs }) => {
+            seekTo(positionMs);
           }}
         />
 
@@ -191,10 +238,14 @@ export default function MemoPlayerScreen() {
         {/* Transcript */}
         <View className="w-full">
           <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-white/60 text-sm uppercase">Transcript</Text>
+            <Text className="text-white/60 text-sm uppercase">
+              {t("player.transcript.title")}
+            </Text>
             <TouchableOpacity onPress={() => setIsEditing(!isEditing)}>
               <Text className="text-[#3B82F6] text-sm">
-                {isEditing ? "Cancel" : "Edit"}
+                {isEditing
+                  ? t("player.transcript.cancel")
+                  : t("player.transcript.edit")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -210,12 +261,14 @@ export default function MemoPlayerScreen() {
               <TouchableOpacity
                 onPress={handleSaveTranscript}
                 className="bg-[#3B82F6] py-2 rounded-lg mt-2">
-                <Text className="text-white text-center">Save</Text>
+                <Text className="text-white text-center">
+                  {t("player.transcript.save")}
+                </Text>
               </TouchableOpacity>
             </View>
           ) : (
             <Text className="text-white bg-[#27282A] p-3 rounded-lg min-h-[100px]">
-              {memo.transcript || "No transcript available"}
+              {memo.transcript || t("player.transcript.noTranscript")}
             </Text>
           )}
         </View>

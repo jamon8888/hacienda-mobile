@@ -1,8 +1,35 @@
 import React from "react";
-import renderer from "react-test-renderer";
+import renderer, { act } from "react-test-renderer";
+import { FlatList } from "react-native";
 import AudioMemosScreen from "./AudioMemosScreen";
 import { useAudioMemos } from "@/hooks/useAudioMemos";
 import { AudioMemoType } from "@/database/models/AudioMemo";
+import { createMockT } from "@/testUtils/mockUseTranslation";
+
+jest.mock("phosphor-react-native", () => {
+  const React = jest.requireActual("react");
+  const createIcon = (name: string) => {
+    const Icon = React.forwardRef((props: any, ref: any) => {
+      return React.createElement("Icon", { ...props, ref, "data-icon": name });
+    });
+    Icon.displayName = name;
+    return Icon;
+  };
+  return {
+    ArrowLeft: createIcon("ArrowLeft"),
+    Plus: createIcon("Plus"),
+    CaretDown: createIcon("CaretDown"),
+    Check: createIcon("Check"),
+    Play: createIcon("Play"),
+    Pause: createIcon("Pause"),
+    Trash: createIcon("Trash"),
+  };
+});
+
+jest.mock("@/hooks/useTranslation", () => {
+  const { createMockT } = require("@/testUtils/mockUseTranslation");
+  return { useTranslation: () => createMockT() };
+});
 
 const mockNavigation = {
   goBack: jest.fn(),
@@ -11,6 +38,7 @@ const mockNavigation = {
 
 jest.mock("@react-navigation/native", () => ({
   useNavigation: () => mockNavigation,
+  useFocusEffect: (callback: () => void) => callback(),
 }));
 
 jest.mock("@react-navigation/drawer", () => ({
@@ -20,6 +48,31 @@ jest.mock("@react-navigation/drawer", () => ({
 jest.mock("@/hooks/useAudioMemos", () => ({
   useAudioMemos: jest.fn(),
 }));
+
+// `mockResolvedValue(mockWorkspaces)` would evaluate mockWorkspaces eagerly,
+// at factory-registration time - which runs before this file's own `const`
+// declarations due to jest.mock() hoisting above imports. Defer the
+// reference into the implementation function so it only resolves at call
+// time, once the whole file (including mockWorkspaces below) has loaded.
+jest.mock("@/database/models/Workspace", () => ({
+  __esModule: true,
+  default: { find: jest.fn(() => Promise.resolve(mockWorkspaces)) },
+}));
+
+const mockWorkspaces = [
+  { slug: "workspace-a", name: "Workspace A" },
+  { slug: "workspace-b", name: "Workspace B" },
+];
+
+// TouchableOpacity is real (unmocked) here, and wraps children in its own
+// internal layers - `.parent` isn't reliably "the pressable" one hop up.
+function findPressableAncestor(instance: any): any {
+  let node = instance.parent;
+  while (node && typeof node.props?.onPress !== "function") {
+    node = node.parent;
+  }
+  return node;
+}
 
 jest.mock("@/components/SafeView", () => {
   const { View } = require("react-native");
@@ -75,60 +128,90 @@ describe("AudioMemosScreen", () => {
     (useAudioMemos as jest.Mock).mockReturnValue(mockUseAudioMemos);
   });
 
-  it("renders loading state correctly", () => {
+  it("renders loading state correctly", async () => {
     (useAudioMemos as jest.Mock).mockReturnValue({
       ...mockUseAudioMemos,
       loading: true,
       memos: [],
     });
 
-    const tree = renderer.create(<AudioMemosScreen />);
-    const root = tree.root;
-    const activityIndicator = root.findByProps({ size: "large" });
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<AudioMemosScreen />);
+    });
+    const activityIndicator = tree!.root.findByProps({ size: "large" });
     expect(activityIndicator).toBeTruthy();
   });
 
-  it("renders empty state when no memos", () => {
+  it("renders empty state when no memos", async () => {
     (useAudioMemos as jest.Mock).mockReturnValue({
       ...mockUseAudioMemos,
       memos: [],
     });
 
-    const tree = renderer.create(<AudioMemosScreen />);
-    const root = tree.root;
-    const emptyText = root.findByProps({
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<AudioMemosScreen />);
+    });
+    const emptyText = tree!.root.findByProps({
       children: "No memos yet.\nTap + to record your first memo.",
     });
     expect(emptyText).toBeTruthy();
   });
 
-  it("renders memo list when memos exist", () => {
-    const tree = renderer.create(<AudioMemosScreen />);
-    const root = tree.root;
-    const flatList = root.findByProps({ keyExtractor: expect.any(Function) });
-    expect(flatList).toBeTruthy();
+  it("renders memo list when memos exist", async () => {
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<AudioMemosScreen />);
+    });
+    const flatList = tree!.root.findByType(FlatList);
+    expect(flatList.props.data).toEqual(mockMemos);
   });
 
-  it("calls fetchMemos on mount with workspace filter", () => {
-    renderer.create(<AudioMemosScreen />);
-    expect(mockUseAudioMemos.fetchMemos).toHaveBeenCalledWith("current");
+  it("fetches memos for the auto-selected workspace once workspaces load", async () => {
+    await act(async () => {
+      renderer.create(<AudioMemosScreen />);
+    });
+    // Initial synchronous call has no workspace selected yet; a second call
+    // fires once Workspace.find() resolves and the picker auto-selects the
+    // first workspace.
+    expect(mockUseAudioMemos.fetchMemos).toHaveBeenLastCalledWith(
+      "workspace-a",
+    );
   });
 
-  it("calls goBack when back button is pressed", () => {
-    const tree = renderer.create(<AudioMemosScreen />);
-    const root = tree.root;
-    const backButton = root.findAllByProps({ weight: "bold" })[0];
-    backButton?.props.onPress();
+  it("fetches memos for global (null) when the Global tab is active", async () => {
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<AudioMemosScreen />);
+    });
+    const globalTab = tree!.root.findByProps({ children: "Global" });
+    await act(async () => {
+      findPressableAncestor(globalTab).props.onPress();
+    });
+    expect(mockUseAudioMemos.fetchMemos).toHaveBeenLastCalledWith(null);
+  });
+
+  it("calls goBack when back button is pressed", async () => {
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<AudioMemosScreen />);
+    });
+    const backIcon = tree!.root.findAllByProps({ "data-icon": "ArrowLeft" })[0];
+    findPressableAncestor(backIcon).props.onPress();
     expect(mockNavigation.goBack).toHaveBeenCalled();
   });
 
-  it("navigates to record mode when plus button is pressed", () => {
-    const tree = renderer.create(<AudioMemosScreen />);
-    const root = tree.root;
-    const plusButton = root.findAllByProps({ weight: "bold" })[1];
-    plusButton?.props.onPress();
+  it("navigates to record mode with the selected workspace when plus button is pressed", async () => {
+    let tree: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(<AudioMemosScreen />);
+    });
+    const plusIcon = tree!.root.findAllByProps({ "data-icon": "Plus" })[0];
+    findPressableAncestor(plusIcon).props.onPress();
     expect(mockNavigation.navigate).toHaveBeenCalledWith("audio_memo_player", {
       mode: "record",
+      wsSlug: "workspace-a",
     });
   });
 });

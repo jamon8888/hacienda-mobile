@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import * as RNFS from "@dr.pogodin/react-native-fs";
 import AudioMemo, { AudioMemoType } from "@/database/models/AudioMemo";
 
 interface UseAudioMemosReturn {
@@ -22,6 +23,7 @@ interface UseAudioMemosReturn {
   resumeMemo: () => Promise<void>;
   stopMemo: () => Promise<void>;
   seekTo: (position: number) => Promise<void>;
+  updatePlaybackTime: (position: number, duration: number) => void;
 }
 
 export function useAudioMemos(): UseAudioMemosReturn {
@@ -70,13 +72,24 @@ export function useAudioMemos(): UseAudioMemosReturn {
     [],
   );
 
-  const deleteMemo = useCallback(async (uuid: string) => {
-    const success = await AudioMemo.delete([{ field: "uuid", value: uuid }]);
-    if (success) {
-      setMemos(prev => prev.filter(m => m.uuid !== uuid));
-    }
-    return success;
-  }, []);
+  const deleteMemo = useCallback(
+    async (uuid: string) => {
+      const audioUri = memos.find(m => m.uuid === uuid)?.audioUri;
+      const success = await AudioMemo.delete([{ field: "uuid", value: uuid }]);
+      if (success) {
+        setMemos(prev => prev.filter(m => m.uuid !== uuid));
+        if (audioUri) {
+          try {
+            await RNFS.unlink(audioUri);
+          } catch (err) {
+            console.warn("Failed to delete memo file:", audioUri, err);
+          }
+        }
+      }
+      return success;
+    },
+    [memos],
+  );
 
   const updateMemo = useCallback(
     async (uuid: string, updates: Partial<AudioMemoType>) => {
@@ -88,20 +101,23 @@ export function useAudioMemos(): UseAudioMemosReturn {
     [],
   );
 
-  // Playback functions would use expo-av or react-native-audio-player
-  const playMemo = useCallback(async (uuid: string, audioUri: string) => {
+  // These are pure state bookkeeping - the actual audio playback is driven
+  // by the AudioWaveformView ref in MemoPlayerScreen. Callers invoke these
+  // both optimistically (on tap, for instant UI feedback) and correctively
+  // (from the waveform's onPlayerStateChange/onTimeUpdate/onEnd/onSeek
+  // callbacks, which are the real source of truth for player state).
+  const playMemo = useCallback(async (uuid: string, _audioUri: string) => {
     setPlayingId(uuid);
-    // Actual playback implementation with audio player library
   }, []);
 
   const pauseMemo = useCallback(async () => {
-    // Pause playback
     setPlayingId(null);
   }, []);
 
-  const resumeMemo = useCallback(async () => {
-    // Resume playback
-  }, []);
+  // Unused by any current call site: pauseMemo clears playingId, so there's
+  // no remembered uuid to resume without a scrubber/mini-player that keeps
+  // a memo "loaded" across pause. Left as a no-op until that exists.
+  const resumeMemo = useCallback(async () => {}, []);
 
   const stopMemo = useCallback(async () => {
     setPlayingId(null);
@@ -110,6 +126,11 @@ export function useAudioMemos(): UseAudioMemosReturn {
 
   const seekTo = useCallback(async (position: number) => {
     setPlaybackPosition(position);
+  }, []);
+
+  const updatePlaybackTime = useCallback((position: number, duration: number) => {
+    setPlaybackPosition(position);
+    setPlaybackDuration(duration);
   }, []);
 
   return {
@@ -127,5 +148,6 @@ export function useAudioMemos(): UseAudioMemosReturn {
     resumeMemo,
     stopMemo,
     seekTo,
+    updatePlaybackTime,
   };
 }

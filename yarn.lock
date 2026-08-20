@@ -8767,6 +8767,9 @@ react-native-waveform-player@^1.0.3:
   resolved "https://registry.yarnpkg.com/react-native-waveform-player/-/react-native-waveform-player-1.0.3.tgz#9de93d010e0c3f5aa7a79df8f8faf8ffcc24726f"
   integrity sha512-OSoz+ecPAaY1uXYsY2MZ9MrsICFIm823VSewgskzBJ2TRPBZkfQRYG5UQaXC8qw5k6AmcULjsmwnCCTXa0Q4UQ==
 
+"react-native-waveform-recorder@file:./vendor/react-native-waveform-recorder":
+  version "1.0.1"
+
 react-native@0.76.3:
   version "0.76.3"
   resolved "https://registry.npmjs.org/react-native/-/react-native-0.76.3.tgz"

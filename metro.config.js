@@ -13,7 +13,8 @@ const configOptions = {
     // top of its bundle, which Metro has no RN-side module for. The function that actually
     // uses it (SentencePieceProcessor.load(url)) is never called -- our tokenizer uses
     // loadFromB64StringModel() instead -- so a stub that throws if ever reached is safe. See
-    // scripts/stubs/fs.js.
+    // scripts/stubs/fs.js. `module` and `url` are imported by the same bundle and need the
+    // same treatment. Jest has its own `^fs$` mapping to src/shims/fs.js (jest.config.js).
     extraNodeModules: {
       fs: require.resolve("./scripts/stubs/fs.js"),
       module: require.resolve("./scripts/stubs/module.js"),

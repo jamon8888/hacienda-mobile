@@ -18,17 +18,20 @@ import Workspace from "@/database/models/Workspace";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Telemetry from "@/utils/Telemetry";
 import LogoIcon from "@/components/LogoIcon";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function DataHandling() {
   const navigation = useNavigation();
   const { isLoading } = useLlmPreference();
+  const { t } = useTranslation("onboarding");
+  const { t: commonT } = useTranslation("common");
   const [isOnboarding, setIsOnboarding] = useState(false);
   const insets = useSafeAreaInsets();
 
   const onContinue = async () => {
     setIsOnboarding(true);
     async function onboardingTasks() {
-      const workspace = await Workspace.create({ name: "My Workspace" });
+      const workspace = await Workspace.create({ name: commonT("home.defaultWorkspaceName") });
       return workspace;
     }
     async function waitAtLeast(ms: number) {
@@ -90,7 +93,7 @@ export default function DataHandling() {
             <View className="flex flex-row gap-x-2 items-center -mt-8">
               <ActivityIndicator size="small" animating={true} color="#fff" />
               <Text className="text-white text-xl text-center animate-pulse">
-                Setting up your first workspace
+                {t("dataHandling.settingUpWorkspace")}
               </Text>
             </View>
           </View>
@@ -128,18 +131,17 @@ export default function DataHandling() {
           <React.Fragment>
             <View className="flex flex-col gap-y-4 justify-center items-center">
               <Text className="text-white text-4xl font-bold text-center">
-                Data Handling & Privacy
+                {t("dataHandling.title")}
               </Text>
               <Text className="text-white/60 text-xl text-center">
-                With AnythingLLM, all chats, documents, and other data is
-                processed and stored on your device.
+                {t("dataHandling.subtitle")}
               </Text>
             </View>
 
             <View className="flex flex-col gap-y-4 items-center">
               <PrivacyItem
-                name="Fully Local Chats"
-                description="All chats are stored on your device."
+                name={t("dataHandling.items.localChats.name")}
+                description={t("dataHandling.items.localChats.description")}
                 image={
                   <Image
                     source={require("@/assets/logo/anything-llm-infinity.png")}
@@ -149,13 +151,15 @@ export default function DataHandling() {
                 }
               />
               <PrivacyItem
-                name="Document Embedding"
-                description="All documents and processing are done on your device."
+                name={t("dataHandling.items.documentEmbedding.name")}
+                description={t(
+                  "dataHandling.items.documentEmbedding.description",
+                )}
                 Icon={<FileDashed size={34} color="#FFF" />}
               />
               <PrivacyItem
-                name="AI Agents"
-                description="All agents are run on your device and only use the internet when required (eg: Web search) "
+                name={t("dataHandling.items.aiAgents.name")}
+                description={t("dataHandling.items.aiAgents.description")}
                 Icon={<Sparkle size={34} color="#FFF" />}
               />
             </View>
@@ -165,7 +169,7 @@ export default function DataHandling() {
                 onPress={onContinue}
                 className="w-full bg-[--cta-light-blue] rounded-lg px-4 py-2 flex flex-row items-center justify-center">
                 <Text className="text-black text-xl">
-                  Experience AnythingLLM
+                  {t("dataHandling.getStarted")}
                 </Text>
               </TouchableOpacity>
             </View>

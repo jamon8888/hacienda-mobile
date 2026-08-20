@@ -35,7 +35,7 @@ export async function memorySearch(
   const vectorResults = await db.execute(
     `SELECT m.*, v.distance
      FROM memories_vec v
-     JOIN memories m ON m.rowid = v.rowid
+     JOIN memories m ON m.id = v.id
      WHERE v.embedding MATCH ? AND m.workspace_id = ?
      ${clientId ? "AND m.client_id = ?" : ""}
      ORDER BY v.distance ASC

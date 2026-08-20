@@ -4,6 +4,38 @@
 
 import { NativeModules } from "react-native";
 
+// ── react-native-device-info / uuid ─────────────────────────────
+// Both pulled in transitively by src/utils/constants.ts, which anything
+// importing a database model (e.g. Workspace -> WorkspaceThread) hits.
+// uuid's ESM build isn't transformable under the default transformIgnorePatterns.
+jest.mock("react-native-device-info", () => ({
+  __esModule: true,
+  default: {
+    getSystemName: jest.fn().mockReturnValue("iOS"),
+    getSystemVersion: jest.fn().mockReturnValue("17.0"),
+    getApiLevelSync: jest.fn().mockReturnValue(34),
+  },
+}));
+jest.mock("uuid", () => ({
+  __esModule: true,
+  v4: jest.fn(() => "mock-uuid"),
+}));
+
+// ── NativeWind (Jest bypass) ───────────────────────────────────
+// nativewind/babel is excluded in test env (see babel.config.js).
+// These mocks let `import { useColorScheme } from "nativewind"` resolve
+// without pulling in the real css-interop runtime.
+jest.mock("nativewind", () => ({
+  useColorScheme: () => "dark",
+  colorScheme: { get: () => "dark", set: jest.fn() },
+}));
+jest.mock("react-native-css-interop", () => ({
+  cssInterop: jest.fn(),
+  remapProps: jest.fn(),
+  InteropProvider: ({ children }) => children,
+  useUnstableNativeVariable: (v) => v,
+}));
+
 // ── AsyncStorage ──────────────────────────────────────────────
 // @react-native-async-storage/async-storage
 const mockStorage = {};
@@ -209,6 +241,13 @@ jest.mock("react-native-vision-camera", () => ({
 jest.mock("react-native-waveform-player", () => ({
   __esModule: true,
   AudioWaveformView: "AudioWaveformView",
+}));
+
+// ── react-native-waveform-recorder ─────────────────────────────
+jest.mock("react-native-waveform-recorder", () => ({
+  __esModule: true,
+  WaveformRecorderView: "WaveformRecorderView",
+  ensureMicrophonePermission: jest.fn().mockResolvedValue(true),
 }));
 
 // ── react-native-nitro-modules ─────────────────────────────────

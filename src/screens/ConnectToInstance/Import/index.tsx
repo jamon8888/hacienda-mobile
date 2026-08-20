@@ -18,6 +18,7 @@ import { CommandResponses } from "@/utils/AnythingLLMExternal";
 import uiStore from "@/store/UIStore";
 import { showToast } from "@/utils/Notification";
 import { unregisterConnection } from "../index";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface ImportViewProps {
   params: { connectionUrl: string; deviceToken: string };
@@ -26,6 +27,7 @@ interface ImportViewProps {
 export function ImportView({ params }: ImportViewProps) {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const { t } = useTranslation("connectToInstance");
 
   const [module, setModule] = useState<AnythingLLMExternal | null>(null);
   const [workspaces, setWorkspaces] = useState<
@@ -55,7 +57,7 @@ export function ImportView({ params }: ImportViewProps) {
     const validateConnection = await module.tokenIsApproved();
     if (!validateConnection) {
       showToast(
-        "Your existing connection to AnythingLLM Desktop expired.",
+        t("import.expired"),
         "short",
       );
       await uiStore.removeFromStorage(
@@ -85,7 +87,7 @@ export function ImportView({ params }: ImportViewProps) {
     try {
       await getWorkspaces();
     } catch (error) {
-      showToast("Failed to refresh workspaces", "short");
+      showToast(t("import.refreshFailed"), "short");
     } finally {
       setRefreshing(false);
     }
@@ -119,7 +121,7 @@ export function ImportView({ params }: ImportViewProps) {
           numberOfLines={1}
           ellipsizeMode="middle"
           className="text-white text-lg font-medium">
-          Connect to AnythingLLM
+          {t("title")}
         </Text>
       </View>
       <ScrollView
@@ -168,7 +170,7 @@ export function ImportView({ params }: ImportViewProps) {
             paddingVertical: 8,
           }}
           className="flex flex-row w-full items-center justify-center gap-2 rounded-lg">
-          <Text className="text-white font-medium">Go back to home</Text>
+          <Text className="text-white font-medium">{t("import.goBackToHome")}</Text>
         </TouchableOpacity>
       </View>
     </SafeView>

@@ -24,14 +24,12 @@ export const defaultCompletionParams: CompletionParams = {
   version: CURRENT_COMPLETION_SETTINGS_VERSION,
   include_thinking_in_context: true,
 
-  // cactus-react-native 1.13.1 CompletionParams (llama.cpp style)
+  // cactus-react-native 1.13.1 CompletionParams (v2 field names)
   temperature: 0.7,
-  top_k: 40,
-  top_p: 0.95,
-  n_predict: 1024,
-  stop: [""],
-  // forceTools, telemetryEnabled, includeStopSequences, useVad, enableThinking
-  // are not in the native CompletionParams type
+  topK: 40,
+  topP: 0.95,
+  maxTokens: 1024,
+  stopSequences: [""],
 };
 
 // Keys present in version-0/1 (llama.cpp-style) settings that have no equivalent
@@ -83,20 +81,20 @@ export function migrateCompletionSettings(settings: any): any {
     // cactus-react-native 1.13.1 CompletionParams field names, and
     // drop sampling knobs that no longer exist in the SDK.
     if ("n_predict" in migratedSettings) {
-      migratedSettings.n_predict = migratedSettings.n_predict;
-      delete migratedSettings.maxTokens;
+      migratedSettings.maxTokens = migratedSettings.n_predict;
+      delete migratedSettings.n_predict;
     }
     if ("top_p" in migratedSettings) {
-      migratedSettings.top_p = migratedSettings.top_p;
-      delete migratedSettings.topP;
+      migratedSettings.topP = migratedSettings.top_p;
+      delete migratedSettings.top_p;
     }
     if ("top_k" in migratedSettings) {
-      migratedSettings.top_k = migratedSettings.top_k;
-      delete migratedSettings.topK;
+      migratedSettings.topK = migratedSettings.top_k;
+      delete migratedSettings.top_k;
     }
     if ("stop" in migratedSettings) {
-      migratedSettings.stop = migratedSettings.stop;
-      delete migratedSettings.stopSequences;
+      migratedSettings.stopSequences = migratedSettings.stop;
+      delete migratedSettings.stop;
     }
     for (const key of V1_KEYS_WITHOUT_SDK_EQUIVALENT) {
       delete migratedSettings[key];

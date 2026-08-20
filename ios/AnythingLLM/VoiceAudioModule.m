@@ -30,7 +30,7 @@ RCT_EXPORT_METHOD(startRecording:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 {
     if (_isRecording) {
-        resolve(@YES); // no-op if already recording
+        reject(@"ALREADY_RECORDING", @"Already recording", nil);
         return;
     }
     
