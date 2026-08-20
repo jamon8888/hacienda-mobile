@@ -27,9 +27,14 @@ export default function NeedleSpikeView() {
     setBusy(true);
     log("Starting Needle download + init...");
     try {
-      await needleStore.init(progress => {
-        log(`Download progress: ${Math.round(progress * 100)}%`);
-      });
+      await needleStore.init(
+        progress => {
+          log(`Download progress: ${Math.round(progress * 100)}%`);
+        },
+        // Explicit dev-initiated download - skip the Wi-Fi gate that guards
+        // the silent production auto-init call sites.
+        { requireWifi: false },
+      );
       setReady(needleStore.ready);
       if (needleStore.ready) {
         log("Needle ready");

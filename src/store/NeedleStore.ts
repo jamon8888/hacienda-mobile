@@ -1,6 +1,7 @@
 import { makeAutoObservable, runInAction } from "mobx";
 import { makePersistable } from "mobx-persist-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import NetInfo from "@react-native-community/netinfo";
 
 import type { CactusLMTool } from "cactus-react-native";
 
@@ -41,9 +42,28 @@ export class NeedleStore {
     });
   }
 
-  async init(onProgress?: (progress: number) => void): Promise<void> {
+  async init(
+    onProgress?: (progress: number) => void,
+    options?: { requireWifi?: boolean },
+  ): Promise<void> {
     if (this.ready || this.busy) {
       return;
+    }
+
+    // The bundle is a ~16MB one-time download. The production call sites
+    // trigger this silently in the background (no user-facing prompt), so
+    // default to Wi-Fi-only to avoid surprising cellular data usage. Explicit,
+    // user-initiated triggers (e.g. NeedleSpikeView's dev button) opt out via
+    // requireWifi: false. Skipping here (rather than erroring) means the next
+    // production call site's own `!ready && !busy` check will retry on a
+    // later request, so this resolves itself once Wi-Fi becomes available
+    // without any extra polling.
+    const requireWifi = options?.requireWifi ?? true;
+    if (requireWifi) {
+      const netState = await NetInfo.fetch();
+      if (netState.type !== "wifi") {
+        return;
+      }
     }
 
     this.busy = true;

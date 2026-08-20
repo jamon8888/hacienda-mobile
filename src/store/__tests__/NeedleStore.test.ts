@@ -1,4 +1,10 @@
 import { NeedleStore } from "../NeedleStore";
+import NetInfo from "@react-native-community/netinfo";
+
+jest.mock("@react-native-community/netinfo", () => ({
+  __esModule: true,
+  default: { fetch: jest.fn() },
+}));
 
 const mockLmInstance = {
   init: jest.fn().mockResolvedValue(undefined),
@@ -25,6 +31,7 @@ jest.useFakeTimers();
 
 beforeEach(() => {
   jest.clearAllMocks();
+  (NetInfo.fetch as jest.Mock).mockResolvedValue({ type: "wifi" });
 });
 
 afterEach(() => {
@@ -55,6 +62,44 @@ describe("NeedleStore", () => {
     expect(store.ready).toBe(false);
     expect(store.error).toBe("network down");
     expect(store.busy).toBe(false);
+  });
+
+  it("skips the download on cellular by default, without setting an error", async () => {
+    (NetInfo.fetch as jest.Mock).mockResolvedValue({ type: "cellular" });
+    const ensureDownloaded = jest.fn().mockResolvedValue("/mock/needle-cq4");
+    const { NeedleBundleDownloader } = jest.requireMock(
+      "@/services/downloads/NeedleBundleDownloader",
+    );
+    NeedleBundleDownloader.mockImplementationOnce(() => ({ ensureDownloaded }));
+
+    const store = new NeedleStore();
+    await store.init();
+
+    expect(store.ready).toBe(false);
+    expect(store.busy).toBe(false);
+    expect(store.error).toBeNull();
+    expect(ensureDownloaded).not.toHaveBeenCalled();
+  });
+
+  it("downloads on cellular when requireWifi is explicitly false", async () => {
+    (NetInfo.fetch as jest.Mock).mockResolvedValue({ type: "cellular" });
+
+    const store = new NeedleStore();
+    await store.init(undefined, { requireWifi: false });
+
+    expect(store.ready).toBe(true);
+  });
+
+  it("retries and succeeds once Wi-Fi becomes available on a later call", async () => {
+    (NetInfo.fetch as jest.Mock).mockResolvedValueOnce({ type: "cellular" });
+
+    const store = new NeedleStore();
+    await store.init();
+    expect(store.ready).toBe(false);
+
+    (NetInfo.fetch as jest.Mock).mockResolvedValueOnce({ type: "wifi" });
+    await store.init();
+    expect(store.ready).toBe(true);
   });
 
   it("returns fallback when routeRag is called before init", async () => {

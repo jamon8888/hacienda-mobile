@@ -257,6 +257,30 @@ jest.mock("react-native-nitro-modules", () => ({
   },
 }));
 
+// ── @react-native-community/netinfo ────────────────────────────
+// Default to "wifi"/connected so files that transitively import a NetInfo
+// consumer (e.g. NeedleStore) don't need their own mock just to load.
+// Tests exercising specific network states mock this per-file instead.
+jest.mock("@react-native-community/netinfo", () => {
+  const state = { isConnected: true, type: "wifi" };
+  const fetchState = jest.fn().mockResolvedValue(state);
+  return {
+    __esModule: true,
+    default: {
+      configure: jest.fn(),
+      fetch: fetchState,
+      refresh: fetchState,
+      addEventListener: jest.fn(() => jest.fn()),
+      useNetInfo: jest.fn().mockReturnValue(state),
+      useNetInfoInstance: jest
+        .fn()
+        .mockReturnValue({ netInfo: state, refresh: jest.fn() }),
+    },
+    fetch: fetchState,
+    useNetInfo: jest.fn().mockReturnValue(state),
+  };
+});
+
 // ── @nozbe/watermelondb (will be overridden per-test) ──────────
 // Only mock the parts that touch native SQLite at import time.
 // Actual WatermelonDB tests use an in-memory adapter (Task 3).
