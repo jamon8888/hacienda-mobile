@@ -29,9 +29,43 @@ function makeMockZip() {
 }
 
 describe("NeedleBundleDownloader", () => {
+  // A minimal stateful fake filesystem. The production completeness check
+  // (`RNFS.exists(stagingDir/config.txt)` after extraction, added to guard
+  // against a killed-mid-extraction false positive) depends on `exists`
+  // actually reflecting prior mkdir/writeFile/unlink/moveFile calls - a
+  // blind `mockResolvedValue(false)` makes that check always fail and
+  // ensureDownloaded() always throw, regardless of what was really written.
+  let fsPaths: Set<string>;
+
   beforeEach(() => {
     jest.clearAllMocks();
-    (RNFS.exists as jest.Mock).mockResolvedValue(false);
+    fsPaths = new Set();
+
+    (RNFS.exists as jest.Mock).mockImplementation(async (path: string) =>
+      fsPaths.has(path),
+    );
+    (RNFS.mkdir as jest.Mock).mockImplementation(async (path: string) => {
+      fsPaths.add(path);
+    });
+    (RNFS.writeFile as jest.Mock).mockImplementation(async (path: string) => {
+      fsPaths.add(path);
+    });
+    (RNFS.unlink as jest.Mock).mockImplementation(async (path: string) => {
+      fsPaths.delete(path);
+      for (const p of fsPaths) {
+        if (p.startsWith(`${path}/`)) fsPaths.delete(p);
+      }
+    });
+    (RNFS.moveFile as jest.Mock).mockImplementation(
+      async (from: string, to: string) => {
+        for (const p of [...fsPaths]) {
+          if (p !== from && !p.startsWith(`${from}/`)) continue;
+          fsPaths.delete(p);
+          fsPaths.add(to + p.slice(from.length));
+        }
+      },
+    );
+
     (RNFS.downloadFile as jest.Mock).mockReturnValue({
       promise: Promise.resolve({ statusCode: 200 }),
     });
@@ -39,9 +73,7 @@ describe("NeedleBundleDownloader", () => {
   });
 
   it("returns existing extract dir without re-downloading if already promoted", async () => {
-    (RNFS.exists as jest.Mock).mockImplementation(async (path: string) =>
-      path === "/mock/Documents/models/needle",
-    );
+    fsPaths.add("/mock/Documents/models/needle");
 
     const downloader = new NeedleBundleDownloader();
     const path = await downloader.ensureDownloaded();
@@ -53,9 +85,7 @@ describe("NeedleBundleDownloader", () => {
   it("re-extracts when the extract dir is missing even if a staging dir was left behind", async () => {
     // Simulates a previous run that was killed mid-extraction: the final extractDir was
     // never promoted, but a partial staging dir is still on disk.
-    (RNFS.exists as jest.Mock).mockImplementation(
-      async (path: string) => path === "/mock/Documents/models/needle.staging",
-    );
+    fsPaths.add("/mock/Documents/models/needle.staging");
 
     const downloader = new NeedleBundleDownloader();
     const path = await downloader.ensureDownloaded();
@@ -118,7 +148,6 @@ describe("NeedleBundleDownloader", () => {
   });
 
   it("discards the staging dir and throws when extraction never produces config.txt", async () => {
-    (RNFS.exists as jest.Mock).mockResolvedValue(false);
     (RNFS.readFile as jest.Mock).mockImplementation(() => {
       const zip = new JSZip();
       zip.file("token_embeddings.weights", "fake-weights");
