@@ -7,11 +7,12 @@ apply plugin: "com.facebook.react"
 // processor through KSP instead of falling back to kapt.
 //
 // kapt cannot be used in this project at all: kapt 2.0.x embeds a Kotlin-metadata reader capped
-// at metadata version 2.0.0, and io.xberg:xberg-android -- along with the kotlin-stdlib 2.2.20
-// and kotlinx-coroutines 1.11.0 it drags in -- ships classes carrying 2.2.0 metadata. Annotation
+// at metadata version 2.0.0, React Native 0.76.3 caps the Kotlin plugin at 2.0.x (see
+// android/build.gradle), and io.xberg:xberg-android -- along with the kotlin-stdlib 2.2.20 and
+// kotlinx-coroutines 1.11.0 it drags in -- ships classes carrying 2.2.0 metadata. Annotation
 // processing therefore died with "Provided Metadata instance has version 2.2.0, while maximum
 // supported version is 2.0.0". Unlike the compiler, kapt has no skip-check escape hatch, so the
-// only fix that does not mean forking Xberg is to stop using kapt.
+// only fix that does not mean forking Xberg or upgrading React Native is to stop using kapt.
 apply plugin: "com.google.devtools.ksp"
 apply plugin: "io.objectbox"
 
@@ -195,7 +196,7 @@ dependencies {
     
     // for download manager
     implementation "androidx.work:work-runtime-ktx:2.9.0"
-    def room_version = "2.7.1"
+    def room_version = "2.6.1"
     ksp "androidx.room:room-compiler:$room_version"
     implementation "androidx.room:room-runtime:$room_version"
     implementation "androidx.room:room-ktx:$room_version"

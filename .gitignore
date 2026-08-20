@@ -39,7 +39,6 @@ android/app/src/main/res/raw
 # node.js
 #
 node_modules/
-.worktrees/
 npm-debug.log
 yarn-error.log
 package-lock.json
@@ -78,6 +77,5 @@ package-lock.json
 .nvmrc
 
 release/
-android/app/src/main/assets/index.android.bundle
-android/app/src/main/assets/*.tflite
+android/app/src/main/assets/index.android.bundleandroid/app/src/main/assets/*.tflite
 android/app/src/main/assets/sentencepiece.model
