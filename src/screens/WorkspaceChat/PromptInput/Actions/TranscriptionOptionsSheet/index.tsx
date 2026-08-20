@@ -11,6 +11,7 @@ import {
 import { View, Text, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Radio, MusicNotes } from "phosphor-react-native";
+import { xbergStore } from "@/store/XbergStore";
 
 const MODEL_OPTIONS = [
   { value: "tiny", label: "Tiny", size: "10 MB", description: "Fastest" },
@@ -44,8 +45,8 @@ export default function TranscriptionOptionsSheet({
   const insets = useSafeAreaInsets();
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const { registerSheet, dismissSheet } = useBottomSheet();
-  const [selectedModel, setSelectedModel] = useState("base");
-  const [selectedLanguage, setSelectedLanguage] = useState("auto");
+  const [selectedModel, setSelectedModel] = useState(xbergStore.transcriptionModel);
+  const [selectedLanguage, setSelectedLanguage] = useState(xbergStore.transcriptionLanguage);
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -64,6 +65,7 @@ export default function TranscriptionOptionsSheet({
   }, [registerSheet]);
 
   function handleConfirm() {
+    xbergStore.setTranscriptionOptions(selectedModel, selectedLanguage);
     onConfirm(selectedModel, selectedLanguage);
     bottomSheetRef.current?.dismiss();
   }

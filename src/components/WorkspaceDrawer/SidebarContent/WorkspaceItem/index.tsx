@@ -336,7 +336,7 @@ function WorkspaceThreadsContainer({
       setActiveThreadIdx(
         workspace.threads?.findIndex(
           (thread: any) => thread.slug === event.params.threadSlug,
-        ) || 0,
+        ) ?? 0,
       );
     });
     return () =>
