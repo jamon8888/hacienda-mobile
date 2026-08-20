@@ -16,7 +16,7 @@ buildscript {
         // out of scope for unblocking this build.
         targetSdkVersion = 35
         ndkVersion = "26.1.10909125"
-        kotlinVersion = "2.0.21"
+        kotlinVersion = "2.2.20"
         objectboxVersion = "4.3.0"
     }
     repositories {
@@ -34,23 +34,35 @@ buildscript {
         // compiler against a 2.2.x stdlib fails every Kotlin module with "Unresolved reference:
         // mapOf" and metadata-version errors, so the compiler has to track the stdlib.
         //
-        // Why 2.0.21 specifically -- it is the ceiling React Native 0.76.3 allows, verified
-        // empirically here:
-        //   2.0.21 -> applies cleanly
-        //   2.1.21 -> "Found interface KotlinTopLevelExtension, but class was expected"
-        //   2.2.20 -> same
-        // RN's Gradle plugin is compiled against the KGP 1.9 API where KotlinTopLevelExtension is
-        // a class; it became an interface in KGP 2.1. Recompiling that plugin against 2.2 was
-        // tried and abandoned: its own build scripts use the kotlinOptions DSL (removed in 2.2)
-        // and apiVersion 1.6 (unsupported in 2.2), so it cascades into patching React Native's
-        // build infrastructure -- fragile, and it would break on every RN upgrade.
+        // Why 2.2.20 specifically -- this value must match what the buildscript classpath
+        // ACTUALLY resolves to, which is decided by React Native's Gradle plugin, not here.
+        // settings.gradle includeBuild()s node_modules/@react-native/gradle-plugin, so it joins
+        // this classpath as a composite project, and patches/@react-native+gradle-plugin+0.76.3
+        // .patch sets that plugin's own version catalog to kotlin = "2.2.20" (it also migrates
+        // the plugin's build scripts off the kotlinOptions DSL and off apiVersion 1.6, both of
+        // which KGP 2.2 rejects -- that is what makes 2.2.20 viable at all).
         //
-        // Raising this past 2.0.21 therefore means upgrading React Native itself.
+        // Gradle then resolves the classpath to the highest requested version, so declaring
+        // anything lower here does NOT take effect -- it is silently upgraded. Run
+        // `./gradlew buildEnvironment` to see it: "kotlin-gradle-plugin:2.0.21 -> 2.2.20".
+        //
+        // Keeping this in sync matters because the KSP coordinate below is derived from it, and
+        // KSP hard-fails on a mismatch rather than degrading: with kotlinVersion = "2.0.21" the
+        // build died at configuration time with
+        //   ksp-2.0.21-1.0.28 is too old for kotlin-2.2.20
+        //   > Could not create task ':app:kspDebugKotlin'
+        //   > Cannot query the value of task ':app:kspDebugKotlin' property
+        //     'classpathSnapshotProperties.useClasspathSnapshot'
+        // because KSP's task factory read a KGP property that had moved.
+        //
+        // So: if the patch's kotlin version changes, change this to match.
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
         classpath("io.objectbox:objectbox-gradle-plugin:$objectboxVersion")
         // KSP replaces kapt for annotation processing -- see the comment in app/build.gradle.
-        // The version's prefix must match kotlinVersion exactly; KSP releases are per-Kotlin.
-        classpath("com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin:$kotlinVersion-1.0.28")
+        // The version's prefix must match the RESOLVED kotlin-gradle-plugin exactly (see above);
+        // KSP releases are per-Kotlin, and the suffix advances independently (2.0.x for the
+        // Kotlin 2.2 line, 1.0.x for 2.0 and earlier).
+        classpath("com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin:$kotlinVersion-2.0.4")
         // Add the Google Services plugin dependency
         // This is used exclusively for Firebase functionality
         classpath 'com.google.gms:google-services:4.4.3'
