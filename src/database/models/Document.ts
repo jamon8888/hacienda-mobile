@@ -227,13 +227,18 @@ export default class Document extends Model {
       .get(Document.table)
       .query()
       .fetch()) as (Model & DocumentType)[];
-    if (!documents || documents.length === 0) return true;
-    await database.write(async () => {
-      this.log(`deleting ${documents.length} documents`);
-      await database.batch(
-        documents.map(document => document.prepareMarkAsDeleted()),
-      );
-    });
+    if (documents && documents.length > 0) {
+      await database.write(async () => {
+        this.log(`deleting ${documents.length} documents`);
+        await database.batch(
+          documents.map(document => document.prepareMarkAsDeleted()),
+        );
+      });
+    }
+    // Runs even with zero documents: a workspace can have audio-memo
+    // vectors (or documents from a workspace that's already been deleted
+    // separately) with no Document rows left to trigger this otherwise.
     if (withVectors) await VectorDB.reset();
+    return true;
   }
 }
