@@ -9,7 +9,6 @@ class XbergPackage : ReactPackage {
     override fun createNativeModules(reactContext: ReactApplicationContext): MutableList<NativeModule> {
         return ArrayList<NativeModule>().apply {
             add(XbergModule(reactContext))
-            add(AudioDecoderModule(reactContext))
         }
     }
     override fun createViewManagers(reactContext: ReactApplicationContext): MutableList<ViewManager<*, *>> {

@@ -1,258 +1,178 @@
-# Needle — Implementation Plan v2.1
+# Needle — Implementation Plan
 
-> **v2.1** · Companion implementer for [`NEEDLE_INTEGRATION.md`](NEEDLE_INTEGRATION.md).
-> Goal: ship the real **Cactus-Compute/needle** model as an on-device RAG router and tool-ranker, running through the **existing `cactus-react-native` engine**. No new native module. **Available to all users** by default; product gating is a separate business decision.
-> Rule: @ reviewers — flag anything that contradicts the spec or the existing Cactus integration.
+> **v1.0.0** · Companion implementer for [`NEEDLE_INTEGRATION.md`](NEEDLE_INTEGRATION.md).
+> Goal: ship an on-device RAG **router** (skip / retrieve / expand) powered by Cactus's 26M-param **Needle** tool-caller, run via **needle-rs** C ABI and bridged the same way as Xberg. **No UI** — a transparent layer inside `getContextTexts()` that degrades silently to the current unconditional semantic search.
+> Rule: @ reviewers — flag anything that contradicts the spec or the vendored-native-module contract.
 
 ---
 
 ## 0. Phase map
 
-| #   | Phase                                         | Deliverable                                           | Done-when                                | Status |
-| --- | --------------------------------------------- | ----------------------------------------------------- | ---------------------------------------- | ------ |
-| P0  | Feasibility spike (CQ4 bundle loads + routes) | proof run on device                                   | K0..K5                                   | 🔲 blocked — needs device |
-| P1  | Bundle downloader                             | download + extract `needle-cq4.zip`                   | typecheck + unit test                    | ✅ |
-| P2  | TS layer `src/utils/Needle`                   | `types.ts` / `NeedleClient.ts` / `index.ts`           | typecheck                                | ✅ |
-| P3  | State + hook                                  | `NeedleStore.ts`, `useNeedle.ts`                      | typecheck                                | ✅ |
-| P4  | Router integration into `getContextTexts`     | gate before embed                                     | typecheck + unit test                    | ✅ (default off) |
-| P5  | Tool-ranking integration                      | `selectTools()` used by `CactusLmWrapper`             | typecheck                                | ✅ (default off) |
-| P6  | Tests & quality                               | unit + integration tests                              | `yarn test`                              | 🔄 core tests done; provider integration tests pending |
+| #   | Phase                                         | Deliverable                                           | Done-when                   |
+| --- | --------------------------------------------- | ----------------------------------------------------- | --------------------------- |
+| P0  | Feasibility spike (native lib loads + routes) | proof run on aarch64                                  | K0..K5                      |
+| P1  | Android native bridge                         | `libneedle.so` + `NeedleModule.kt`                    | typecheck + `assembleDebug` |
+| P2  | iOS native bridge                             | staticlib + `NeedleModule.swift/.m`                   | `pod install` + build       |
+| P3  | TS layer `src/utils/Needle`                   | `types.ts`/`XbergClient`-style client/`index.ts`      | typecheck                   |
+| P4  | State + hook                                  | `NeedleStore.ts`, `useNeedle.ts`                      | typecheck                   |
+| P5  | Router integration into `getContextTexts`     | gate before embed                                     | typecheck + unit test       |
+| P6  | Bundling weights download                     | RNFS fetch of 22MB `needle.safetensors` + `vocab.txt` | integration test            |
 
 ---
 
 ## P0 — Feasibility spike (BLOCKING; do first)
 
-Verifies the official CQ4 bundle actually loads in our pinned runtime.
+Verifies needle-rs is actually usable on ARM before any RN plumbing.
 
-1. Download `https://huggingface.co/Cactus-Compute/needle/resolve/main/needle-cq4.zip` to a dev machine and inspect the extracted folder (already done; see spec).
-2. In an RN debug build, download the zip with RNFS, extract it with `jszip`, and load the folder via `CactusLM`:
-   ```ts
-   const lm = new CactusLM({ model: '/data/.../Documents/models/needle' });
-   await lm.init();
-   ```
-3. If `init()` succeeds, run the document-router tools and confirm valid JSON tool calls.
-4. Measure load time, first-route latency, and peak RAM on a mid-range Android device.
-5. If `needle-cq4.zip` fails on runtime 1.13.1, repeat with `needle-pebble-ft-cq4.zip`. If that also fails, escalate to the `needle-rs` v1 plan.
+1. Clone `https://github.com/Geekgineer/needle-rs`, `cargo build --release --target aarch64-linux-android`.
+2. Confirm the **NEON** matvec path compiles/runs (not scalar fallback). Run the crates' own e2e parity test on aarch64.
+3. `needle_load` against the 22 MB `Abdalrahman/needle-rs-safetensors` (INT4) resolves and `needle_run` returns parseable JSON for the `DOCUMENT_TOOLS` in the spec (§4.4).
+4. Rough latency: load once (cold) + per-route warm. Budget: warm < 300 ms, working set < 30 MB.
+5. If NEON is non-functional → pivot: build the **WASM** variant and bundle through a Hermes-compatible wasm runtime, re-run. Else proceed.
 
-**Exit criteria:** a valid tool call is produced on-device. → K0 — nothing else starts.
+**Exit criteria:** `needle_run` produces a syntactically valid tool call on-device. → K0 (checklist) — nothing else starts.
 
 ---
 
-## P1 — Bundle downloader
+## P1 — Android native module
 
-Create a dedicated downloader because the SDK registry does not list Needle.
+Mirror `com.hacienda.xberg` exactly. New dir `android/app/src/main/java/com/hacienda/needle/`.
 
-**File**: `src/services/downloads/NeedleBundleDownloader.ts` (or extend `DownloadManager`).
+1. **build files** — add NDK `externalNativeBuild`/CMake block to `android/app/build.gradle` (or a `module.cmake`) that:
+   - statically links the Rust-produced `libneedle.a` (ABI per each `abiFilters` — `arm64-v8a`, plus `x86_64`/`armeabi-v7a` if kept);
+   - declares `targetSdk/minSdk` parity with the app (minSdk 24 already set for cactus).
+2. **`NeedleModule.kt`** — `@ReactMethod`s (TurboModule-style, single-threaded guarded):
+   - `init(safetensorsPath: String, vocabPath: String, promise: Promise)` → `needle_load`; maps NULL/crash → `reject` with `err.code = 'NEEDLE_UNAVAILABLE'` (never throw into JS).
+   - `route(query: String, toolsJson: String, promise: Promise)` → returns the JSON call string; on load-fail/latency → `reject('NEEDLE_TIMEOUT', fallback)`.
+   - `release(promise)`.
+   - Handle JNI → pointer as `Long` (~handle) in a thread-safe holder (id = JNI GlobalRef lifecycle) — reuse the `DeviceInfo`/`pdfparser` JNI convention in repo, not Xberg (Xberg is a managed SDK, this is raw JNI).
+3. **`NeedlePackage.kt`** — clone of `XbergPackage.kt` shape.
+4. Register in `MainApplication.kt` (addLine to the existing `packages` list) — do **not** hand-edit the `XbergPackage` entry.
 
-```ts
-const NEEDLE_CQ4_URL =
-  "https://huggingface.co/Cactus-Compute/needle/resolve/main/needle-cq4.zip";
+**Verify**: `yarn typecheck` unaffected; `./gradlew assembleDebug` builds and links (embed the `.so` check).
 
-export class NeedleBundleDownloader {
-  async ensureDownloaded(onProgress?: (p: number) => void): Promise<string> {
-    const extractDir = `${RNFS.DocumentDirectoryPath}/models/needle`;
-    if (await RNFS.exists(`${extractDir}/config.txt`)) {
-      return extractDir;
-    }
-
-    const zipPath = `${extractDir}.zip`;
-    await RNFS.downloadFile({ fromUrl: NEEDLE_CQ4_URL, toFile: zipPath }).promise;
-
-    const zipData = await RNFS.readFile(zipPath, "base64");
-    const zip = await JSZip.loadAsync(zipData, { base64: true });
-    // ...write each entry to extractDir...
-
-    await RNFS.unlink(zipPath);
-    return extractDir;
-  }
-}
-```
-
-**Verify**: `yarn typecheck`; on-device download completes and folder contains `config.txt` + weight files.
+> Note: keep the pure-JS fork per original pattern. If CMake linking is painful, the C ABI can ship as a prebuilt `.a`/`.so` copied into `libs`; decide in P0.
 
 ---
 
-## P2 — TS layer `src/utils/Needle`
+## P2 — iOS native module
+
+Mirror `ios/Hacienda/XbergModule.swift` + `.m`.
+
+- `NeedleModule.swift` — `@objc` exposed methods `init(weights:vocab:resolver:rejecter:)`, `route(_:toolsJson:resolver:rejecter:)`, plus `NeedleModule.m` macro registration (mirror `XbergModule.{swift,m}`, `RCT_EXTERN_MODULE`).
+- Link the Rust staticlib (universal arm64-sim + device) and the `needle.h` C header into the Xcode target via the Podfile/Podspec dependency.
+- `Podfile`: add a local pod that pulls the staticlib (or vendor under `ios/hacienda/` and reference in `.xcconfig`).
+- Keep `cactus.xcframework` path untouched.
+
+**Verify**: `cd ios && pod install`; open Xcode build. (iOS can be validated later — Android is the primary target this session.)
+
+---
+
+## P3 — TS layer `src/utils/Needle`
 
 Mirror `src/utils/Xberg/*`:
 
-- **`types.ts`** — `NeedleRouteDecision = { type: 'retrieve', topK } | { type: 'expand', topK, revisedQuery } | { type: 'skip' } | { type: 'fallback' }`; `NeedleToolSelectionResult`; `DOCUMENT_TOOLS`.
-- **`NeedleClient.ts`** — owns the `CactusLM` instance loaded from the local path:
+- **`types.ts`** — `NeedleRouteDecision = { type: 'retrieve', topK } | { type: 'expand', topK, revisedQuery } | { type: 'skip' } | { type: 'fallback' }`; `DOCUMENT_TOOLS` (spec §4.4); `RouteOptions`.
+- **`NeedleClient.ts`** — thin `NativeModules.NeedleModule` wrapper:
   ```ts
-  static async init(bundlePath: string): Promise<void>
-  static async routeRag(query: string, opts?: RouteOptions): Promise<NeedleRouteDecision>
-  static async selectTools(query: string, tools: CactusLMTool[], topK?: number): Promise<CactusLMTool[]>
+  static async init(weightsPath, vocabPath): Promise<void>      // reject → mark unavailable
+  static async route(query, toolsJson): Promise<string>          // '' → fallback
   ```
-  Add the **500 ms timeout** guard + `fallback` on any rejection.
-- **`index.ts`** — exports the above plus helper `buildDocumentTools()`.
+  Add the **250 ms timeout** guard + `''`→`fallback` here.
+- **`index.ts`** — exports `routeRag(userPrompt, opts?: RouteOptions): Promise<NeedleRouterDecision>`:
 
-Keep the router a pure function for unit-testing; the store owns the instance.
+  1. if `!NeedleStore.ready` → `{ type: 'fallback' }`;
+  2. `const json = await NeedleClient.route(prompt, stringify(DOCUMENT_TOOLS))`;
+  3. parse; if not a one-named call → `{ type: 'fallback' }`; else map to action with `topK` clamped to `[1, min(opts.maxTopK, 5)]` (`maxTopK` is passed by the caller = the provider's `this.topN * 2`).
 
-**Verify**: `yarn typecheck` passes.
-
----
-
-## P3 — State + hook
-
-- **`src/store/NeedleStore.ts`** — singleton, `makeAutoObservable`, fields `{ ready, busy, lastRoute, error }`, methods `init()`, `routeRag()`, `selectTools()`. Non-blocking: `init` swallows failures into `ready=false`.
-- **`src/hooks/useNeedle.ts`** — returns `{ ready, busy, routeRag, selectTools }` bound to the store.
-
-The store:
-1. Calls `NeedleBundleDownloader.ensureDownloaded()`.
-2. Creates `new CactusLM({ model: bundlePath })`.
-3. Calls `lm.init()` (no `lm.download()` because the registry path is not used).
-4. Serializes all routing calls via a `busy` flag / queue.
-
-**Verify**: `yarn typecheck` passes.
+- Reuse `XbergClient`'s `NativeModules` import style; keep the router a pure function (no store/service coupling) for unit-testing.
 
 ---
 
-## P4 — Integrate into `getContextTexts()`
+## P4 — State + hook
 
-**File**: `src/utils/AiProviders/baseOpenAILikeProvider/index.ts`, **at top of** `getContextTexts` (before the embed).
+- **`src/store/NeedleStore.ts`** — singleton, `makeAutoObservable`, fields `{ ready, busy, lastRoute, error }`, methods `init()`, `route()`. Non-blocking: `init` swallows failures into `ready=false`.
+- **`src/hooks/useNeedle.ts`** — returns `{ ready, init, route }` bound to the store (pattern of `useXberg`).
+
+---
+
+## P5 — Integrate into `getContextTexts()`
+
+**File**: `src/utils/AiProviders/baseOpenAILikeProvider/index.ts`, **at top of** `getContextTexts` (line ~272, before the embed).
 
 ```ts
 const route = await NeedleRouter.routeRag(userPrompt, {
   maxTopK: this.topN * 2,
 });
-if (route.type === "skip") return [];
+if (route.type === "skip") return []; // no embed, no search
 const topN =
-  route.type === "expand" || route.type === "retrieve"
-    ? route.topK
-    : this.topN;
-// existing path continues with topN
+  route.type === "expand" || route.type === "retrieve" ? route.topK : this.topN; // 'fallback' → unchanged
+await ensureVectorCount(); // existing pre-embed guard
+const queryVector = await embedder.embed(userPrompt, "query", dims);
+const results = await VectorDB.runSemanticSearch(
+  this.workspace.slug,
+  queryVector,
+  topN,
+);
 ```
 
-- Guard upstream so `routeRag` never throws (it returns `fallback`).
-- `skip` path returns early; `expand`/`retrieve` override `topN`; `fallback` reuses `this.topN`.
-
-**Verify**: `yarn typecheck` + new unit tests in `src/utils/Needle/__tests__/routeRag.test.ts`.
+- guard upstream so `routeRag` never throws (it returns `fallback`).
+- `skip` path and `expand` path are both covered below; `fallback` reuses `this.topN`.
 
 ---
 
-## P5 — Tool-ranking integration
+## P6 — Weight bundling & asset fetch
 
-**File**: `src/utils/AiProviders/onDevice/cactus/index.ts`, inside `streamGetChatCompletion()`.
-
-Before the main LLM call, rank the available tools with Needle:
-
-```ts
-let cactusTools = this.toCactusTools(availableTools ?? []);
-if (cactusTools.length > 5 && needleStore.ready) {
-  cactusTools = await needleStore.selectTools(
-    messages[messages.length - 1].content ?? "",
-    cactusTools,
-    5,
-  );
-}
-```
-
-Then pass the ranked subset to the main LLM:
-
-```ts
-const result = await this.cactusLmContext.complete({
-  messages: messages as any,
-  options: {
-    stopSequences: [...stops],
-    maxTokens: this.nPredict,
-    ...apiParams,
-    temperature: this.temperature,
-  },
-  tools: cactusTools.length > 0 ? cactusTools : undefined,
-  onToken: callback,
-});
-```
-
-This replaces the generic `toolRagTopK` engine heuristic with the dedicated Needle ranker.
-
-**Verify**: `yarn typecheck` passes.
+- On first `init` call (guarded by `NeedleStore`), fetch `needle.safetensors` + `vocab.txt` from `Abdalrahman/needle-rs-safetensors` via RNFS download into `DocumentDirectoryPath/needle/` (mirror the existing Cactus `ModelStore`/downloadManager pattern).
+- If `needle.safetensors` already exists → re-init directly (no re-download).
+- `init` must be non-blocking on the JS thread; resolution = just the native `ready` flag (no test inference).
 
 ---
 
-## P6 — Tests & quality
+## P7 — Tests & quality (post code)
 
-### Automated tests
-
-Run the full Needle test subset:
-
-```bash
-yarn test src/utils/Needle \
-          src/store/__tests__/NeedleStore.test.ts \
-          src/services/downloads/__tests__/NeedleBundleDownloader.test.ts \
-          src/utils/AiProviders/baseOpenAILikeProvider/__tests__/needleIntegration.test.ts \
-          src/utils/AiProviders/onDevice/cactus/__tests__/needleToolRanking.test.ts
-```
-
-Expect 30 tests covering:
-
-| File | What it tests |
-| ---- | ------------- |
-| `src/utils/Needle/__tests__/routeRag.test.ts` | `routeRag` mapping, `topK` clamping, confidence gating, malformed responses, and fallback behavior. |
-| `src/store/__tests__/NeedleStore.test.ts` | Store init success/failure, `routeRag` / `selectTools` fallbacks, concurrent-call serialization, and destroy lifecycle. |
-| `src/services/downloads/__tests__/NeedleBundleDownloader.test.ts` | Cache hit, download/extract, nested directories, progress reporting, HTTP failure, and custom bundle URLs. |
-| `src/utils/AiProviders/baseOpenAILikeProvider/__tests__/needleIntegration.test.ts` | `getContextTexts` honors Needle `skip`, `expand`, and `fallback` decisions (uses mocked VectorDB + embedder). |
-| `src/utils/AiProviders/onDevice/cactus/__tests__/needleToolRanking.test.ts` | `streamGetChatCompletion` ranks tool lists > 5 and falls back when Needle is unavailable. |
-
-Also run:
-
-```bash
-yarn typecheck
-yarn eslint src/services/downloads src/utils/Needle src/store/NeedleStore.ts \
-            src/utils/AiProviders/baseOpenAILikeProvider/index.ts \
-            src/utils/AiProviders/onDevice/cactus/index.ts
-```
-
-### Manual / on-device verification
-
-See the P0 checklist below. The `NeedleSpikeView` in DevTools is the manual test harness.
+- Unit: `routeRag` mapping/clamp/fallback cases (`src/utils/Needle/__tests__/routeRag.test.ts`).
+- Integration on device: RAG-answer vs general-knowledge questions only when correctly routed.
+- `yarn typecheck`, `yarn lint`, `yarn test`.
 
 ---
-
-## P0 on-device verification checklist
-
-Use the `NeedleSpikeView` in DevTools (added in `src/screens/Dev/views/NeedleSpikeView`) to verify before enabling `NEEDLE_ROUTER_ENABLED`:
-
-1. Tap **Download & Init Needle**. Confirm the zip downloads, extracts, and `Ready: YES` appears.
-2. Note load time, download size (≈ 16 MB), and peak RAM.
-3. Tap **Test RAG Routing** with a document-style question (e.g. "What does the budget say about travel?"). Confirm a valid `retrieve_documents` / `skip_rag` / `expand_search` tool call is returned.
-4. Tap **Test Tool Selection** with a long tool list. Confirm `selectTools` returns a subset (≤ 5) without crashing.
-5. If `needle-cq4.zip` fails to load, try `needle-pebble-ft-cq4.zip` by changing `NeedleBundleDownloader` defaults.
-6. If both fail, the CQ4 format is incompatible with `cactus-react-native@1.13.1`; escalate to the `needle-rs` v1 path.
-
-**K0 gate:** at least one valid on-device tool call is produced. Do not enable `NEEDLE_ROUTER_ENABLED` until K0 passes.
 
 ## Files (all new unless noted)
 
-| Path                                                                  | Action                               |
-| --------------------------------------------------------------------- | ------------------------------------ |
-| `src/services/downloads/NeedleBundleDownloader.ts`                    | create                               |
-| `src/utils/Needle/{types.ts, NeedleClient.ts, index.ts}`              | create                               |
-| `src/store/NeedleStore.ts`, `src/hooks/useNeedle.ts`                  | create                               |
-| `src/utils/AiProviders/baseOpenAILikeProvider/index.ts`               | edit `getContextTexts`               |
-| `src/utils/AiProviders/onDevice/cactus/index.ts`                      | edit `streamGetChatCompletion`       |
-| `package.json`                                                        | add `jszip`                          |
-
-## Feature gate
-
-Both production integration points (`getContextTexts` and `CactusLmWrapper`) are guarded by `NEEDLE_ROUTER_ENABLED` in `src/store/NeedleStore.ts`, currently `false`. This lets us land all the wiring now without affecting users while P0 on-device verification is pending. To enable after P0 passes, flip the constant to `true`.
+| Path                                                                     | Action                               |
+| ------------------------------------------------------------------------ | ------------------------------------ |
+| `android/.../com/hacienda/needle/{NeedleModule.kt, NeedlePackage.kt}` | create                               |
+| `android/app/build.gradle` (+ prefab or CMake)                           | add `.so` link (edit)                |
+| `ios/Hacienda/{NeedleModule.swift, NeedleModule.m, needle.h}`         | create                               |
+| `ios/Podfile` / Podspec                                                  | add staticlib pod (edit)             |
+| `src/utils/Needle/{types.ts, NeedleClient.ts, index.ts}`                 | create                               |
+| `src/store/NeedleStore.ts`, `src/hooks/useNeedle.ts`                     | create                               |
+| `src/AiProviders/baseOpenAILikeProvider/index.ts`                        | edit `getContextTexts`               |
+| `src/screens/WorkspaceSettings/index.tsx` (maybe)                        | settings toggle for router (skip v1) |
 
 ## Rollback / safety
 
-- The needle gate lives in one function with a guaranteed `fallback` return — reverting = revert that single edit or set `NEEDLE_ROUTER_ENABLED = false`. A broken/missing bundle can never `throw` into `getContextTexts`.
-- Tool-ranking changes are additive; removing them restores prior behavior.
-- **No public API/UI change in v2.1.**
+- The needle gate lives in one function with a guaranteed `fallback` return — reverting = revert that single edit. A broken/missing native module can never `throw` into `getContextTexts` (all paths catch to `fallback`).
+- **No public API/UI change in v1.**
 
 ---
 
-## R — Review findings
+_Reviewer: open point — iOS static lib bundling method (vendored pod vs. `.xcconfig`) is undecided and ships after the Android gate._
 
-Findings from auditing this plan against the spec and the existing Cactus integration:
+---
 
-1. **`CactusLM.complete()` is async and runs on a native thread.** The JS-side timeout cannot cancel it; it only lets `routeRag` return `fallback` while the native call completes. Acceptable **only if we enforce max one in-flight call** — see (3).
-2. **The SDK is not re-entrant.** `CactusLM` throws if a completion/embedding is already in progress. `NeedleStore` must serialize calls.
-3. **Concurrency / serialization:** `routeRag()` and `selectTools()` calls must be serialized behind a JS-side queue (or a `busy` flag). Two overlapping calls corrupt state or throw.
-4. **Model lifecycle:** the Needle `CactusLM` instance must be `destroy()`-ed when the store is torn down to free native memory.
-5. **Clamp scope:** `routeRag` must NOT read `this.topN`; it takes `opts.maxTopK` as an arg. Hard-clamp `topK` to `[1, min(maxTopK, 5)]`.
-6. **Tool description token budget:** keep `DOCUMENT_TOOLS` terse; future additions must not bloat the prompt.
-7. **Silent fail contract:** any `reject`/`throw` path maps to `{ type: 'fallback' }` or the unfiltered tool list — never propagate.
-8. **Bundle format risk:** the spike must confirm `needle-cq4.zip` is compatible with `cactus-react-native@1.13.1`. This is the single biggest open question.
+## R — Review findings (must be addressed before/at each phase)
+
+Findings from auditing this plan against the spec, the vendored-native-module contract, and the `getContextTexts` source:
+
+1. **`needle_run` is synchronous/blocking.** It runs on a NativeModule background thread (ReactPackage `createNativeModules` executor), so it won't stall the JS thread — good. But the JS-side **250 ms timeout cannot cancel** it; it only lets `routeRag` return `fallback` while the native call keeps running to completion. That is acceptable (fire-and-forget) **only if we enforce max one in-flight call** — see (3).
+
+2. **Native engine is not re-entrant / not thread-safe.** Assumed unless proven otherwise in P0; enforce single-caller serialization.
+3. **Concurrency / serialization:** `route()` calls must be serialized behind a native `synchronized`/lock (or a ready-flag gate) + a JS-side in-flight checker. Otherwise two overlapping `getContextTexts` calls corrupt the single `NeedleHandle`. Add this to `NeedleStore` and the Kotlin/Swift modules.
+4. **JNI `Long` handle lifetime:** `needle_load` returns a raw pointer. Storing it as `Long` in a Kotlin field is fine (mirrors `pdfparser` JNI convention) but must be a **global reference** with an explicit `free` on `release()` / React `invalidate()` — a leaked handle is a native-memory leak. Never let JS/GC own the pointer value.
+5. **Clamp scope:** `routeRag` must NOT read `this.topN` (it has no provider reference); it takes `opts.maxTopK` as an arg (fixed above in P3/P5). Never trust the model's `top_k` — hard-clamp `[1, min(maxTopK, 5)]`.
+6. **Encoder token budget (≤1024):** the flat `DOCUMENT_TOOLS` descriptions must stay terse; byte-length-cheat check the JSON in tests so a future tool addition doesn't overflow the encoder silently.
+7. **Silent fail contract:** any `reject`/`throw` path must map to `{ type: 'fallback' }` — never propagate. This is the single most important invariant; `getContextTexts` itself must not be made `async`-risky for this.
+8. **iOS bundling method open** (see reviewer note); Android is the only target this session — iOS work is gated behind the Android exit criteria.
+
+> These findings correspond to real risks, not stylistic edits; P5/P0 confirmed the worst one (blocking + re-entrancy).
