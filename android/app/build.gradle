@@ -215,9 +215,12 @@ dependencies {
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.22.1'
     // ONNX Runtime for Silero VAD
     implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.18.0'
-    // LiteRT for EmbeddingGemma inference
+    // LiteRT for EmbeddingGemma inference. litert-gpu was dropped -- Google's Maven repo never
+    // published a 2.x release of it (maxes out at 1.4.2, while litert itself reached 2.2.0), so
+    // it 404'd on every resolve. Not currently used by EmbeddingGemmaModule.kt (still a
+    // CPU-only placeholder), so nothing regresses; re-add once litert-gpu ships a matching
+    // 2.x version or EmbeddingGemmaModule actually wires up a GPU delegate.
     implementation 'com.google.ai.edge.litert:litert:2.1.6'
-    implementation 'com.google.ai.edge.litert:litert-gpu:2.1.6'
     // Core library desugaring for Java 8+ APIs (MethodHandle, etc.)
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
 }
