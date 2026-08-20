@@ -61,7 +61,7 @@ export function tokenize(
     );
   }
 
-  if (maxLength < 2) {
+  if (!Number.isSafeInteger(maxLength) || maxLength < 2) {
     throw new Error(
       `maxLength must be at least 2 (CLS + SEP tokens), got ${maxLength}`,
     );
