@@ -24,14 +24,12 @@ export const defaultCompletionParams: CompletionParams = {
   version: CURRENT_COMPLETION_SETTINGS_VERSION,
   include_thinking_in_context: true,
 
-  // cactus-react-native 1.13.1 CompletionParams (llama.cpp style)
+  // cactus-react-native 1.13.1 CompletionParams (v2 field names)
   temperature: 0.7,
-  top_k: 40,
-  top_p: 0.95,
-  n_predict: 1024,
-  stop: [""],
-  // forceTools, telemetryEnabled, includeStopSequences, useVad, enableThinking
-  // are not in the native CompletionParams type
+  topK: 40,
+  topP: 0.95,
+  maxTokens: 1024,
+  stopSequences: [""],
 };
 
 // Keys present in version-0/1 (llama.cpp-style) settings that have no equivalent

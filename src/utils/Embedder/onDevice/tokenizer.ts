@@ -23,8 +23,6 @@ export async function initializeTokenizer(): Promise<void> {
     let modelData: string;
 
     if (Platform.OS === "android") {
-      // Android assets live inside the APK and must be read via readFileAssets.
-      // MainBundlePath + exists() works on iOS only.
       modelData = await RNFS.readFileAssets("sentencepiece.model", "base64");
     } else {
       const modelPath = `${RNFS.MainBundlePath}/sentencepiece.model`;
@@ -99,7 +97,6 @@ export function decode(tokens: number[]): string {
   if (!spmProcessor) {
     throw new Error("Tokenizer not initialized");
   }
-  // Filter out special tokens (below MASK_TOKEN = 4)
   const filteredTokens = tokens.filter(
     t => t >= TOKENIZER_CONSTANTS.MASK_TOKEN,
   );
