@@ -18,6 +18,8 @@ import {
   MultilingualEmbeddingModelId,
   DEFAULT_MULTILINGUAL_EMBEDDING_MODEL,
 } from "@/utils/models/defaults";
+import Workspace from "@/database/models/Workspace";
+import { reembedWorkspace } from "@/utils/Embedder/reembedWorkspace";
 import type { IWorkspacePageKey } from "./index";
 
 interface EmbeddingSettingsViewProps {
@@ -108,10 +110,14 @@ export function EmbeddingSettingsView({
       ...config,
       modelVersion: "1.0",
     };
-    await workspace.update(
-      { field: "slug", value: workspace.slug },
+    const updated = await Workspace.update(
+      [{ field: "slug", value: workspace.slug }],
       { embeddingConfig: newConfig },
     );
+    if (!updated) {
+      uiStore.showError("Embedding settings could not be saved");
+      return;
+    }
     setConfig(newConfig);
     uiStore.showSuccess("Embedding settings saved");
   }
@@ -141,9 +147,20 @@ export function EmbeddingSettingsView({
 
   async function handleReembedWorkspace() {
     setShowReembedConfirm(false);
-    uiStore.showError("Re-embedding started... This may take a while.");
-    // TODO: Implement re-embedding logic
-    // This would require a background job to re-embed all documents
+    // Use the current (possibly just-changed) config rather than the
+    // workspace prop's, which may not have caught up to the latest save yet.
+    const { documentsReembedded, documentsFailed, memosReembedded, memosFailed } =
+      await reembedWorkspace({ ...workspace, embeddingConfig: config });
+
+    const total = documentsReembedded + memosReembedded;
+    const failed = documentsFailed + memosFailed;
+    if (failed === 0) {
+      uiStore.showSuccess(`Re-embedded ${total} item${total === 1 ? "" : "s"}`);
+    } else {
+      uiStore.showError(
+        `Re-embedded ${total} item${total === 1 ? "" : "s"}, ${failed} failed`,
+      );
+    }
   }
 
   return (

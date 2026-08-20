@@ -2,6 +2,24 @@ import { useState, useCallback } from "react";
 import AudioMemo, { AudioMemoType } from "@/database/models/AudioMemo";
 import { embedMemoTranscript } from "@/utils/AudioMemos/embedMemoTranscript";
 
+// Module-level (not per-hook-instance) so overlapping transcript edits for
+// the same memo serialize correctly even across different mounted screens
+// (e.g. AudioMemosScreen and MemoPlayerScreen both hold their own
+// useAudioMemos() instance). Without this, two edits in quick succession can
+// run embedMemoTranscript concurrently - since that function itself inserts
+// and deletes real vectors, an older job finishing last can overwrite a
+// newer job's vectors, not just race on the final AudioMemo.update call.
+const embedQueue = new Map<string, Promise<unknown>>();
+
+function enqueueEmbed(uuid: string, task: () => Promise<void>): void {
+  const previous = embedQueue.get(uuid) ?? Promise.resolve();
+  const next = previous.then(task, task);
+  embedQueue.set(uuid, next);
+  next.finally(() => {
+    if (embedQueue.get(uuid) === next) embedQueue.delete(uuid);
+  });
+}
+
 interface UseAudioMemosReturn {
   memos: AudioMemoType[];
   loading: boolean;
@@ -96,8 +114,21 @@ export function useAudioMemos(): UseAudioMemosReturn {
       // changes - covers both auto-transcription and manual edits, since
       // both funnel through this same call. Fire-and-forget: embedding can
       // take a few seconds (model load) and shouldn't block the caller.
+      // Queued per-uuid (see enqueueEmbed) so a second edit before the first
+      // finishes embedding waits its turn instead of racing it.
       if (updates.transcript !== undefined) {
-        embedMemoTranscript(updated).then(async vectorBoxIds => {
+        enqueueEmbed(uuid, async () => {
+          // Re-fetch rather than embedding the `updated` snapshot captured
+          // above: by the time this job's turn comes up, a later edit may
+          // already have changed the transcript (and this memo's
+          // vectorBoxIds) again, and embedMemoTranscript needs the current
+          // vectorBoxIds to know what to replace.
+          const [current] = await AudioMemo.find([
+            { field: "uuid", value: uuid },
+          ]);
+          if (!current) return;
+
+          const vectorBoxIds = await embedMemoTranscript(current);
           // undefined means the embed failed/was skipped - leave the memo's
           // existing vectorBoxIds untouched rather than persisting an empty
           // array over what could still be a valid, working embedding.

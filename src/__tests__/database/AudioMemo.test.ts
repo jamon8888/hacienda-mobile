@@ -337,6 +337,56 @@ describe("AudioMemo.delete", () => {
   });
 });
 
+describe("AudioMemo.deleteAll", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("marks every memo deleted and unlinks every audio file", async () => {
+    const memoA = { audioUri: "file:///a.m4a", prepareMarkAsDeleted: jest.fn() };
+    const memoB = { audioUri: "file:///b.m4a", prepareMarkAsDeleted: jest.fn() };
+    const mockQuery = jest
+      .fn()
+      .mockReturnValue({ fetch: jest.fn().mockResolvedValue([memoA, memoB]) });
+    const mockGet = jest.fn().mockReturnValue({ query: mockQuery });
+    const mockWrite = jest.fn().mockImplementation(fn => fn());
+    const mockBatch = jest.fn().mockResolvedValue(undefined);
+
+    require("@/database").database.write = mockWrite;
+    require("@/database").database.get = mockGet;
+    require("@/database").database.batch = mockBatch;
+
+    const result = await AudioMemo.deleteAll();
+
+    expect(result).toBe(true);
+    expect(mockBatch).toHaveBeenCalledWith([
+      memoA.prepareMarkAsDeleted.mock.results[0]?.value,
+      memoB.prepareMarkAsDeleted.mock.results[0]?.value,
+    ]);
+    expect(memoA.prepareMarkAsDeleted).toHaveBeenCalled();
+    expect(memoB.prepareMarkAsDeleted).toHaveBeenCalled();
+    expect(RNFS.unlink).toHaveBeenCalledWith("file:///a.m4a");
+    expect(RNFS.unlink).toHaveBeenCalledWith("file:///b.m4a");
+    // Vector cleanup is intentionally left to the caller (see comment in
+    // AudioMemo.ts) - deleteAll never deletes vectors by id itself.
+    expect(VectorDB.deleteVectorsByIds).not.toHaveBeenCalled();
+  });
+
+  it("returns true and does nothing when there are no memos", async () => {
+    const mockQuery = jest
+      .fn()
+      .mockReturnValue({ fetch: jest.fn().mockResolvedValue([]) });
+    const mockGet = jest.fn().mockReturnValue({ query: mockQuery });
+
+    require("@/database").database.get = mockGet;
+
+    const result = await AudioMemo.deleteAll();
+
+    expect(result).toBe(true);
+    expect(RNFS.unlink).not.toHaveBeenCalled();
+  });
+});
+
 describe("AudioMemo.update", () => {
   beforeEach(() => {
     jest.clearAllMocks();

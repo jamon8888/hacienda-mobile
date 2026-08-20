@@ -628,15 +628,32 @@ class ModelStore {
   };
 
   private initContextPromise: Promise<CactusLM> | null = null;
+  private initContextModelId: string | null = null;
 
   // Guards against concurrent callers (e.g. a double-tap on "load model", or
   // a manual load racing an AppState resume) each releasing/constructing
   // their own native context - only the isContextLoading flag existed
   // before, which is UI-facing state, not something that blocked re-entry.
-  initContext = async (model: Model) => {
-    if (this.initContextPromise) return this.initContextPromise;
+  // Keyed by model.id: a second call for the SAME model reuses the in-flight
+  // promise, but a call for a DIFFERENT model while one is still loading
+  // must not be handed that promise (it would resolve to the wrong model) -
+  // it waits for the current load to settle, then starts its own.
+  initContext = async (model: Model): Promise<CactusLM> => {
+    if (this.initContextPromise) {
+      if (this.initContextModelId === model.id) return this.initContextPromise;
+      try {
+        await this.initContextPromise;
+      } catch {
+        // Ignore - starting a fresh init for the newly-requested model
+        // regardless of how the previous one ended.
+      }
+      return this.initContext(model);
+    }
+
+    this.initContextModelId = model.id;
     this.initContextPromise = this.doInitContext(model).finally(() => {
       this.initContextPromise = null;
+      this.initContextModelId = null;
     });
     return this.initContextPromise;
   };

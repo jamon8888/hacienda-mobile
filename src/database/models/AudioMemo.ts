@@ -5,6 +5,10 @@ import { generateUUID } from "@/utils/constants";
 import * as RNFS from "@dr.pogodin/react-native-fs";
 import VectorDB from "@/utils/VectorDB";
 import sanitizeVectorBoxIds from "./shared/sanitizeVectorBoxIds";
+import {
+  invalidateWorkspaceCache,
+  queryCache,
+} from "@/utils/AiProviders/semanticSearchCache";
 
 function warnIfUnscoped(where: { field: string; value: string | null }[]) {
   if (!__DEV__) return;
@@ -163,6 +167,7 @@ export default class AudioMemo extends Model {
       warnIfUnscoped(where);
       let audioUris: string[] = [];
       let vectorBoxIds: number[] = [];
+      let workspaceSlugs = new Set<string>();
       let found = false;
       await database.write(async () => {
         const memos = (await database
@@ -175,6 +180,7 @@ export default class AudioMemo extends Model {
         for (const memo of memos) {
           if (memo.audioUri) audioUris.push(memo.audioUri);
           vectorBoxIds = [...vectorBoxIds, ...(memo.vectorBoxIds ?? [])];
+          if (memo.workspaceSlug) workspaceSlugs.add(memo.workspaceSlug);
         }
         await database.batch(memos.map(memo => memo.prepareMarkAsDeleted()));
       });
@@ -194,6 +200,7 @@ export default class AudioMemo extends Model {
           console.warn("Failed to delete memo vectors:", err);
         }
       }
+      for (const slug of workspaceSlugs) invalidateWorkspaceCache(slug);
       return true;
     } catch (error) {
       console.error("Error deleting audio memos", error);
@@ -223,6 +230,7 @@ export default class AudioMemo extends Model {
     // Vector cleanup is intentionally left to the caller (e.g. a full app
     // reset already calls VectorDB.reset() once for everything, which is
     // cheaper and avoids racing a second per-id deletion pass here).
+    queryCache.clear();
     return true;
   }
 }

@@ -229,7 +229,11 @@ describe("useAudioMemos", () => {
       const updatedMemo = { ...existingMemo, transcript: "new" };
       const withVectors = { ...updatedMemo, vectorBoxIds: [42, 43] };
 
-      (AudioMemo.find as jest.Mock).mockResolvedValue([existingMemo]);
+      // First find() call is fetchMemos(); second is the queued embed job's
+      // re-fetch of current state (see enqueueEmbed in useAudioMemos.ts).
+      (AudioMemo.find as jest.Mock)
+        .mockResolvedValueOnce([existingMemo])
+        .mockResolvedValueOnce([updatedMemo]);
       (AudioMemo.update as jest.Mock)
         .mockResolvedValueOnce(updatedMemo)
         .mockResolvedValueOnce(withVectors);
@@ -281,6 +285,49 @@ describe("useAudioMemos", () => {
 
       expect(embedMemoTranscript).not.toHaveBeenCalled();
       expect(AudioMemo.update).toHaveBeenCalledTimes(1);
+    });
+
+    it("serializes overlapping transcript edits instead of racing their embed jobs", async () => {
+      const existingMemo = {
+        uuid: "to-update",
+        audioUri: "file:///old.m4a",
+        durationMs: 1000,
+        waveformPeaks: [],
+        vectorBoxIds: [],
+        workspaceSlug: "ws-1",
+        transcript: "old",
+        createdAt: 1000,
+        updatedAt: 1000,
+      };
+
+      (AudioMemo.find as jest.Mock).mockResolvedValue([existingMemo]);
+      (AudioMemo.update as jest.Mock).mockResolvedValue(existingMemo);
+      (embedMemoTranscript as jest.Mock).mockResolvedValue([1]);
+
+      const { result } = renderHook(() => useAudioMemos());
+      await act(async () => {
+        await result.current.fetchMemos();
+      });
+
+      await act(async () => {
+        await result.current.updateMemo("to-update", { transcript: "first" });
+        await result.current.updateMemo("to-update", { transcript: "second" });
+        // Let the per-uuid embed queue drain (see enqueueEmbed).
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(embedMemoTranscript).toHaveBeenCalledTimes(2);
+      const embedCallOrder = (embedMemoTranscript as jest.Mock).mock
+        .invocationCallOrder;
+      const updateCallOrder = (AudioMemo.update as jest.Mock).mock
+        .invocationCallOrder;
+      // 4 AudioMemo.update calls total: 2 direct transcript writes (indices
+      // 0-1), then each job's vectorBoxIds write (indices 2-3). The second
+      // embed job must not start until the first job's entire pipeline -
+      // including its vectorBoxIds write at index 2 - has completed.
+      expect(embedCallOrder[1]).toBeGreaterThan(updateCallOrder[2]);
     });
   });
 

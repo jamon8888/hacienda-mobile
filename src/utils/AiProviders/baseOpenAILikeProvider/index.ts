@@ -444,19 +444,18 @@ export default abstract class BaseOpenAILikeProvider {
 
   /**
    * How many tokens of RAG-injected context to allow. Derived from the
-   * active workspace's model context length where available (roughly half
-   * of it, leaving room for chat history/system prompt/response), otherwise
-   * falls back to DEFAULT_CONTEXT_TOKEN_BUDGET - which also acts as a floor
-   * so a very small context window still gets a usable amount of context.
+   * active workspace's model context length where available - roughly half
+   * of it, leaving room for chat history/system prompt/response, and always
+   * below the window itself. DEFAULT_CONTEXT_TOKEN_BUDGET is only used as a
+   * fallback when no context length is known at all, never as a floor on
+   * top of a real (possibly small) context length - a small model's budget
+   * must never exceed what its context window can actually hold.
    */
   private get contextTokenBudget(): number {
     const contextLength = this.workspace?.contextLength;
     if (!contextLength || contextLength <= 0)
       return this.DEFAULT_CONTEXT_TOKEN_BUDGET;
-    return Math.max(
-      this.DEFAULT_CONTEXT_TOKEN_BUDGET,
-      Math.floor(contextLength * 0.5),
-    );
+    return Math.floor(contextLength * 0.5);
   }
 
   /**

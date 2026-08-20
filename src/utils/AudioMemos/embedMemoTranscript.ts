@@ -110,7 +110,30 @@ export async function embedMemoTranscript(
     const { ids } = await VectorDB.bulkInsert(memo.workspaceSlug, vectors);
 
     if (memo.vectorBoxIds.length > 0) {
-      await VectorDB.deleteVectorsByIds(memo.vectorBoxIds);
+      try {
+        await VectorDB.deleteVectorsByIds(memo.vectorBoxIds);
+      } catch (err) {
+        // The new vectors are already in and searchable but we can't
+        // confirm the old ones are gone - roll back the insert rather than
+        // leaving both live with no vectorBoxIds anywhere that could clean
+        // up `ids` later. The memo keeps pointing at its (still-valid) old
+        // vectorBoxIds, since we return undefined below.
+        console.warn(
+          "Failed to delete old memo vectors, rolling back new insert:",
+          memo.uuid,
+          err,
+        );
+        try {
+          await VectorDB.deleteVectorsByIds(ids);
+        } catch (rollbackErr) {
+          console.warn(
+            "Failed to roll back newly-inserted memo vectors:",
+            memo.uuid,
+            rollbackErr,
+          );
+        }
+        return undefined;
+      }
     }
 
     invalidateWorkspaceCache(memo.workspaceSlug);

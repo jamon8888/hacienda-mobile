@@ -1,4 +1,6 @@
 import Workspace from "@/database/models/Workspace";
+import AudioMemo from "@/database/models/AudioMemo";
+import Document from "@/database/models/Document";
 import { generateUUID } from "@/utils/constants";
 
 jest.mock("@/database", () => ({
@@ -14,13 +16,24 @@ jest.mock("@/utils/constants", () => ({
 
 jest.mock("@/database/models/WorkspaceThread", () => ({
   __esModule: true,
-  default: { create: jest.fn().mockResolvedValue({ slug: "thread-slug" }) },
+  default: {
+    create: jest.fn().mockResolvedValue({ slug: "thread-slug" }),
+    get: jest.fn().mockResolvedValue([]),
+    delete: jest.fn().mockResolvedValue(true),
+  },
 }));
 
-jest.mock("@/database/models/Document", () => ({ __esModule: true, default: {} }));
+jest.mock("@/database/models/Document", () => ({
+  __esModule: true,
+  default: { delete: jest.fn().mockResolvedValue(true) },
+}));
+jest.mock("@/database/models/AudioMemo", () => ({
+  __esModule: true,
+  default: { delete: jest.fn().mockResolvedValue(true) },
+}));
 jest.mock("@/database/models/WorkspaceChat", () => ({
   __esModule: true,
-  default: {},
+  default: { delete: jest.fn().mockResolvedValue(true) },
 }));
 jest.mock("@/store/UIStore", () => ({
   __esModule: true,
@@ -179,5 +192,60 @@ describe("Workspace.update", () => {
 
     expect(result).toBeNull();
     expect(existingWorkspace.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("Workspace.delete", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (require("@/database/models/WorkspaceThread").default.get as jest.Mock)
+      .mockResolvedValue([]);
+  });
+
+  it("cleans up audio memos (with vectors) for each deleted workspace", async () => {
+    const workspaceA: any = { slug: "workspace-a", prepareMarkAsDeleted: jest.fn() };
+    const workspaceB: any = { slug: "workspace-b", prepareMarkAsDeleted: jest.fn() };
+
+    const mockQuery = jest
+      .fn()
+      .mockReturnValue({ fetch: jest.fn().mockResolvedValue([workspaceA, workspaceB]) });
+    const mockGet = jest.fn().mockReturnValue({ query: mockQuery });
+    const mockWrite = jest.fn().mockImplementation(fn => fn());
+    const mockBatch = jest.fn().mockResolvedValue(undefined);
+
+    require("@/database").database.write = mockWrite;
+    require("@/database").database.get = mockGet;
+    require("@/database").database.batch = mockBatch;
+
+    const result = await Workspace.delete([
+      { field: "slug", value: "workspace-a" },
+    ]);
+
+    expect(result).toBe(true);
+    expect(AudioMemo.delete).toHaveBeenCalledWith(
+      [{ field: "workspace_slug", value: "workspace-a" }],
+      true,
+    );
+    expect(AudioMemo.delete).toHaveBeenCalledWith(
+      [{ field: "workspace_slug", value: "workspace-b" }],
+      true,
+    );
+    expect(AudioMemo.delete).toHaveBeenCalledTimes(2);
+  });
+
+  it("reports failure when the underlying deletion throws", async () => {
+    const mockQuery = jest
+      .fn()
+      .mockReturnValue({ fetch: jest.fn().mockResolvedValue([]) });
+    const mockGet = jest.fn().mockReturnValue({ query: mockQuery });
+
+    require("@/database").database.get = mockGet;
+
+    const result = await Workspace.delete([
+      { field: "slug", value: "nonexistent" },
+    ]);
+
+    expect(result).toBe(false);
+    expect(AudioMemo.delete).not.toHaveBeenCalled();
   });
 });

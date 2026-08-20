@@ -59,14 +59,13 @@ export function getEmbeddingProvider(
 }
 
 export function setEmbeddingEngine(engine: EmbeddingEngine): EmbeddingProvider {
-  // Explicit user-driven switch (e.g. changing a workspace's embedding
-  // settings) - always tear down and rebuild fresh, rather than reusing
-  // whatever happens to be cached for this engine.
-  providerCache.get(engine)?.cleanup();
-  const provider = createEmbeddingProvider(engine);
-  cacheProvider(engine, provider);
-  lastUsedEngine = engine;
-  return provider;
+  // Same idempotent lookup as getEmbeddingProvider(engine) - this used to
+  // unconditionally tear down and rebuild a fresh provider every call, which
+  // sounds right for "the user explicitly changed engines" but its only
+  // real call site (useAttachments) invokes it unconditionally on every
+  // render, not on a genuine change event. That defeated the provider cache
+  // entirely and could tear down/interrupt an embed that was still running.
+  return getEmbeddingProvider(engine);
 }
 
 export function getCurrentEngine(): EmbeddingEngine {

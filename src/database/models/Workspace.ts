@@ -508,7 +508,7 @@ export default class Workspace extends Model {
             workspace.slug = slugify(workspace.name).toLowerCase();
           if (!workspace.systemPrompt)
             workspace.systemPrompt = Workspace.defaultSystemPrompt;
-          if (!workspace.temperature)
+          if (workspace.temperature == null)
             workspace.temperature = Workspace.defaultTemperature;
           if (!workspace.contextLength)
             workspace.contextLength = Workspace.defaultContextLength;
@@ -516,7 +516,7 @@ export default class Workspace extends Model {
             workspace.isRemote = data.isRemote ?? false;
           if (!workspace.remoteConfig)
             workspace.remoteConfig = data.remoteConfig ?? null;
-          workspace.createdAt = Date.now();
+          if (workspace.createdAt == null) workspace.createdAt = Date.now();
         });
     });
     newWorkspace = this.toWorkspaceObject(newWorkspace);

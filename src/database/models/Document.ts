@@ -4,6 +4,7 @@ import { Q, Model } from "@nozbe/watermelondb";
 import { generateUUID } from "@/utils/constants";
 import VectorDB from "@/utils/VectorDB";
 import sanitizeVectorBoxIds from "./shared/sanitizeVectorBoxIds";
+import { invalidateWorkspaceCache } from "@/utils/AiProviders/semanticSearchCache";
 
 export type DocumentType = {
   name: string;
@@ -112,6 +113,33 @@ export default class Document extends Model {
     return newDocument;
   }
 
+  static async update(
+    uuid: string,
+    updates: Partial<Pick<DocumentType, "vectorBoxIds" | "contentHash">>,
+  ): Promise<DocumentType | null> {
+    try {
+      return await database.write(async () => {
+        const documents = await database
+          .get(Document.table)
+          .query(Q.where("uuid", uuid))
+          .fetch();
+        if (documents.length === 0) return null;
+
+        const document = documents[0];
+        await document.update((doc: any) => {
+          if (updates.vectorBoxIds !== undefined)
+            doc.vectorBoxIds = updates.vectorBoxIds;
+          if (updates.contentHash !== undefined)
+            doc.contentHash = updates.contentHash;
+        });
+        return this.toDocumentObject(document);
+      });
+    } catch (error) {
+      console.error("Error updating document:", error);
+      return null;
+    }
+  }
+
   static async deleteByUuids(
     uuids: string[],
     withVectors: boolean = false,
@@ -120,6 +148,7 @@ export default class Document extends Model {
       if (!uuids.length) return true;
 
       let vectorBoxIds: number[] = [];
+      let workspaceSlugs = new Set<string>();
       await database.write(async () => {
         const documents = await database
           .get(Document.table)
@@ -129,10 +158,9 @@ export default class Document extends Model {
         if (documents.length === 0) return;
         this.log(`deleting ${documents.length} documents by uuids`);
         for (const document of documents) {
-          vectorBoxIds = [
-            ...vectorBoxIds,
-            ...((document as Document).vectorBoxIds || []),
-          ];
+          const doc = document as Document;
+          vectorBoxIds = [...vectorBoxIds, ...(doc.vectorBoxIds || [])];
+          if (doc.workspaceSlug) workspaceSlugs.add(doc.workspaceSlug);
           await document.destroyPermanently();
         }
       });
@@ -143,6 +171,7 @@ export default class Document extends Model {
         );
         await VectorDB.deleteVectorsByIds(vectorBoxIds);
       }
+      for (const slug of workspaceSlugs) invalidateWorkspaceCache(slug);
 
       this.log("documents successfully deleted");
       return true;
@@ -160,6 +189,7 @@ export default class Document extends Model {
       if (!where.length) return true;
 
       let vectorBoxIds: number[] = [];
+      let workspaceSlugs = new Set<string>();
       await database.write(async () => {
         const documents = await database
           .get(Document.table)
@@ -169,10 +199,9 @@ export default class Document extends Model {
         if (documents.length === 0) return;
         this.log(`deleting ${documents.length} documents`, where);
         for (const document of documents) {
-          vectorBoxIds = [
-            ...vectorBoxIds,
-            ...((document as Document).vectorBoxIds || []),
-          ];
+          const doc = document as Document;
+          vectorBoxIds = [...vectorBoxIds, ...(doc.vectorBoxIds || [])];
+          if (doc.workspaceSlug) workspaceSlugs.add(doc.workspaceSlug);
           await document.destroyPermanently();
         }
       });
@@ -183,6 +212,7 @@ export default class Document extends Model {
         );
         await VectorDB.deleteVectorsByIds(vectorBoxIds);
       }
+      for (const slug of workspaceSlugs) invalidateWorkspaceCache(slug);
 
       this.log("documents successfully deleted");
       return true;
