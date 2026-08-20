@@ -21,7 +21,6 @@ const md3BaseColors: Partial<MD3BaseColors> = {
 };
 
 const AnythingLLMColors = (isDark: boolean = false) => {
-  // TODO: add light theme colors
   const darkThemeColors = {
     text: {
       primary: "#FFFFFF",
@@ -36,7 +35,21 @@ const AnythingLLMColors = (isDark: boolean = false) => {
     },
   };
 
-  return darkThemeColors;
+  const lightThemeColors = {
+    text: {
+      primary: "#111111",
+      secondary: "#4B4B4B",
+    },
+    background: {
+      primary: "#FFFFFF",
+      secondary: "#F5F5F5",
+      ctaBlue: "#1E4DF6",
+      ctaBlueProgressBar: "#3E6BFF",
+      ctaLightBlue: "#0EA5E9",
+    },
+  };
+
+  return isDark ? darkThemeColors : lightThemeColors;
 };
 
 type ApplicationColors = MD3BaseColors & { anythingllm: AnythingLLMColorways };
