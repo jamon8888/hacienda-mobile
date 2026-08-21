@@ -1,3 +1,4 @@
+import { act, renderHook } from "@testing-library/react-native";
 import { pcmBase64ToInt16Samples } from "./audioEncoding";
 
 // cactus-react-native ships classes, not the { lm, error }-returning static
@@ -74,7 +75,10 @@ jest.mock("./VoiceAudioStream", () => ({
 }));
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { VoicePipelineProvider } = require("./VoicePipelineProvider");
+const {
+  VoicePipelineProvider,
+  useVoicePipeline,
+} = require("./VoicePipelineProvider");
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -168,6 +172,60 @@ describe("speech segment pipeline", () => {
 
     expect(mockLlmInstance.complete).toHaveBeenCalled();
     expect(mockSpeakText).not.toHaveBeenCalled();
+  });
+});
+
+describe("download progress", () => {
+  // The screen shows nothing at all while a multi-gigabyte model downloads unless these events
+  // reach it, so both halves of the path are covered: the provider emitting, and the hook
+  // re-exposing. The hook subscribed to every other listener but this one, which is why a ~5GB
+  // first-run download rendered as a frozen screen.
+  it("emits per-model progress and holds 'downloading' state across each fetch", async () => {
+    const events: unknown[] = [];
+    const states: unknown[] = [];
+    mockSttInstance.download.mockImplementationOnce(
+      async ({ onProgress }: { onProgress?: (p: number) => void }) => {
+        states.push(provider.getState());
+        onProgress?.(0.5);
+      },
+    );
+    mockLlmInstance.download.mockImplementationOnce(
+      async ({ onProgress }: { onProgress?: (p: number) => void }) => {
+        states.push(provider.getState());
+        onProgress?.(0.25);
+      },
+    );
+    const provider = new VoicePipelineProvider();
+    provider.onDownloadProgress((info: unknown) => events.push(info));
+
+    await provider.initialize();
+
+    expect(states).toEqual(["downloading", "downloading"]);
+    expect(events).toEqual([
+      { model: "asr", progress: 0.5 },
+      { model: "llm", progress: 0.25 },
+    ]);
+  });
+
+  it("re-exposes the latest progress event through useVoicePipeline", async () => {
+    mockSttInstance.download.mockImplementationOnce(
+      async ({ onProgress }: { onProgress?: (p: number) => void }) =>
+        onProgress?.(1),
+    );
+    mockLlmInstance.download.mockImplementationOnce(
+      async ({ onProgress }: { onProgress?: (p: number) => void }) =>
+        onProgress?.(0.42),
+    );
+
+    const { result } = renderHook(() => useVoicePipeline());
+    await act(async () => {
+      await result.current.initialize();
+    });
+
+    expect(result.current.downloadProgress).toEqual({
+      model: "llm",
+      progress: 0.42,
+    });
   });
 });
 

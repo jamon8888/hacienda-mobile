@@ -40,7 +40,13 @@ export interface VoiceResponse {
   };
 }
 
-type PipelineState =
+/** Fractional (0..1) download progress for one of the two models the pipeline loads. */
+export type DownloadProgress = {
+  model: "asr" | "llm";
+  progress: number;
+};
+
+export type PipelineState =
   | "idle"
   | "downloading"
   | "initializing"
@@ -57,10 +63,7 @@ export class VoicePipelineProvider {
   private audioStream: VoiceAudioStream | null = null;
   private state: PipelineState = "idle";
   private stateListeners: ((state: PipelineState) => void)[] = [];
-  private downloadProgressListeners: ((info: {
-    model: "asr" | "llm";
-    progress: number;
-  }) => void)[] = [];
+  private downloadProgressListeners: ((info: DownloadProgress) => void)[] = [];
   private responseListeners: ((response: VoiceResponse) => void)[] = [];
   private transcriptListeners: ((text: string, isFinal: boolean) => void)[] =
     [];
@@ -356,9 +359,7 @@ export class VoicePipelineProvider {
     };
   }
 
-  onDownloadProgress(
-    listener: (info: { model: "asr" | "llm"; progress: number }) => void,
-  ): () => void {
+  onDownloadProgress(listener: (info: DownloadProgress) => void): () => void {
     this.downloadProgressListeners.push(listener);
     return () => {
       this.downloadProgressListeners = this.downloadProgressListeners.filter(
@@ -413,7 +414,10 @@ export class VoicePipelineProvider {
     this.stateListeners.forEach(l => l(state));
   }
 
-  private notifyDownloadProgress(model: "asr" | "llm", progress: number) {
+  private notifyDownloadProgress(
+    model: DownloadProgress["model"],
+    progress: number,
+  ) {
     this.downloadProgressListeners.forEach(l => l({ model, progress }));
   }
 
@@ -462,6 +466,8 @@ export function useVoicePipeline(config: VoicePipelineConfig = {}) {
   const [error, setError] = useState<Error | null>(null);
   const [volume, setVolume] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
+  const [downloadProgress, setDownloadProgress] =
+    useState<DownloadProgress | null>(null);
 
   useEffect(() => {
     const unsubState = provider.onStateChange(setState);
@@ -472,6 +478,8 @@ export function useVoicePipeline(config: VoicePipelineConfig = {}) {
     const unsubError = provider.onError(setError);
     const unsubVolume = provider.onVolumeChange(setVolume);
     const unsubCapturing = provider.onCapturingChange(setIsRecording);
+    const unsubDownloadProgress =
+      provider.onDownloadProgress(setDownloadProgress);
 
     return () => {
       unsubState();
@@ -480,6 +488,7 @@ export function useVoicePipeline(config: VoicePipelineConfig = {}) {
       unsubError();
       unsubVolume();
       unsubCapturing();
+      unsubDownloadProgress();
       provider.cleanup().catch(console.error);
     };
   }, []);
@@ -508,6 +517,7 @@ export function useVoicePipeline(config: VoicePipelineConfig = {}) {
     error,
     volume,
     isRecording,
+    downloadProgress,
     initialize,
     startListening,
     stopListening,

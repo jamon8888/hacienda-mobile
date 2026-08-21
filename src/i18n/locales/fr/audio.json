@@ -57,6 +57,7 @@
     "title": "Assistant vocal",
     "states": {
       "tapToStart": "Appuyez pour commencer",
+      "downloadingModels": "Téléchargement des modèles...",
       "loadingModels": "Chargement des modèles...",
       "listening": "Écoute...",
       "transcribing": "Transcription...",
@@ -68,6 +69,12 @@
     "sections": {
       "response": "Réponse",
       "thinking": "Réflexion"
+    },
+    "download": {
+      "preparing": "Préparation du téléchargement...",
+      "asr": "Téléchargement du modèle de reconnaissance vocale",
+      "llm": "Téléchargement du modèle de langage",
+      "hint": "Premier lancement uniquement. Gardez l'application ouverte — le téléchargement est volumineux."
     },
     "confidence": "Confiance :",
     "holdToSpeak": "Maintenez pour parler · Se libère au silence",

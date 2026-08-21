@@ -12,6 +12,7 @@ import {
 import SafeView from "@/components/SafeView";
 import { Microphone, X, SpeakerHigh, Sparkle } from "phosphor-react-native";
 import {
+  PipelineState,
   useVoicePipeline,
   VoicePipelineConfig,
 } from "@/utils/AiProviders/onDevice/voice";
@@ -85,6 +86,35 @@ const COLORS = {
   thinking: "#8B5CF6",
 };
 
+/**
+ * Keyed by PipelineState rather than matched in a switch with a `default` arm: the switch silently
+ * routed "downloading" to the "unknown" label, so the screen read "Unknown" for the entire
+ * multi-gigabyte first-run model fetch. A Record over the union makes any state added later a
+ * compile error here instead of a mystery string on screen.
+ */
+const STATE_LABEL_KEYS: Record<PipelineState, string> = {
+  idle: "voiceChat.states.tapToStart",
+  downloading: "voiceChat.states.downloadingModels",
+  initializing: "voiceChat.states.loadingModels",
+  listening: "voiceChat.states.listening",
+  transcribing: "voiceChat.states.transcribing",
+  thinking: "voiceChat.states.thinking",
+  responding: "voiceChat.states.responding",
+  error: "voiceChat.states.error",
+};
+
+/** Same exhaustiveness rationale as STATE_LABEL_KEYS. */
+const STATE_COLORS: Record<PipelineState, string> = {
+  idle: COLORS.textSecondary,
+  downloading: COLORS.accent,
+  initializing: COLORS.textSecondary,
+  listening: COLORS.recording,
+  transcribing: COLORS.warning,
+  thinking: COLORS.thinking,
+  responding: COLORS.success,
+  error: COLORS.error,
+};
+
 const DEFAULT_VOICE_PIPELINE_CONFIG: VoicePipelineConfig = {
   asrModelId: DEFAULT_CACTUS_ASR_MODEL,
   llmModelId: DEFAULT_CACTUS_LLM_MODEL,
@@ -134,6 +164,7 @@ function VoiceChatScreenInner({ config }: { config: VoicePipelineConfig }) {
     error,
     volume,
     isRecording,
+    downloadProgress,
     initialize,
     startListening,
     stopListening,
@@ -243,42 +274,13 @@ function VoiceChatScreenInner({ config }: { config: VoicePipelineConfig }) {
     }
   };
 
-  const getStateColor = () => {
-    switch (state) {
-      case "listening":
-        return COLORS.recording;
-      case "transcribing":
-        return COLORS.warning;
-      case "thinking":
-        return COLORS.thinking;
-      case "responding":
-        return COLORS.success;
-      case "error":
-        return COLORS.error;
-      default:
-        return COLORS.textSecondary;
-    }
-  };
+  // `state` is typed, but it arrives from a provider that outlives any one render; an unmapped
+  // value at runtime falls back rather than rendering `undefined`.
+  const getStateColor = () => STATE_COLORS[state] ?? COLORS.textSecondary;
 
   const getStateLabel = () => {
-    switch (state) {
-      case "idle":
-        return t("voiceChat.states.tapToStart");
-      case "initializing":
-        return t("voiceChat.states.loadingModels");
-      case "listening":
-        return t("voiceChat.states.listening");
-      case "transcribing":
-        return t("voiceChat.states.transcribing");
-      case "thinking":
-        return t("voiceChat.states.thinking");
-      case "responding":
-        return t("voiceChat.states.responding");
-      case "error":
-        return t("voiceChat.states.error");
-      default:
-        return t("voiceChat.states.unknown");
-    }
+    const key = STATE_LABEL_KEYS[state];
+    return key ? t(key) : t("voiceChat.states.unknown");
   };
 
   const renderWaveform = () => {
@@ -296,6 +298,34 @@ function VoiceChatScreenInner({ config }: { config: VoicePipelineConfig }) {
             ]}
           />
         ))}
+      </View>
+    );
+  };
+
+  /**
+   * The models are ~5GB on first run. Without this the screen is indistinguishable from a hang for
+   * several minutes, which on metered data is the difference between "broken" and "stop now".
+   */
+  const renderDownloadProgress = () => {
+    if (state !== "downloading") return null;
+
+    const pct = downloadProgress
+      ? Math.round(Math.min(1, Math.max(0, downloadProgress.progress)) * 100)
+      : 0;
+    const label = downloadProgress
+      ? t(`voiceChat.download.${downloadProgress.model}`)
+      : t("voiceChat.download.preparing");
+
+    return (
+      <View style={styles.downloadContainer}>
+        <View style={styles.downloadHeader}>
+          <Text style={styles.downloadLabel}>{label}</Text>
+          <Text style={styles.downloadPercent}>{pct}%</Text>
+        </View>
+        <View style={styles.downloadBar}>
+          <View style={[styles.downloadFill, { width: `${pct}%` }]} />
+        </View>
+        <Text style={styles.downloadHint}>{t("voiceChat.download.hint")}</Text>
       </View>
     );
   };
@@ -325,7 +355,9 @@ function VoiceChatScreenInner({ config }: { config: VoicePipelineConfig }) {
     return (
       <View style={styles.responseContainer}>
         <View style={styles.responseHeader}>
-          <Text style={styles.responseLabel}>{t("voiceChat.sections.response")}</Text>
+          <Text style={styles.responseLabel}>
+            {t("voiceChat.sections.response")}
+          </Text>
           <View style={styles.responseMeta}>
             <Text style={styles.metaItem}>
               {lastResponse.metrics.asrLatencyMs}ms ASR
@@ -343,7 +375,9 @@ function VoiceChatScreenInner({ config }: { config: VoicePipelineConfig }) {
         <Text style={styles.responseText}>{lastResponse.text}</Text>
         {lastResponse.thinking && (
           <View style={styles.thinkingBlock}>
-            <Text style={styles.thinkingLabel}>{t("voiceChat.sections.thinking")}</Text>
+            <Text style={styles.thinkingLabel}>
+              {t("voiceChat.sections.thinking")}
+            </Text>
             <Text style={styles.thinkingText}>{lastResponse.thinking}</Text>
           </View>
         )}
@@ -355,7 +389,8 @@ function VoiceChatScreenInner({ config }: { config: VoicePipelineConfig }) {
             ]}
           />
           <Text style={styles.confidenceLabel}>
-            {t("voiceChat.confidence")} {(lastResponse.confidence * 100).toFixed(0)}%
+            {t("voiceChat.confidence")}{" "}
+            {(lastResponse.confidence * 100).toFixed(0)}%
           </Text>
         </View>
       </View>
@@ -377,7 +412,9 @@ function VoiceChatScreenInner({ config }: { config: VoicePipelineConfig }) {
               { transform: [{ scale: pulseAnim }] },
             ]}
           />
-          <Text style={[styles.stateLabel, { color: getStateColor() }]}>
+          <Text
+            numberOfLines={1}
+            style={[styles.stateLabel, { color: getStateColor() }]}>
             {getStateLabel()}
           </Text>
         </View>
@@ -415,6 +452,9 @@ function VoiceChatScreenInner({ config }: { config: VoicePipelineConfig }) {
 
           {renderWaveform()}
         </View>
+
+        {/* Model Download Progress */}
+        {renderDownloadProgress()}
 
         {/* Transcript Display */}
         {renderTranscript()}
@@ -480,20 +520,28 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "700",
     color: COLORS.text,
+    flexShrink: 1,
   },
+  // The state label is the widest thing in this row and varies by locale
+  // ("Téléchargement des modèles..." vs "Downloading models..."), so the row has to be allowed to
+  // give it space and the label has to be allowed to truncate rather than overrun the title.
   headerActions: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    flexShrink: 1,
+    marginLeft: 12,
   },
   statusDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
+    flexShrink: 0,
   },
   stateLabel: {
     fontSize: 14,
     fontWeight: "500",
+    flexShrink: 1,
   },
   content: {
     flex: 1,
@@ -533,6 +581,47 @@ const styles = StyleSheet.create({
     width: 4,
     borderRadius: 2,
     minHeight: 4,
+  },
+  downloadContainer: {
+    width: "100%",
+    padding: 16,
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: 16,
+  },
+  downloadHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  downloadLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: COLORS.text,
+  },
+  downloadPercent: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: COLORS.accent,
+  },
+  downloadBar: {
+    height: 6,
+    backgroundColor: COLORS.background,
+    borderRadius: 3,
+    overflow: "hidden",
+  },
+  downloadFill: {
+    height: "100%",
+    backgroundColor: COLORS.accent,
+    borderRadius: 3,
+  },
+  downloadHint: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 8,
   },
   transcriptContainer: {
     width: "100%",

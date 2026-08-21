@@ -57,6 +57,7 @@
     "title": "Voice Assistant",
     "states": {
       "tapToStart": "Tap to start",
+      "downloadingModels": "Downloading models...",
       "loadingModels": "Loading models...",
       "listening": "Listening...",
       "transcribing": "Transcribing...",
@@ -68,6 +69,12 @@
     "sections": {
       "response": "Response",
       "thinking": "Thinking"
+    },
+    "download": {
+      "preparing": "Preparing download...",
+      "asr": "Downloading speech recognition model",
+      "llm": "Downloading language model",
+      "hint": "First run only. Keep the app open — this is a large download."
     },
     "confidence": "Confidence:",
     "holdToSpeak": "Hold to speak · Releases on silence",
